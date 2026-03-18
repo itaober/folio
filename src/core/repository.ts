@@ -210,6 +210,28 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
         break;
       }
 
+      case 'updateSettings': {
+        if (mutation.payload.backlogThreshold !== undefined) {
+          next.settings.backlogThreshold = Math.max(
+            1,
+            Math.floor(mutation.payload.backlogThreshold)
+          );
+        }
+
+        if (mutation.payload.staleThreshold !== undefined) {
+          next.settings.staleThreshold = Math.max(
+            1,
+            Math.floor(mutation.payload.staleThreshold)
+          );
+        }
+
+        if (mutation.payload.defaultStatus !== undefined) {
+          next.settings.defaultStatus = mutation.payload.defaultStatus;
+        }
+
+        break;
+      }
+
       case 'touchOpenedAt': {
         const item = next.items[mutation.payload.id];
         if (!item) {

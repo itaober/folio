@@ -81,6 +81,11 @@ export default function App(): ReactElement {
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
   const [tagActionTarget, setTagActionTarget] = useState('');
   const [tagRenameValue, setTagRenameValue] = useState('');
+  const [backlogThresholdInput, setBacklogThresholdInput] = useState('20');
+  const [staleThresholdInput, setStaleThresholdInput] = useState('30');
+  const [defaultStatusInput, setDefaultStatusInput] = useState<'unread' | 'reading'>(
+    'unread'
+  );
   const [undoItem, setUndoItem] = useState<FolioItem | null>(null);
   const undoTimerRef = useRef<number | null>(null);
 
@@ -112,6 +117,9 @@ export default function App(): ReactElement {
   async function refresh(): Promise<void> {
     const nextStore = await getStore();
     setStore(nextStore);
+    setBacklogThresholdInput(String(nextStore.settings.backlogThreshold));
+    setStaleThresholdInput(String(nextStore.settings.staleThreshold));
+    setDefaultStatusInput(nextStore.settings.defaultStatus);
   }
 
   const displayItems = useMemo(() => {
@@ -352,6 +360,32 @@ export default function App(): ReactElement {
     if (activeTagFilter === tagActionTarget) {
       setActiveTagFilter(null);
     }
+    await refresh();
+  }
+
+  async function handleSaveThresholdSettings(): Promise<void> {
+    const backlogThreshold = Number(backlogThresholdInput);
+    const staleThreshold = Number(staleThresholdInput);
+    if (!Number.isFinite(backlogThreshold) || !Number.isFinite(staleThreshold)) {
+      setNotice({ level: 'error', text: t('options.updateFailed') });
+      return;
+    }
+
+    const result = await commit({
+      type: 'updateSettings',
+      payload: {
+        backlogThreshold,
+        staleThreshold,
+        defaultStatus: defaultStatusInput
+      }
+    });
+
+    if (!result.ok) {
+      setNotice({ level: 'error', text: t('options.updateFailed') });
+      return;
+    }
+
+    setNotice({ level: 'success', text: t('options.updateSuccess') });
     await refresh();
   }
 
@@ -644,6 +678,56 @@ export default function App(): ReactElement {
                 <option value="en">{t('settings.english')}</option>
                 <option value="zh-CN">{t('settings.zhCN')}</option>
               </select>
+
+              <div className="h-px bg-(--border)" />
+
+              <div className="space-y-2">
+                <p className="m-0 text-sm text-text-secondary">
+                  {t('options.thresholdsTitle')}
+                </p>
+                <label className="block text-xs text-text-muted">
+                  {t('options.backlogThreshold')}
+                </label>
+                <input
+                  className="folio-input"
+                  type="number"
+                  min={1}
+                  value={backlogThresholdInput}
+                  onChange={(event) =>
+                    setBacklogThresholdInput(event.target.value)
+                  }
+                />
+                <label className="block text-xs text-text-muted">
+                  {t('options.staleThreshold')}
+                </label>
+                <input
+                  className="folio-input"
+                  type="number"
+                  min={1}
+                  value={staleThresholdInput}
+                  onChange={(event) => setStaleThresholdInput(event.target.value)}
+                />
+                <label className="block text-xs text-text-muted">
+                  {t('options.defaultStatus')}
+                </label>
+                <select
+                  className="folio-input"
+                  value={defaultStatusInput}
+                  onChange={(event) =>
+                    setDefaultStatusInput(event.target.value as 'unread' | 'reading')
+                  }
+                >
+                  <option value="unread">{t('common.unread')}</option>
+                  <option value="reading">{t('common.reading')}</option>
+                </select>
+                <button
+                  type="button"
+                  className="folio-btn-primary"
+                  onClick={() => void handleSaveThresholdSettings()}
+                >
+                  {t('common.save')}
+                </button>
+              </div>
 
               <div className="h-px bg-(--border)" />
 

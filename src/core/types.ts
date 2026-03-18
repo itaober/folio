@@ -88,6 +88,14 @@ export type FolioMutation =
       };
     }
   | {
+      type: 'updateSettings';
+      payload: {
+        backlogThreshold?: number;
+        staleThreshold?: number;
+        defaultStatus?: 'unread' | 'reading';
+      };
+    }
+  | {
       type: 'touchOpenedAt';
       payload: {
         id: string;
