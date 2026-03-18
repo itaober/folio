@@ -7,7 +7,8 @@ const en = {
     settings: 'Settings',
     save: 'Save',
     cancel: 'Cancel',
-    delete: 'Delete'
+    delete: 'Delete',
+    operationFailed: 'Operation failed'
   },
   popup: {
     title: 'Folio',
@@ -21,6 +22,8 @@ const en = {
     quickEditNote: 'Note',
     quickEditApply: 'Apply',
     quickEditDismiss: 'Dismiss',
+    saveFailed: 'Failed to save',
+    updateFailed: 'Failed to update',
     backlogHint: 'Unread backlog is high ({{count}} items)',
     noActiveTab: 'No active page available',
     recent: 'Recent',
@@ -41,6 +44,8 @@ const en = {
     tags: 'Tags',
     status: 'Status',
     updateSuccess: 'Saved',
+    updateFailed: 'Failed to update',
+    undoFailed: 'Failed to undo',
     batchSelected: '{{count}} selected',
     batchDelete: 'Delete Selected',
     batchTagPlaceholder: 'Tag for selected',

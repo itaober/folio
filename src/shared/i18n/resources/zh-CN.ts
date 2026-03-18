@@ -7,7 +7,8 @@ const zhCN = {
     settings: '设置',
     save: '保存',
     cancel: '取消',
-    delete: '删除'
+    delete: '删除',
+    operationFailed: '操作失败'
   },
   popup: {
     title: 'Folio',
@@ -21,6 +22,8 @@ const zhCN = {
     quickEditNote: '备注',
     quickEditApply: '应用',
     quickEditDismiss: '收起',
+    saveFailed: '收藏失败',
+    updateFailed: '更新失败',
     backlogHint: '待读积压较高（{{count}} 项）',
     noActiveTab: '当前没有可用页面',
     recent: '最近添加',
@@ -41,6 +44,8 @@ const zhCN = {
     tags: '标签',
     status: '状态',
     updateSuccess: '已保存',
+    updateFailed: '更新失败',
+    undoFailed: '撤销失败',
     batchSelected: '已选 {{count}} 项',
     batchDelete: '删除选中',
     batchTagPlaceholder: '为选中项添加标签',

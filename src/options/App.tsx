@@ -35,10 +35,27 @@ interface EditDraft {
   status: FolioStatus;
 }
 
+type NoticeLevel = 'success' | 'error' | 'info';
+
+interface NoticeState {
+  level: NoticeLevel;
+  text: string;
+}
+
 function statusText(status: FolioStatus, t: (key: string) => string): string {
   if (status === 'unread') return t('common.unread');
   if (status === 'reading') return t('common.reading');
   return t('common.done');
+}
+
+function noticeClass(level: NoticeLevel): string {
+  if (level === 'success') {
+    return 'border-(--status-done-border) bg-(--status-done-bg) text-(--status-done-text)';
+  }
+  if (level === 'error') {
+    return 'border-(--status-unread-border) bg-(--status-unread-bg) text-(--status-unread-text)';
+  }
+  return 'border-(--border) bg-bg-elevated text-text-secondary';
 }
 
 function parseTags(input: string): string[] {
@@ -58,7 +75,7 @@ export default function App(): ReactElement {
   const [batchTag, setBatchTag] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
-  const [message, setMessage] = useState('');
+  const [notice, setNotice] = useState<NoticeState | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>('saved_desc');
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
@@ -148,7 +165,7 @@ export default function App(): ReactElement {
 
   async function handleSetStatus(item: FolioItem, status: FolioStatus): Promise<void> {
     await commit({ type: 'setStatus', payload: { id: item.id, status } });
-    setMessage(t('options.updateSuccess'));
+    setNotice({ level: 'success', text: t('options.updateSuccess') });
     await refresh();
   }
 
@@ -186,12 +203,12 @@ export default function App(): ReactElement {
     });
 
     if (!result.ok) {
-      setMessage('Failed to undo');
+      setNotice({ level: 'error', text: t('options.undoFailed') });
       return;
     }
 
     setUndoItem(null);
-    setMessage(t('options.updateSuccess'));
+    setNotice({ level: 'success', text: t('options.updateSuccess') });
     await refresh();
   }
 
@@ -213,7 +230,7 @@ export default function App(): ReactElement {
     ).showDirectoryPicker;
 
     if (typeof showDirectoryPicker !== 'function') {
-      setMessage(t('settings.syncUnavailable'));
+      setNotice({ level: 'error', text: t('settings.syncUnavailable') });
       return;
     }
 
@@ -236,7 +253,10 @@ export default function App(): ReactElement {
       }
 
       const text = error instanceof Error ? error.message : 'unknown_error';
-      setMessage(t('settings.syncFailed', { error: text }));
+      setNotice({
+        level: 'error',
+        text: t('settings.syncFailed', { error: text })
+      });
     }
   }
 
@@ -256,13 +276,14 @@ export default function App(): ReactElement {
     try {
       const result = await syncBackupNow();
       if (result.ok) {
-        setMessage(t('settings.syncSuccess'));
+        setNotice({ level: 'success', text: t('settings.syncSuccess') });
       } else {
-        setMessage(
-          t('settings.syncFailed', {
+        setNotice({
+          level: 'error',
+          text: t('settings.syncFailed', {
             error: result.error ?? 'unknown_error'
           })
-        );
+        });
       }
       await refresh();
     } finally {
@@ -298,7 +319,7 @@ export default function App(): ReactElement {
       });
     }
 
-    setMessage(t('options.updateSuccess'));
+    setNotice({ level: 'success', text: t('options.updateSuccess') });
     setTagActionTarget('');
     setTagRenameValue('');
     setActiveTagFilter(null);
@@ -325,7 +346,7 @@ export default function App(): ReactElement {
       });
     }
 
-    setMessage(t('options.updateSuccess'));
+    setNotice({ level: 'success', text: t('options.updateSuccess') });
     setTagActionTarget('');
     setTagRenameValue('');
     if (activeTagFilter === tagActionTarget) {
@@ -374,7 +395,7 @@ export default function App(): ReactElement {
       await commit(mutation);
     }
 
-    setMessage(t('options.updateSuccess'));
+    setNotice({ level: 'success', text: t('options.updateSuccess') });
     setSelectedIds([]);
     await refresh();
   }
@@ -465,11 +486,11 @@ export default function App(): ReactElement {
     });
 
     if (!result.ok) {
-      setMessage('Failed to update');
+      setNotice({ level: 'error', text: t('options.updateFailed') });
       return;
     }
 
-    setMessage(t('options.updateSuccess'));
+    setNotice({ level: 'success', text: t('options.updateSuccess') });
     setEditingId(null);
     setEditDraft(null);
     await refresh();
@@ -605,8 +626,14 @@ export default function App(): ReactElement {
             </div>
           ) : null}
 
-          {message ? (
-            <p className="mb-3 mt-0 text-sm text-text-secondary">{message}</p>
+          {notice ? (
+            <p
+              className={`mb-3 mt-0 rounded-md border px-3 py-2 text-sm ${noticeClass(
+                notice.level
+              )}`}
+            >
+              {notice.text}
+            </p>
           ) : null}
 
           {view === 'settings' ? (

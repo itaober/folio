@@ -16,6 +16,13 @@ interface ActivePage {
   favicon: string;
 }
 
+type NoticeLevel = 'success' | 'error' | 'info';
+
+interface NoticeState {
+  level: NoticeLevel;
+  text: string;
+}
+
 const STATUS_ORDER: FolioStatus[] = ['unread', 'reading', 'done'];
 
 function statusToLabel(status: FolioStatus, t: (key: string) => string): string {
@@ -24,13 +31,23 @@ function statusToLabel(status: FolioStatus, t: (key: string) => string): string 
   return t('common.done');
 }
 
+function noticeClass(level: NoticeLevel): string {
+  if (level === 'success') {
+    return 'border-(--status-done-border) bg-(--status-done-bg) text-(--status-done-text)';
+  }
+  if (level === 'error') {
+    return 'border-(--status-unread-border) bg-(--status-unread-bg) text-(--status-unread-text)';
+  }
+  return 'border-(--border) bg-bg-elevated text-text-secondary';
+}
+
 export default function App(): ReactElement {
   const { t } = useTranslation();
 
   const [activePage, setActivePage] = useState<ActivePage | null>(null);
   const [currentItem, setCurrentItem] = useState<FolioItem | null>(null);
   const [recentItems, setRecentItems] = useState<FolioItem[]>([]);
-  const [message, setMessage] = useState<string>('');
+  const [notice, setNotice] = useState<NoticeState | null>(null);
   const [locale, setLocale] = useState<SupportedLocale>('en');
   const [backlogCount, setBacklogCount] = useState(0);
   const [isQuickEditOpen, setIsQuickEditOpen] = useState(false);
@@ -80,7 +97,7 @@ export default function App(): ReactElement {
       setActivePage(null);
       setCurrentItem(null);
       setRecentItems([]);
-      setMessage(t('popup.noActiveTab'));
+      setNotice({ level: 'info', text: t('popup.noActiveTab') });
       return null;
     }
 
@@ -118,15 +135,17 @@ export default function App(): ReactElement {
 
     if (!result.ok && result.code === 'already_exists') {
       const statusLabel = result.item ? statusToLabel(result.item.status, t) : '';
-      setMessage(
-        result.item
-          ? t('popup.alreadySavedWithStatus', { status: statusLabel })
-          : t('popup.alreadySaved')
-      );
+      setNotice({
+        level: 'info',
+        text:
+          result.item
+            ? t('popup.alreadySavedWithStatus', { status: statusLabel })
+            : t('popup.alreadySaved')
+      });
     } else if (!result.ok) {
-      setMessage('Failed to save');
+      setNotice({ level: 'error', text: t('popup.saveFailed') });
     } else {
-      setMessage(t('popup.saved'));
+      setNotice({ level: 'success', text: t('popup.saved') });
       const savedItem = await load();
       if (savedItem) {
         openQuickEdit(savedItem);
@@ -174,7 +193,7 @@ export default function App(): ReactElement {
 
     await changeLanguage(value);
     setLocale(value);
-    setMessage('');
+    setNotice(null);
   }
 
   async function handleApplyQuickEdit(): Promise<void> {
@@ -198,11 +217,11 @@ export default function App(): ReactElement {
     });
 
     if (!result.ok) {
-      setMessage('Failed to update');
+      setNotice({ level: 'error', text: t('popup.updateFailed') });
       return;
     }
 
-    setMessage(t('popup.saved'));
+    setNotice({ level: 'success', text: t('popup.saved') });
     setIsQuickEditOpen(false);
     await load();
   }
@@ -270,7 +289,15 @@ export default function App(): ReactElement {
           </div>
         )}
 
-        {message ? <p className="m-0 text-xs text-text-secondary">{message}</p> : null}
+        {notice ? (
+          <p
+            className={`m-0 rounded-md border px-2 py-1 text-xs ${noticeClass(
+              notice.level
+            )}`}
+          >
+            {notice.text}
+          </p>
+        ) : null}
 
         {currentItem && isQuickEditOpen ? (
           <div className="folio-card space-y-2 p-3">
