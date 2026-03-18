@@ -56,6 +56,8 @@ export default function App(): ReactElement {
   const [isSyncing, setIsSyncing] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>('saved_desc');
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
+  const [tagActionTarget, setTagActionTarget] = useState('');
+  const [tagRenameValue, setTagRenameValue] = useState('');
 
   useEffect(() => {
     void refresh();
@@ -218,6 +220,70 @@ export default function App(): ReactElement {
     } finally {
       setIsSyncing(false);
     }
+  }
+
+  async function handleRenameTag(): Promise<void> {
+    if (!store || !tagActionTarget) {
+      return;
+    }
+
+    const newTag = tagRenameValue.trim();
+    if (!newTag) {
+      return;
+    }
+
+    for (const item of Object.values(store.items)) {
+      if (!item.tags.includes(tagActionTarget)) {
+        continue;
+      }
+
+      const nextTags = item.tags.map((tag) =>
+        tag === tagActionTarget ? newTag : tag
+      );
+
+      await commit({
+        type: 'updateItem',
+        payload: {
+          id: item.id,
+          tags: [...new Set(nextTags)]
+        }
+      });
+    }
+
+    setMessage(t('options.updateSuccess'));
+    setTagActionTarget('');
+    setTagRenameValue('');
+    setActiveTagFilter(null);
+    await refresh();
+  }
+
+  async function handleDeleteTag(): Promise<void> {
+    if (!store || !tagActionTarget) {
+      return;
+    }
+
+    for (const item of Object.values(store.items)) {
+      if (!item.tags.includes(tagActionTarget)) {
+        continue;
+      }
+
+      const nextTags = item.tags.filter((tag) => tag !== tagActionTarget);
+      await commit({
+        type: 'updateItem',
+        payload: {
+          id: item.id,
+          tags: nextTags
+        }
+      });
+    }
+
+    setMessage(t('options.updateSuccess'));
+    setTagActionTarget('');
+    setTagRenameValue('');
+    if (activeTagFilter === tagActionTarget) {
+      setActiveTagFilter(null);
+    }
+    await refresh();
   }
 
   function handleToggleSelect(id: string): void {
@@ -535,6 +601,55 @@ export default function App(): ReactElement {
                   {t('settings.lastSyncError')}:&nbsp;
                   {store?.settings.lastSyncError ?? '-'}
                 </p>
+              </div>
+
+              <div className="h-px bg-[var(--border)]" />
+
+              <div className="space-y-2">
+                <p className="m-0 text-sm text-text-secondary">
+                  {t('options.tagManagerTitle')}
+                </p>
+                <label className="block text-xs text-text-muted">
+                  {t('options.tagSelect')}
+                </label>
+                <select
+                  className="folio-input"
+                  value={tagActionTarget}
+                  onChange={(event) => setTagActionTarget(event.target.value)}
+                >
+                  <option value="">-</option>
+                  {(store?.tags ?? []).map((tag) => (
+                    <option key={tag} value={tag}>
+                      {tag}
+                    </option>
+                  ))}
+                </select>
+                <label className="block text-xs text-text-muted">
+                  {t('options.tagNewName')}
+                </label>
+                <input
+                  className="folio-input"
+                  value={tagRenameValue}
+                  onChange={(event) => setTagRenameValue(event.target.value)}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="folio-btn-outline"
+                    onClick={() => void handleRenameTag()}
+                    disabled={!tagActionTarget || !tagRenameValue.trim()}
+                  >
+                    {t('options.renameTag')}
+                  </button>
+                  <button
+                    type="button"
+                    className="folio-btn-outline"
+                    onClick={() => void handleDeleteTag()}
+                    disabled={!tagActionTarget}
+                  >
+                    {t('options.deleteTag')}
+                  </button>
+                </div>
               </div>
             </section>
           ) : (

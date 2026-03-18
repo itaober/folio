@@ -32,6 +32,7 @@ export default function App(): ReactElement {
   const [recentItems, setRecentItems] = useState<FolioItem[]>([]);
   const [message, setMessage] = useState<string>('');
   const [locale, setLocale] = useState<SupportedLocale>('en');
+  const [backlogCount, setBacklogCount] = useState(0);
   const [isQuickEditOpen, setIsQuickEditOpen] = useState(false);
   const [quickEditTitle, setQuickEditTitle] = useState('');
   const [quickEditTags, setQuickEditTags] = useState('');
@@ -91,10 +92,15 @@ export default function App(): ReactElement {
 
     const store = await getStore();
     const item = selectItemByUrl(store, url) ?? null;
+    const unreadCount = Object.values(store.items).filter(
+      (entry) => entry.status === 'unread'
+    ).length;
+    const threshold = store.settings.backlogThreshold;
 
     setActivePage(page);
     setCurrentItem(item);
     setRecentItems(selectRecentItems(store, 5));
+    setBacklogCount(unreadCount > threshold ? unreadCount : 0);
     return item;
   }
 
@@ -244,6 +250,12 @@ export default function App(): ReactElement {
       </section>
 
       <section className="space-y-3 p-4">
+        {backlogCount > 0 ? (
+          <p className="m-0 rounded-md border border-[var(--status-unread-border)] bg-[var(--status-unread-bg)] px-2 py-1 text-xs text-[var(--status-unread-text)]">
+            {t('popup.backlogHint', { count: backlogCount })}
+          </p>
+        ) : null}
+
         {!currentItem ? (
           <button type="button" className="folio-btn-primary w-full" disabled={!canSave} onClick={() => void handleSaveCurrentPage()}>
             {t('popup.saveCurrentPage')}

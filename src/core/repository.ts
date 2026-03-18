@@ -9,6 +9,22 @@ function createId(): string {
   return crypto.randomUUID();
 }
 
+function collectTagsFromItems(items: FolioStore['items']): string[] {
+  const tagSet = new Set<string>();
+
+  for (const item of Object.values(items)) {
+    for (const tag of item.tags) {
+      const normalized = tag.trim();
+      if (!normalized) {
+        continue;
+      }
+      tagSet.add(normalized);
+    }
+  }
+
+  return [...tagSet].sort();
+}
+
 async function writeStore(store: FolioStore): Promise<void> {
   await chrome.storage.local.set({ [FOLIO_STORE_KEY]: store });
 }
@@ -196,6 +212,7 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
         return { ok: false, code: 'unknown_error', store: current };
     }
 
+    next.tags = collectTagsFromItems(next.items);
     await writeStore(next);
     const syncedStore = await updateSyncMetadata(next);
     emitCommitEvent({ mutation, store: syncedStore });
