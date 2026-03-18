@@ -1,6 +1,12 @@
 import { createDefaultStore, FOLIO_STORE_KEY } from './defaults';
 import { emitCommitEvent, subscribeCommitEvent } from './events';
-import type { CommitResult, FolioMutation, FolioStore } from './types';
+import type {
+  CommitResult,
+  FolioItem,
+  FolioMutation,
+  FolioStatus,
+  FolioStore
+} from './types';
 import { extractDomain, normalizeUrl } from './url';
 import { isSupportedLocale, writeStoredLocale } from '../shared/i18n/localeStore';
 import { writeBackupToDirectory } from './sync/backupWriter';
@@ -40,6 +46,139 @@ function normalizeStore(store: FolioStore): FolioStore {
     ...store,
     settings: normalizedSettings
   };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function toNumber(value: unknown, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return fallback;
+  }
+  return value;
+}
+
+function parseStatus(value: unknown): FolioStatus {
+  if (value === 'unread' || value === 'reading' || value === 'done') {
+    return value;
+  }
+  return 'unread';
+}
+
+function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | null {
+  if (!isRecord(raw)) {
+    return null;
+  }
+
+  const defaultStore = createDefaultStore();
+  const rawItems = isRecord(raw.items) ? raw.items : {};
+  const byUrl = new Map<string, FolioItem>();
+  const now = Date.now();
+
+  for (const value of Object.values(rawItems)) {
+    if (!isRecord(value)) {
+      continue;
+    }
+
+    const normalizedUrl = normalizeUrl(
+      typeof value.url === 'string' ? value.url : ''
+    );
+    if (!normalizedUrl) {
+      continue;
+    }
+
+    const savedAt = toNumber(value.savedAt, now);
+    const nextItem: FolioItem = {
+      id:
+        typeof value.id === 'string' && value.id.trim()
+          ? value.id
+          : createId(),
+      url: normalizedUrl,
+      title:
+        typeof value.title === 'string' && value.title.trim()
+          ? value.title
+          : normalizedUrl,
+      favicon: typeof value.favicon === 'string' ? value.favicon : '',
+      domain: extractDomain(normalizedUrl),
+      status: parseStatus(value.status),
+      tags: Array.isArray(value.tags)
+        ? [...new Set(value.tags.filter((tag): tag is string => typeof tag === 'string').map((tag) => tag.trim()).filter(Boolean))]
+        : [],
+      note: typeof value.note === 'string' ? value.note : '',
+      savedAt,
+      updatedAt: toNumber(value.updatedAt, savedAt),
+      lastOpenedAt:
+        typeof value.lastOpenedAt === 'number' && Number.isFinite(value.lastOpenedAt)
+          ? value.lastOpenedAt
+          : null
+    };
+
+    const existing = byUrl.get(nextItem.url);
+    if (!existing || existing.updatedAt <= nextItem.updatedAt) {
+      byUrl.set(nextItem.url, nextItem);
+    }
+  }
+
+  const items: Record<string, FolioItem> = {};
+  const usedIds = new Set<string>();
+  for (const item of byUrl.values()) {
+    const nextId = usedIds.has(item.id) ? createId() : item.id;
+    usedIds.add(nextId);
+    items[nextId] = { ...item, id: nextId };
+  }
+
+  const rawSettings = isRecord(raw.settings) ? raw.settings : {};
+  const locale =
+    typeof rawSettings.locale === 'string' && isSupportedLocale(rawSettings.locale)
+      ? rawSettings.locale
+      : current.settings.locale;
+  const defaultStatus =
+    rawSettings.defaultStatus === 'unread' || rawSettings.defaultStatus === 'reading'
+      ? rawSettings.defaultStatus
+      : current.settings.defaultStatus;
+  const backlogEnabled =
+    typeof rawSettings.backlogEnabled === 'boolean'
+      ? rawSettings.backlogEnabled
+      : current.settings.backlogEnabled;
+  const staleEnabled =
+    typeof rawSettings.staleEnabled === 'boolean'
+      ? rawSettings.staleEnabled
+      : current.settings.staleEnabled;
+  const backlogThreshold = Math.max(
+    1,
+    Math.floor(toNumber(rawSettings.backlogThreshold, current.settings.backlogThreshold))
+  );
+  const staleThreshold = Math.max(
+    1,
+    Math.floor(toNumber(rawSettings.staleThreshold, current.settings.staleThreshold))
+  );
+
+  const rawMeta = isRecord(raw.meta) ? raw.meta : {};
+
+  const nextStore: FolioStore = {
+    items,
+    tags: collectTagsFromItems(items),
+    settings: {
+      ...defaultStore.settings,
+      ...current.settings,
+      locale,
+      defaultStatus,
+      backlogEnabled,
+      backlogThreshold,
+      staleEnabled,
+      staleThreshold
+    },
+    meta: {
+      version:
+        typeof rawMeta.version === 'string'
+          ? rawMeta.version
+          : current.meta.version,
+      createdAt: toNumber(rawMeta.createdAt, current.meta.createdAt)
+    }
+  };
+
+  return normalizeStore(nextStore);
 }
 
 async function updateSyncMetadata(store: FolioStore): Promise<FolioStore> {
@@ -320,6 +459,37 @@ export async function syncBackupNow(): Promise<{
     error: result.ok ? undefined : result.error,
     store: nextStore
   };
+}
+
+export async function importStoreFromJson(raw: unknown): Promise<{
+  ok: boolean;
+  error?: string;
+  store: FolioStore;
+}> {
+  const current = await getStore();
+  const next = sanitizeImportedStore(raw, current);
+  if (!next) {
+    return {
+      ok: false,
+      error: 'invalid_json_structure',
+      store: current
+    };
+  }
+
+  try {
+    await writeStore(next);
+    if (current.settings.locale !== next.settings.locale) {
+      await writeStoredLocale(next.settings.locale);
+    }
+    const syncedStore = await updateSyncMetadata(next);
+    return { ok: true, store: syncedStore };
+  } catch {
+    return {
+      ok: false,
+      error: 'import_failed',
+      store: current
+    };
+  }
 }
 
 export { subscribeCommitEvent };

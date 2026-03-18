@@ -107,7 +107,12 @@ const zhCN = {
     syncSuccess: '备份同步成功',
     syncFailed: '同步失败：{{error}}',
     lastSyncedAt: '上次同步',
-    lastSyncError: '最近错误'
+    lastSyncError: '最近错误',
+    importTitle: '导入恢复',
+    importHint: '导入 Folio JSON 备份并覆盖当前数据。',
+    importJson: '导入 JSON',
+    importSuccess: '已导入 {{count}} 项',
+    importFailed: '导入失败：{{error}}'
   }
 };
 

@@ -107,7 +107,12 @@ const en = {
     syncSuccess: 'Backup synced',
     syncFailed: 'Sync failed: {{error}}',
     lastSyncedAt: 'Last synced',
-    lastSyncError: 'Last sync error'
+    lastSyncError: 'Last sync error',
+    importTitle: 'Import Restore',
+    importHint: 'Import a Folio JSON backup and replace current data.',
+    importJson: 'Import JSON',
+    importSuccess: 'Imported {{count}} items',
+    importFailed: 'Import failed: {{error}}'
   }
 };
 

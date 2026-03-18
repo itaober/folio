@@ -3,13 +3,14 @@ import {
   useMemo,
   useRef,
   useState,
+  type ChangeEvent,
   type ReactElement,
   type ReactNode
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { changeLanguage } from '../shared/i18n';
 import { isSupportedLocale, readStoredLocale, type SupportedLocale } from '../shared/i18n/localeStore';
-import { commit, getStore, syncBackupNow } from '../core/repository';
+import { commit, getStore, importStoreFromJson, syncBackupNow } from '../core/repository';
 import {
   selectAllItems,
   selectFilteredItems,
@@ -134,6 +135,7 @@ export default function App(): ReactElement {
   );
   const [undoItems, setUndoItems] = useState<FolioItem[]>([]);
   const undoTimerRef = useRef<number | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     void refresh();
@@ -392,6 +394,57 @@ export default function App(): ReactElement {
       await refresh();
     } finally {
       setIsSyncing(false);
+    }
+  }
+
+  function handleImportClick(): void {
+    importInputRef.current?.click();
+  }
+
+  async function handleImportFileChange(
+    event: ChangeEvent<HTMLInputElement>
+  ): Promise<void> {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const rawText = await file.text();
+      const raw = JSON.parse(rawText) as unknown;
+      const result = await importStoreFromJson(raw);
+
+      if (!result.ok) {
+        setNotice({
+          level: 'error',
+          text: t('settings.importFailed', { error: result.error ?? 'unknown_error' })
+        });
+        return;
+      }
+
+      await changeLanguage(result.store.settings.locale);
+      setLocale(result.store.settings.locale);
+      setNotice({
+        level: 'success',
+        text: t('settings.importSuccess', {
+          count: Object.keys(result.store.items).length
+        })
+      });
+      setView('all');
+      setSearch('');
+      setActiveTagFilter(null);
+      setSelectedIds([]);
+      setEditingId(null);
+      setEditDraft(null);
+      await refresh();
+    } catch (error) {
+      const text = error instanceof Error ? error.message : 'invalid_json';
+      setNotice({
+        level: 'error',
+        text: t('settings.importFailed', { error: text })
+      });
     }
   }
 
@@ -1046,6 +1099,27 @@ export default function App(): ReactElement {
                   {t('settings.lastSyncError')}:&nbsp;
                   {store?.settings.lastSyncError ?? '-'}
                 </p>
+              </div>
+
+              <div className="h-px bg-(--border)" />
+
+              <div className="space-y-2">
+                <p className="m-0 text-sm text-text-secondary">{t('settings.importTitle')}</p>
+                <p className="m-0 text-xs text-text-muted">{t('settings.importHint')}</p>
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept="application/json,.json"
+                  className="hidden"
+                  onChange={(event) => void handleImportFileChange(event)}
+                />
+                <button
+                  type="button"
+                  className="folio-btn-outline"
+                  onClick={handleImportClick}
+                >
+                  {t('settings.importJson')}
+                </button>
               </div>
 
               <div className="h-px bg-(--border)" />
