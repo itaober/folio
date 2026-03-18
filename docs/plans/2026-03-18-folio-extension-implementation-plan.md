@@ -2,11 +2,11 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Build a Chrome-only MV3 Folio extension (full PRD scope except keyboard shortcuts) with popup quick actions, full options management UI, local storage domain model, and one-way automatic local backup sync on committed mutations.
+**Goal:** Build a Chrome-only MV3 Folio extension (full PRD scope except keyboard shortcuts) with popup quick actions, full options management UI, English/Simplified Chinese localization (default English), local storage domain model, and one-way automatic local backup sync on committed mutations.
 
 **Architecture:** Use one Vite + React + TypeScript repository with multiple extension entries (`popup`, `options`, `background`) and a shared core domain layer for storage, selectors, exports, and sync orchestration. All state mutations pass through a single repository commit path, and post-commit effects (badge update + local backup write) are handled centrally. UI uses Tailwind CSS utilities with PRD warm-light tokens mapped through CSS variables.
 
-**Tech Stack:** `pnpm`, TypeScript, React, Vite, Tailwind CSS, Manifest V3, `@crxjs/vite-plugin`, Chrome Extension APIs, File System Access API (options page)
+**Tech Stack:** `pnpm`, TypeScript, React, Vite, Tailwind CSS, `i18next`, `react-i18next`, Manifest V3, `@crxjs/vite-plugin`, Chrome Extension APIs, File System Access API (options page)
 
 ---
 
@@ -15,6 +15,7 @@
 - No automated tests in this iteration (explicit requirement): no TDD, no unit tests, no E2E tests.
 - Verification is `pnpm typecheck`, `pnpm build`, plus manual acceptance checks.
 - Keyboard shortcut feature is removed completely.
+- Localization scope is `en` + `zh-CN`, with first-run/default locale fixed to `en`.
 - Use frequent small commits.
 - If behavior is unclear during implementation, use `@superpowers/systematic-debugging` before patching.
 
@@ -46,7 +47,7 @@ Add scripts and deps:
 }
 ```
 
-Include core deps: `react`, `react-dom`; dev deps: `typescript`, `vite`, `@vitejs/plugin-react`, `@crxjs/vite-plugin`, `tailwindcss`, `postcss`, `autoprefixer`.
+Include core deps: `react`, `react-dom`, `i18next`, `react-i18next`; dev deps: `typescript`, `vite`, `@vitejs/plugin-react`, `@crxjs/vite-plugin`, `tailwindcss`, `postcss`, `autoprefixer`.
 
 **Step 2: Define manifest entry map**
 
@@ -97,6 +98,40 @@ Expected: no TS or build errors.
 ```bash
 git add src/popup src/options src/background src/shared/styles
 git commit -m "feat: add extension entrypoints and tailwind style foundation"
+```
+
+### Task 2A: Add localization foundation (`en` / `zh-CN`, default `en`)
+
+**Files:**
+- Create: `src/shared/i18n/index.ts`
+- Create: `src/shared/i18n/resources/en.ts`
+- Create: `src/shared/i18n/resources/zh-CN.ts`
+- Create: `src/shared/i18n/localeStore.ts`
+- Modify: `src/popup/main.tsx`
+- Modify: `src/options/main.tsx`
+
+**Step 1: Initialize i18n runtime**
+
+Configure `i18next` + `react-i18next` and preload `en` and `zh-CN` resources.
+
+**Step 2: Set locale persistence rules**
+
+On first run, force default locale to `en`; persist user-selected locale in extension storage and restore on next startup.
+
+**Step 3: Wrap app roots with i18n provider**
+
+Ensure popup/options render translated strings through shared i18n context.
+
+**Step 4: Verify**
+
+Run: `pnpm typecheck && pnpm build`  
+Expected: no typing/build errors after i18n wiring.
+
+**Step 5: Commit**
+
+```bash
+git add src/shared/i18n src/popup/main.tsx src/options/main.tsx
+git commit -m "feat: add i18n foundation for english and simplified chinese"
 ```
 
 ### Task 3: Implement core domain types and storage repository
@@ -435,7 +470,7 @@ git commit -m "feat: add batch operations and global tag management"
 
 **Step 1: Implement threshold settings UI**
 
-Support backlog and stale thresholds with validation and commit-save behavior.
+Support backlog and stale thresholds with validation and commit-save behavior, plus language selector (`English` / `简体中文`).
 
 **Step 2: Implement directory authorization controls**
 
@@ -554,3 +589,4 @@ Then load `dist/` as unpacked extension in Chrome and re-run critical manual che
 5. Exports (JSON/CSV/Markdown)
 6. Badge state mapping
 7. One-way auto backup write on committed mutation only
+8. Default locale is English; switching to Simplified Chinese updates popup/options strings

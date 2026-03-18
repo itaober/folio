@@ -13,6 +13,7 @@ Source PRD: `prd.md`
 - Test policy for this build: no automated tests (no TDD, no unit/integration/E2E in this iteration).
 - Local file sync policy: automatic one-way sync from browser data to local file (`folio-data.json`), triggered only on committed data mutations.
 - Style system: Tailwind utility classes with PRD tokens mapped via CSS variables.
+- Localization: support `English` and `Simplified Chinese` (`en`, `zh-CN`), default locale is `en`.
 
 ## 2. Architecture
 
@@ -23,6 +24,7 @@ Single repository, multi-entry extension app:
 - `background` entry (service worker): context menu action, toolbar badge state orchestration, storage event coordination, backup sync triggering.
 - `core` shared domain layer: storage repository, selectors, validation, sync service, exporters.
 - `shared` styling layer: Tailwind CSS + CSS variable tokens for warm-light palette, typography, spacing, and component primitives aligned with PRD visual spec.
+- `shared` i18n layer: locale resources, translation hooks, and locale persistence with fallback to English.
 
 ## 3. Feature Design
 
@@ -47,7 +49,7 @@ Single repository, multi-entry extension app:
 - Batch operations: status change, tag assignment, delete.
 - Export formats: JSON, CSV, Markdown for current view or full dataset.
 - Stats surface: weekly done count, total count, unread count, top 3 domains.
-- Settings: thresholds, sync directory setup/status, destructive setting confirmations.
+- Settings: thresholds, language selector (`English` / `简体中文`), sync directory setup/status, destructive setting confirmations.
 
 ### 3.3 Background Behaviors
 
@@ -109,6 +111,8 @@ The build is acceptable when all checks pass manually in Chrome:
 8. Toolbar status indicator changes according to current page state.
 9. Backup file is updated on committed mutations only, not while typing.
 10. Visual system aligns with PRD warm-light spec (color, typography, spacing, interaction).
+11. UI language defaults to English on first run.
+12. Switching language in settings updates popup/options text correctly for `en` and `zh-CN`.
 
 ## 8. Non-Goals for This Iteration
 
