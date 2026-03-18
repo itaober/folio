@@ -28,6 +28,9 @@ const zhCN = {
     noActiveTab: '当前没有可用页面',
     recent: '最近添加',
     openDashboard: '打开后台',
+    editInFolio: '在 Folio 中编辑',
+    searchPlaceholder: '搜索你的阅读清单...',
+    searchAction: '搜索',
     language: '语言'
   },
   options: {

@@ -92,6 +92,12 @@ export default function App(): ReactElement {
   useEffect(() => {
     void refresh();
     void readStoredLocale().then((saved) => setLocale(saved));
+    const initialSearch = new URLSearchParams(window.location.search).get(
+      'search'
+    );
+    if (initialSearch) {
+      setSearch(initialSearch);
+    }
 
     const listener = (
       changes: Record<string, chrome.storage.StorageChange>,

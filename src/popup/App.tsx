@@ -54,6 +54,7 @@ export default function App(): ReactElement {
   const [quickEditTitle, setQuickEditTitle] = useState('');
   const [quickEditTags, setQuickEditTags] = useState('');
   const [quickEditNote, setQuickEditNote] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const quickEditTimerRef = useRef<number | null>(null);
 
   const canSave = Boolean(activePage?.url);
@@ -174,6 +175,19 @@ export default function App(): ReactElement {
     await chrome.runtime.openOptionsPage();
   }
 
+  async function handleOpenOptionsWithSearch(): Promise<void> {
+    const keyword = searchTerm.trim();
+    if (!keyword) {
+      await chrome.runtime.openOptionsPage();
+      return;
+    }
+
+    const optionsUrl = chrome.runtime.getURL(
+      `src/options/index.html?search=${encodeURIComponent(keyword)}`
+    );
+    await chrome.tabs.create({ url: optionsUrl });
+  }
+
   async function handleOpenRecentItem(item: FolioItem): Promise<void> {
     await chrome.tabs.create({ url: item.url });
     await commit({ type: 'touchOpenedAt', payload: { id: item.id } });
@@ -286,6 +300,13 @@ export default function App(): ReactElement {
               <p className="m-0 font-mono text-xs text-text-muted">{currentItem.domain}</p>
             </div>
             <div className="flex gap-1">{statusButtons}</div>
+            <button
+              type="button"
+              className="text-left text-xs text-text-link underline underline-offset-2"
+              onClick={() => void handleOpenOptions()}
+            >
+              {t('popup.editInFolio')}
+            </button>
           </div>
         )}
 
@@ -350,6 +371,22 @@ export default function App(): ReactElement {
       </section>
 
       <section className="p-4 pt-0">
+        <div className="mb-3 flex items-center gap-2">
+          <input
+            className="folio-input"
+            placeholder={t('popup.searchPlaceholder')}
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+          />
+          <button
+            type="button"
+            className="folio-btn-outline whitespace-nowrap py-2 text-xs"
+            onClick={() => void handleOpenOptionsWithSearch()}
+          >
+            {t('popup.searchAction')}
+          </button>
+        </div>
+
         <p className="mb-2 font-mono text-[10px] uppercase text-text-muted">{t('popup.recent')}</p>
         <div className="space-y-1">
           {recentItems.map((item) => (

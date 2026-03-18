@@ -28,6 +28,9 @@ const en = {
     noActiveTab: 'No active page available',
     recent: 'Recent',
     openDashboard: 'Open Dashboard',
+    editInFolio: 'Edit in Folio',
+    searchPlaceholder: 'Search your reading list...',
+    searchAction: 'Search',
     language: 'Language'
   },
   options: {
