@@ -8,6 +8,7 @@ const en = {
     save: 'Save',
     cancel: 'Cancel',
     delete: 'Delete',
+    confirmQuestion: 'Confirm?',
     operationFailed: 'Operation failed'
   },
   popup: {
@@ -71,6 +72,7 @@ const en = {
     sortDomain: 'Domain (A-Z)',
     sortTitle: 'Title (A-Z)',
     sortStatus: 'Status',
+    savedAt: 'Saved',
     tagsSection: 'Tags',
     clearTagFilter: 'Clear tag',
     staleUnread: 'Stale',

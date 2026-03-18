@@ -8,6 +8,7 @@ const zhCN = {
     save: '保存',
     cancel: '取消',
     delete: '删除',
+    confirmQuestion: '确认？',
     operationFailed: '操作失败'
   },
   popup: {
@@ -71,6 +72,7 @@ const zhCN = {
     sortDomain: '域名（A-Z）',
     sortTitle: '标题（A-Z）',
     sortStatus: '状态',
+    savedAt: '收藏于',
     tagsSection: '标签',
     clearTagFilter: '清除标签筛选',
     staleUnread: '久置',

@@ -109,6 +109,21 @@ function renderHighlightedText(text: string, keyword: string): ReactNode {
   return <>{chunks}</>;
 }
 
+function formatSavedAtLabel(timestamp: number, locale: SupportedLocale): {
+  short: string;
+  full: string;
+} {
+  const localeTag = locale === 'zh-CN' ? 'zh-CN' : 'en-US';
+  const date = new Date(timestamp);
+
+  return {
+    short: date.toLocaleDateString(localeTag, { month: 'short', day: 'numeric' }),
+    full: date.toLocaleString(localeTag)
+  };
+}
+
+type DangerAction = 'clearSyncDirectory' | 'deleteTag';
+
 export default function App(): ReactElement {
   const { t } = useTranslation();
   const [store, setStore] = useState<FolioStore | null>(null);
@@ -134,7 +149,9 @@ export default function App(): ReactElement {
     'unread'
   );
   const [undoItems, setUndoItems] = useState<FolioItem[]>([]);
+  const [pendingDangerAction, setPendingDangerAction] = useState<DangerAction | null>(null);
   const undoTimerRef = useRef<number | null>(null);
+  const dangerConfirmTimerRef = useRef<number | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -165,8 +182,31 @@ export default function App(): ReactElement {
       if (undoTimerRef.current !== null) {
         window.clearTimeout(undoTimerRef.current);
       }
+      if (dangerConfirmTimerRef.current !== null) {
+        window.clearTimeout(dangerConfirmTimerRef.current);
+      }
     };
   }, []);
+
+  function armDangerAction(action: DangerAction): void {
+    if (dangerConfirmTimerRef.current !== null) {
+      window.clearTimeout(dangerConfirmTimerRef.current);
+    }
+
+    setPendingDangerAction(action);
+    dangerConfirmTimerRef.current = window.setTimeout(() => {
+      setPendingDangerAction(null);
+      dangerConfirmTimerRef.current = null;
+    }, 3000);
+  }
+
+  function clearDangerAction(): void {
+    if (dangerConfirmTimerRef.current !== null) {
+      window.clearTimeout(dangerConfirmTimerRef.current);
+      dangerConfirmTimerRef.current = null;
+    }
+    setPendingDangerAction(null);
+  }
 
   async function refresh(): Promise<void> {
     const nextStore = await getStore();
@@ -377,6 +417,16 @@ export default function App(): ReactElement {
     await refresh();
   }
 
+  async function handleDangerClearSyncDirectory(): Promise<void> {
+    if (pendingDangerAction !== 'clearSyncDirectory') {
+      armDangerAction('clearSyncDirectory');
+      return;
+    }
+
+    clearDangerAction();
+    await handleClearSyncDirectory();
+  }
+
   async function handleSyncNow(): Promise<void> {
     setIsSyncing(true);
     try {
@@ -548,6 +598,16 @@ export default function App(): ReactElement {
       setActiveTagFilter(null);
     }
     await refresh();
+  }
+
+  async function handleDangerDeleteTag(): Promise<void> {
+    if (pendingDangerAction !== 'deleteTag') {
+      armDangerAction('deleteTag');
+      return;
+    }
+
+    clearDangerAction();
+    await handleDeleteTag();
   }
 
   async function handleSaveThresholdSettings(): Promise<void> {
@@ -1073,10 +1133,12 @@ export default function App(): ReactElement {
                   <button
                     type="button"
                     className="folio-btn-outline"
-                    onClick={() => void handleClearSyncDirectory()}
+                    onClick={() => void handleDangerClearSyncDirectory()}
                     disabled={!store?.settings.syncDirectory}
                   >
-                    {t('settings.clearDirectory')}
+                    {pendingDangerAction === 'clearSyncDirectory'
+                      ? t('common.confirmQuestion')
+                      : t('settings.clearDirectory')}
                   </button>
                   <button
                     type="button"
@@ -1134,7 +1196,12 @@ export default function App(): ReactElement {
                 <select
                   className="folio-input"
                   value={tagActionTarget}
-                  onChange={(event) => setTagActionTarget(event.target.value)}
+                  onChange={(event) => {
+                    setTagActionTarget(event.target.value);
+                    if (pendingDangerAction === 'deleteTag') {
+                      clearDangerAction();
+                    }
+                  }}
                 >
                   <option value="">-</option>
                   {(store?.tags ?? []).map((tag) => (
@@ -1163,10 +1230,12 @@ export default function App(): ReactElement {
                   <button
                     type="button"
                     className="folio-btn-outline"
-                    onClick={() => void handleDeleteTag()}
+                    onClick={() => void handleDangerDeleteTag()}
                     disabled={!tagActionTarget}
                   >
-                    {t('options.deleteTag')}
+                    {pendingDangerAction === 'deleteTag'
+                      ? t('common.confirmQuestion')
+                      : t('options.deleteTag')}
                   </button>
                 </div>
               </div>
@@ -1242,8 +1311,10 @@ export default function App(): ReactElement {
               </section>
 
               <section className="space-y-2">
-                {displayItems.map((item) => (
-                  <article key={item.id} className="folio-card p-3">
+                {displayItems.map((item) => {
+                  const savedAtLabel = formatSavedAtLabel(item.savedAt, locale);
+                  return (
+                    <article key={item.id} className="folio-card p-3">
                     <div className="flex items-start gap-3">
                       <input
                         type="checkbox"
@@ -1315,6 +1386,9 @@ export default function App(): ReactElement {
 
                         <span className="rounded-full border border-(--border) px-2 py-1 text-[10px] text-text-secondary">
                           {statusText(item.status, t)}
+                        </span>
+                        <span className="font-mono text-[10px] text-text-muted" title={savedAtLabel.full}>
+                          {t('options.savedAt')}: {savedAtLabel.short}
                         </span>
                         {item.status === 'unread' &&
                         (store?.settings.staleEnabled ?? true) &&
@@ -1394,8 +1468,9 @@ export default function App(): ReactElement {
                         </div>
                       </div>
                     ) : null}
-                  </article>
-                ))}
+                    </article>
+                  );
+                })}
 
                 {displayItems.length === 0 ? (
                   <div className="folio-card p-6">
