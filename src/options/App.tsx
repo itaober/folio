@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { changeLanguage } from '../shared/i18n';
 import { isSupportedLocale, readStoredLocale, type SupportedLocale } from '../shared/i18n/localeStore';
@@ -58,6 +64,8 @@ export default function App(): ReactElement {
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
   const [tagActionTarget, setTagActionTarget] = useState('');
   const [tagRenameValue, setTagRenameValue] = useState('');
+  const [undoItem, setUndoItem] = useState<FolioItem | null>(null);
+  const undoTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     void refresh();
@@ -74,6 +82,14 @@ export default function App(): ReactElement {
 
     chrome.storage.onChanged.addListener(listener);
     return () => chrome.storage.onChanged.removeListener(listener);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (undoTimerRef.current !== null) {
+        window.clearTimeout(undoTimerRef.current);
+      }
+    };
   }, []);
 
   async function refresh(): Promise<void> {
@@ -138,12 +154,44 @@ export default function App(): ReactElement {
 
   async function handleDelete(item: FolioItem): Promise<void> {
     await commit({ type: 'deleteItem', payload: { id: item.id } });
-    setMessage(t('options.updateSuccess'));
+    if (undoTimerRef.current !== null) {
+      window.clearTimeout(undoTimerRef.current);
+    }
+    setUndoItem(item);
+    undoTimerRef.current = window.setTimeout(() => {
+      setUndoItem(null);
+    }, 3000);
     setSelectedIds((previous) => previous.filter((id) => id !== item.id));
     if (editingId === item.id) {
       setEditingId(null);
       setEditDraft(null);
     }
+    await refresh();
+  }
+
+  async function handleUndoDelete(): Promise<void> {
+    if (!undoItem) {
+      return;
+    }
+
+    if (undoTimerRef.current !== null) {
+      window.clearTimeout(undoTimerRef.current);
+    }
+
+    const result = await commit({
+      type: 'restoreItem',
+      payload: {
+        item: undoItem
+      }
+    });
+
+    if (!result.ok) {
+      setMessage('Failed to undo');
+      return;
+    }
+
+    setUndoItem(null);
+    setMessage(t('options.updateSuccess'));
     await refresh();
   }
 
@@ -430,7 +478,7 @@ export default function App(): ReactElement {
   return (
     <main className="min-h-screen bg-bg-base text-text-primary">
       <div className="mx-auto flex min-h-screen max-w-[1200px]">
-        <aside className="w-56 border-r border-[var(--border)] bg-bg-surface p-4">
+        <aside className="w-56 border-r border-(--border) bg-bg-surface p-4">
           <h1 className="m-0 font-display text-xl italic">Folio</h1>
           <p className="mb-4 mt-1 font-mono text-[11px] text-text-muted">Reading List</p>
 
@@ -468,8 +516,8 @@ export default function App(): ReactElement {
                   type="button"
                   className={
                     activeTagFilter === tag
-                      ? 'w-full rounded-md border border-[var(--accent-border)] bg-accent-subtle px-2 py-1 text-left text-xs text-accent'
-                      : 'w-full rounded-md border border-transparent px-2 py-1 text-left text-xs text-text-secondary hover:border-[var(--border)] hover:bg-bg-elevated'
+                      ? 'w-full rounded-md border border-(--accent-border) bg-accent-subtle px-2 py-1 text-left text-xs text-accent'
+                      : 'w-full rounded-md border border-transparent px-2 py-1 text-left text-xs text-text-secondary hover:border-(--border) hover:bg-bg-elevated'
                   }
                   onClick={() => {
                     setView('all');
@@ -482,7 +530,7 @@ export default function App(): ReactElement {
               {activeTagFilter ? (
                 <button
                   type="button"
-                  className="w-full rounded-md border border-[var(--border)] px-2 py-1 text-left text-xs text-text-secondary hover:bg-bg-elevated"
+                  className="w-full rounded-md border border-(--border) px-2 py-1 text-left text-xs text-text-secondary hover:bg-bg-elevated"
                   onClick={() => setActiveTagFilter(null)}
                 >
                   {t('options.clearTagFilter')}
@@ -507,7 +555,7 @@ export default function App(): ReactElement {
               />
               {view !== 'settings' ? (
                 <select
-                  className="rounded-md border border-[var(--border)] bg-bg-elevated px-2 py-1 text-xs text-text-secondary"
+                  className="rounded-md border border-(--border) bg-bg-elevated px-2 py-1 text-xs text-text-secondary"
                   value={sortMode}
                   onChange={(event) => setSortMode(event.target.value as SortMode)}
                 >
@@ -544,7 +592,22 @@ export default function App(): ReactElement {
             </div>
           </header>
 
-          {message ? <p className="mb-3 mt-0 text-sm text-text-secondary">{message}</p> : null}
+          {undoItem ? (
+            <div className="mb-3 flex items-center gap-2 rounded-md border border-(--border) bg-bg-elevated px-3 py-2 text-sm text-text-secondary">
+              <span>{t('options.removedUndo')}</span>
+              <button
+                type="button"
+                className="folio-btn-outline py-1 text-xs"
+                onClick={() => void handleUndoDelete()}
+              >
+                {t('options.undo')}
+              </button>
+            </div>
+          ) : null}
+
+          {message ? (
+            <p className="mb-3 mt-0 text-sm text-text-secondary">{message}</p>
+          ) : null}
 
           {view === 'settings' ? (
             <section className="folio-card max-w-xl space-y-3 p-4">
@@ -555,7 +618,7 @@ export default function App(): ReactElement {
                 <option value="zh-CN">{t('settings.zhCN')}</option>
               </select>
 
-              <div className="h-px bg-[var(--border)]" />
+              <div className="h-px bg-(--border)" />
 
               <div className="space-y-2">
                 <p className="m-0 text-sm text-text-secondary">{t('settings.syncDirectory')}</p>
@@ -603,7 +666,7 @@ export default function App(): ReactElement {
                 </p>
               </div>
 
-              <div className="h-px bg-[var(--border)]" />
+              <div className="h-px bg-(--border)" />
 
               <div className="space-y-2">
                 <p className="m-0 text-sm text-text-secondary">
@@ -683,8 +746,9 @@ export default function App(): ReactElement {
                 </button>
                 <span className="text-xs text-text-secondary">{t('options.batchSelected', { count: selectedIds.length })}</span>
                 <select
-                  className="rounded-md border border-[var(--border)] bg-bg-elevated px-2 py-1 text-xs"
+                  className="rounded-md border border-(--border) bg-bg-elevated px-2 py-1 text-xs"
                   defaultValue=""
+                  disabled={selectedIds.length === 0}
                   onChange={(event) => {
                     const value = event.target.value as FolioStatus | '';
                     if (!value) return;
@@ -703,10 +767,20 @@ export default function App(): ReactElement {
                   value={batchTag}
                   onChange={(event) => setBatchTag(event.target.value)}
                 />
-                <button type="button" className="folio-btn-outline text-xs" onClick={() => void handleBatchApplyTag()}>
+                <button
+                  type="button"
+                  className="folio-btn-outline text-xs"
+                  onClick={() => void handleBatchApplyTag()}
+                  disabled={selectedIds.length === 0 || !batchTag.trim()}
+                >
                   {t('options.applyTag')}
                 </button>
-                <button type="button" className="folio-btn-outline text-xs" onClick={() => void handleBatchDelete()}>
+                <button
+                  type="button"
+                  className="folio-btn-outline text-xs"
+                  onClick={() => void handleBatchDelete()}
+                  disabled={selectedIds.length === 0}
+                >
                   {t('options.batchDelete')}
                 </button>
               </section>
@@ -739,7 +813,7 @@ export default function App(): ReactElement {
                             {item.tags.map((tag) => (
                               <span
                                 key={`${item.id}-${tag}`}
-                                className="rounded-full border border-[var(--border)] bg-bg-elevated px-2 py-0.5 text-[10px] text-text-secondary"
+                                className="rounded-full border border-(--border) bg-bg-elevated px-2 py-0.5 text-[10px] text-text-secondary"
                               >
                                 #{tag}
                               </span>
@@ -750,7 +824,7 @@ export default function App(): ReactElement {
 
                       <div className="flex items-center gap-2">
                         <select
-                          className="rounded-md border border-[var(--border)] bg-bg-elevated px-2 py-1 text-xs"
+                          className="rounded-md border border-(--border) bg-bg-elevated px-2 py-1 text-xs"
                           value={item.status}
                           onChange={(event) => void handleSetStatus(item, event.target.value as FolioStatus)}
                         >
@@ -771,7 +845,7 @@ export default function App(): ReactElement {
                           {t('common.delete')}
                         </button>
 
-                        <span className="rounded-full border border-[var(--border)] px-2 py-1 text-[10px] text-text-secondary">
+                        <span className="rounded-full border border-(--border) px-2 py-1 text-[10px] text-text-secondary">
                           {statusText(item.status, t)}
                         </span>
                         {item.status === 'unread' &&
@@ -781,7 +855,7 @@ export default function App(): ReactElement {
                             60 *
                             60 *
                             1000 ? (
-                          <span className="rounded-full border border-[var(--status-unread-border)] bg-[var(--status-unread-bg)] px-2 py-1 text-[10px] text-[var(--status-unread-text)]">
+                          <span className="rounded-full border border-(--status-unread-border) bg-(--status-unread-bg) px-2 py-1 text-[10px] text-(--status-unread-text)">
                             {t('options.staleUnread')}
                           </span>
                         ) : null}
@@ -789,7 +863,7 @@ export default function App(): ReactElement {
                     </div>
 
                     {editingId === item.id && editDraft ? (
-                      <div className="mt-3 grid gap-2 border-t border-[var(--border)] pt-3">
+                      <div className="mt-3 grid gap-2 border-t border-(--border) pt-3">
                         <label>
                           <span className="mb-1 block text-xs text-text-secondary">Title</span>
                           <input

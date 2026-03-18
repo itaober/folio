@@ -175,6 +175,22 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
         break;
       }
 
+      case 'restoreItem': {
+        const item = mutation.payload.item;
+        const duplicate = Object.values(next.items).find(
+          (existing) => existing.url === item.url && existing.id !== item.id
+        );
+        if (duplicate) {
+          return { ok: false, code: 'already_exists', item: duplicate, store: current };
+        }
+
+        next.items[item.id] = {
+          ...item,
+          updatedAt: now
+        };
+        break;
+      }
+
       case 'setLocale': {
         if (!isSupportedLocale(mutation.payload.locale)) {
           return { ok: false, code: 'invalid_locale', store: current };

@@ -63,6 +63,8 @@ const en = {
     tagNewName: 'New tag name',
     renameTag: 'Rename Tag',
     deleteTag: 'Delete Tag',
+    removedUndo: 'Removed',
+    undo: 'Undo',
     statsWeeklyDone: 'Done this week',
     statsTotal: 'Total saved',
     statsUnread: 'Unread',

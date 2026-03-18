@@ -216,8 +216,8 @@ export default function App(): ReactElement {
           type="button"
           className={
             isActive
-              ? 'rounded-md border border-[var(--accent-border)] bg-accent-subtle px-2 py-1 text-xs text-accent'
-              : 'rounded-md border border-[var(--border)] bg-transparent px-2 py-1 text-xs text-text-secondary hover:bg-bg-elevated'
+              ? 'rounded-md border border-(--accent-border) bg-accent-subtle px-2 py-1 text-xs text-accent'
+              : 'rounded-md border border-(--border) bg-transparent px-2 py-1 text-xs text-text-secondary hover:bg-bg-elevated'
           }
           onClick={() => void handleStatusChange(status)}
         >
@@ -229,7 +229,7 @@ export default function App(): ReactElement {
 
   return (
     <main className="h-[520px] w-[360px] overflow-y-auto bg-bg-base text-text-primary">
-      <header className="flex h-12 items-center justify-between border-b border-[var(--border)] bg-bg-surface px-4">
+      <header className="flex h-12 items-center justify-between border-b border-(--border) bg-bg-surface px-4">
         <div>
           <p className="m-0 font-display text-base italic">{t('popup.title')}</p>
           <p className="m-0 text-[11px] text-text-muted">{t('popup.subtitle')}</p>
@@ -239,7 +239,7 @@ export default function App(): ReactElement {
         </button>
       </header>
 
-      <section className="border-b border-[var(--border)] p-4">
+      <section className="border-b border-(--border) p-4">
         <label className="mb-1 block font-mono text-[11px] uppercase text-text-muted">
           {t('popup.language')}
         </label>
@@ -251,7 +251,7 @@ export default function App(): ReactElement {
 
       <section className="space-y-3 p-4">
         {backlogCount > 0 ? (
-          <p className="m-0 rounded-md border border-[var(--status-unread-border)] bg-[var(--status-unread-bg)] px-2 py-1 text-xs text-[var(--status-unread-text)]">
+          <p className="m-0 rounded-md border border-(--status-unread-border) bg-(--status-unread-bg) px-2 py-1 text-xs text-(--status-unread-text)">
             {t('popup.backlogHint', { count: backlogCount })}
           </p>
         ) : null}
@@ -329,20 +329,20 @@ export default function App(): ReactElement {
             <button
               key={item.id}
               type="button"
-              className="flex w-full items-center justify-between rounded-md border border-transparent px-2 py-2 text-left hover:border-[var(--border)] hover:bg-bg-elevated"
+              className="flex w-full items-center justify-between rounded-md border border-transparent px-2 py-2 text-left hover:border-(--border) hover:bg-bg-elevated"
               onClick={() => void handleOpenRecentItem(item)}
             >
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm text-text-primary">{item.title}</span>
                 <span className="block truncate font-mono text-[11px] text-text-muted">{item.domain}</span>
               </span>
-              <span className="ml-2 rounded-full border border-[var(--border)] px-2 py-0.5 text-[10px] text-text-secondary">
+              <span className="ml-2 rounded-full border border-(--border) px-2 py-0.5 text-[10px] text-text-secondary">
                 {statusToLabel(item.status, t)}
               </span>
             </button>
           ))}
           {recentItems.length === 0 ? (
-            <p className="m-0 rounded-md border border-dashed border-[var(--border)] px-3 py-4 text-xs text-text-muted">
+            <p className="m-0 rounded-md border border-dashed border-(--border) px-3 py-4 text-xs text-text-muted">
               {t('options.emptyText')}
             </p>
           ) : null}

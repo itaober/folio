@@ -70,6 +70,12 @@ export type FolioMutation =
       };
     }
   | {
+      type: 'restoreItem';
+      payload: {
+        item: FolioItem;
+      };
+    }
+  | {
       type: 'setLocale';
       payload: {
         locale: SupportedLocale;

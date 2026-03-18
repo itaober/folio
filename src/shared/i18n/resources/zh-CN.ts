@@ -63,6 +63,8 @@ const zhCN = {
     tagNewName: '新标签名',
     renameTag: '重命名标签',
     deleteTag: '删除标签',
+    removedUndo: '已删除',
+    undo: '撤销',
     statsWeeklyDone: '本周已读',
     statsTotal: '总收藏',
     statsUnread: '待读',
