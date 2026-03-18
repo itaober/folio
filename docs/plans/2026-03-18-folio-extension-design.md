@@ -8,10 +8,11 @@ Source PRD: `prd.md`
 
 - Delivery scope: PRD full scope (`MVP + v2 + v3`), except keyboard shortcuts are removed entirely.
 - Browser target: Chrome only (Manifest V3).
-- Tech stack: TypeScript + React + Vite.
+- Tech stack: TypeScript + React + Vite + Tailwind CSS.
 - Package manager: `pnpm`.
 - Test policy for this build: no automated tests (no TDD, no unit/integration/E2E in this iteration).
 - Local file sync policy: automatic one-way sync from browser data to local file (`folio-data.json`), triggered only on committed data mutations.
+- Style system: Tailwind utility classes with PRD tokens mapped via CSS variables.
 
 ## 2. Architecture
 
@@ -21,7 +22,7 @@ Single repository, multi-entry extension app:
 - `options` entry: full management UI.
 - `background` entry (service worker): context menu action, toolbar badge state orchestration, storage event coordination, backup sync triggering.
 - `core` shared domain layer: storage repository, selectors, validation, sync service, exporters.
-- `shared` UI/theme layer: design tokens and reusable UI primitives aligned with PRD visual spec.
+- `shared` styling layer: Tailwind CSS + CSS variable tokens for warm-light palette, typography, spacing, and component primitives aligned with PRD visual spec.
 
 ## 3. Feature Design
 

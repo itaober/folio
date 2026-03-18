@@ -4,9 +4,9 @@
 
 **Goal:** Build a Chrome-only MV3 Folio extension (full PRD scope except keyboard shortcuts) with popup quick actions, full options management UI, local storage domain model, and one-way automatic local backup sync on committed mutations.
 
-**Architecture:** Use one Vite + React + TypeScript repository with multiple extension entries (`popup`, `options`, `background`) and a shared core domain layer for storage, selectors, exports, and sync orchestration. All state mutations pass through a single repository commit path, and post-commit effects (badge update + local backup write) are handled centrally. UI follows the warm-light design token system from the PRD.
+**Architecture:** Use one Vite + React + TypeScript repository with multiple extension entries (`popup`, `options`, `background`) and a shared core domain layer for storage, selectors, exports, and sync orchestration. All state mutations pass through a single repository commit path, and post-commit effects (badge update + local backup write) are handled centrally. UI uses Tailwind CSS utilities with PRD warm-light tokens mapped through CSS variables.
 
-**Tech Stack:** `pnpm`, TypeScript, React, Vite, Manifest V3, `@crxjs/vite-plugin`, Chrome Extension APIs, File System Access API (options page)
+**Tech Stack:** `pnpm`, TypeScript, React, Vite, Tailwind CSS, Manifest V3, `@crxjs/vite-plugin`, Chrome Extension APIs, File System Access API (options page)
 
 ---
 
@@ -25,6 +25,8 @@
 - Create: `pnpm-workspace.yaml`
 - Create: `tsconfig.json`
 - Create: `vite.config.ts`
+- Create: `tailwind.config.ts`
+- Create: `postcss.config.cjs`
 - Create: `index.html`
 - Create: `src/manifest.ts`
 - Create: `src/assets/icon-16.png`, `src/assets/icon-32.png`, `src/assets/icon-48.png`, `src/assets/icon-128.png`
@@ -44,7 +46,7 @@ Add scripts and deps:
 }
 ```
 
-Include core deps: `react`, `react-dom`; dev deps: `typescript`, `vite`, `@vitejs/plugin-react`, `@crxjs/vite-plugin`.
+Include core deps: `react`, `react-dom`; dev deps: `typescript`, `vite`, `@vitejs/plugin-react`, `@crxjs/vite-plugin`, `tailwindcss`, `postcss`, `autoprefixer`.
 
 **Step 2: Define manifest entry map**
 
@@ -58,7 +60,7 @@ Expected: commands finish successfully and `dist/` is generated.
 **Step 4: Commit**
 
 ```bash
-git add package.json pnpm-workspace.yaml tsconfig.json vite.config.ts index.html src/manifest.ts src/assets
+git add package.json pnpm-workspace.yaml tsconfig.json vite.config.ts tailwind.config.ts postcss.config.cjs index.html src/manifest.ts src/assets
 git commit -m "chore: bootstrap pnpm vite react mv3 extension"
 ```
 
@@ -70,16 +72,16 @@ git commit -m "chore: bootstrap pnpm vite react mv3 extension"
 - Create: `src/options/main.tsx`
 - Create: `src/options/App.tsx`
 - Create: `src/background/index.ts`
-- Create: `src/shared/theme/tokens.css`
-- Create: `src/shared/theme/base.css`
+- Create: `src/shared/styles/tokens.css`
+- Create: `src/shared/styles/tailwind.css`
 
 **Step 1: Add React mount points for popup/options**
 
-Render `App` components with shared base styles.
+Render `App` components and import global Tailwind entry style.
 
 **Step 2: Add warm-light token set**
 
-Port PRD color/typography/spacing/radius/shadow tokens into `tokens.css` and global reset/base typography into `base.css`.
+Port PRD color/typography/spacing/radius/shadow tokens into `tokens.css`, then wire Tailwind layers and utilities through `tailwind.css`.
 
 **Step 3: Add background worker skeleton**
 
@@ -93,8 +95,8 @@ Expected: no TS or build errors.
 **Step 5: Commit**
 
 ```bash
-git add src/popup src/options src/background src/shared/theme
-git commit -m "feat: add extension entrypoints and base theme"
+git add src/popup src/options src/background src/shared/styles
+git commit -m "feat: add extension entrypoints and tailwind style foundation"
 ```
 
 ### Task 3: Implement core domain types and storage repository
@@ -481,21 +483,21 @@ git add src/options/components/ExportMenu.tsx src/options/components/StatsPanel.
 git commit -m "feat: add export controls and stats panel"
 ```
 
-### Task 15: Apply final PRD visual polish and interaction rules
+### Task 15: Apply final PRD visual polish and Tailwind utility rules
 
 **Files:**
-- Modify: `src/shared/theme/tokens.css`
-- Modify: `src/shared/theme/base.css`
+- Modify: `src/shared/styles/tokens.css`
+- Modify: `src/shared/styles/tailwind.css`
 - Modify: `src/popup/**/*.tsx`
 - Modify: `src/options/**/*.tsx`
 
 **Step 1: Enforce PRD visual constraints**
 
-Apply warm-light palette, font roles (`Lora`, `IBM Plex Sans`, `IBM Plex Mono`), radius limits, functional-only shadows.
+Apply warm-light palette, font roles (`Lora`, `IBM Plex Sans`, `IBM Plex Mono`), radius limits, and functional-only shadows through Tailwind class mappings + CSS variables.
 
 **Step 2: Enforce interaction spec**
 
-Use inline notices only, motion timings (120ms/220ms), no decorative transitions, no modal/toast overuse.
+Use inline notices only, motion timings (120ms/220ms), no decorative transitions, no modal/toast overuse; keep custom CSS only for interactions not well-expressed by utilities.
 
 **Step 3: Verify**
 
@@ -504,8 +506,8 @@ Manual visual pass in popup and options on standard desktop viewport.
 **Step 4: Commit**
 
 ```bash
-git add src/shared/theme src/popup src/options
-git commit -m "style: align popup and options ui with prd warm-light system"
+git add src/shared/styles src/popup src/options
+git commit -m "style: align popup and options ui with prd warm-light tailwind system"
 ```
 
 ### Task 16: End-to-end manual acceptance sweep and release notes
@@ -552,4 +554,3 @@ Then load `dist/` as unpacked extension in Chrome and re-run critical manual che
 5. Exports (JSON/CSV/Markdown)
 6. Badge state mapping
 7. One-way auto backup write on committed mutation only
-
