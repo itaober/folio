@@ -1,6 +1,13 @@
 import type { FolioItem, FolioStatus, FolioStore } from './types';
 import { normalizeUrl } from './url';
 
+export type SortMode =
+  | 'saved_desc'
+  | 'saved_asc'
+  | 'domain_asc'
+  | 'title_asc'
+  | 'status';
+
 export function selectAllItems(store: FolioStore): FolioItem[] {
   return Object.values(store.items).sort((a, b) => b.savedAt - a.savedAt);
 }
@@ -11,6 +18,10 @@ export function selectRecentItems(store: FolioStore, limit = 5): FolioItem[] {
 
 export function selectItemsByStatus(store: FolioStore, status: FolioStatus): FolioItem[] {
   return selectAllItems(store).filter((item) => item.status === status);
+}
+
+export function selectItemsByTag(store: FolioStore, tag: string): FolioItem[] {
+  return selectAllItems(store).filter((item) => item.tags.includes(tag));
 }
 
 export function selectItemByUrl(store: FolioStore, rawUrl: string): FolioItem | undefined {
@@ -35,4 +46,22 @@ export function selectFilteredItems(store: FolioStore, keyword: string): FolioIt
       item.note.toLowerCase().includes(normalizedKeyword)
     );
   });
+}
+
+export function sortItems(items: FolioItem[], mode: SortMode): FolioItem[] {
+  const cloned = [...items];
+
+  switch (mode) {
+    case 'saved_asc':
+      return cloned.sort((a, b) => a.savedAt - b.savedAt);
+    case 'domain_asc':
+      return cloned.sort((a, b) => a.domain.localeCompare(b.domain));
+    case 'title_asc':
+      return cloned.sort((a, b) => a.title.localeCompare(b.title));
+    case 'status':
+      return cloned.sort((a, b) => a.status.localeCompare(b.status));
+    case 'saved_desc':
+    default:
+      return cloned.sort((a, b) => b.savedAt - a.savedAt);
+  }
 }

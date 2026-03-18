@@ -3,7 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { changeLanguage } from '../shared/i18n';
 import { isSupportedLocale, readStoredLocale, type SupportedLocale } from '../shared/i18n/localeStore';
 import { commit, getStore, syncBackupNow } from '../core/repository';
-import { selectAllItems, selectFilteredItems, selectItemsByStatus } from '../core/selectors';
+import {
+  selectAllItems,
+  selectFilteredItems,
+  selectItemsByStatus,
+  sortItems,
+  type SortMode
+} from '../core/selectors';
 import { toCsv, toJson, toMarkdown } from '../core/exportFormats';
 import { downloadTextFile } from '../core/exporters';
 import { computeStats } from '../core/stats';
@@ -48,6 +54,8 @@ export default function App(): ReactElement {
   const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
   const [message, setMessage] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>('saved_desc');
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
 
   useEffect(() => {
     void refresh();
@@ -74,14 +82,24 @@ export default function App(): ReactElement {
   const displayItems = useMemo(() => {
     if (!store) return [];
 
+    let items: FolioItem[] = [];
+
     if (search.trim()) {
-      return selectFilteredItems(store, search);
+      items = selectFilteredItems(store, search);
+    } else if (view === 'all') {
+      items = selectAllItems(store);
+    } else if (view === 'settings') {
+      items = [];
+    } else {
+      items = selectItemsByStatus(store, view);
     }
 
-    if (view === 'all') return selectAllItems(store);
-    if (view === 'settings') return [];
-    return selectItemsByStatus(store, view);
-  }, [store, search, view]);
+    if (activeTagFilter) {
+      items = items.filter((item) => item.tags.includes(activeTagFilter));
+    }
+
+    return sortItems(items, sortMode);
+  }, [store, search, view, activeTagFilter, sortMode]);
 
   const counts = useMemo(() => {
     if (!store) {
@@ -372,6 +390,40 @@ export default function App(): ReactElement {
           <button type="button" className="folio-btn-outline mt-4 w-full" onClick={() => setView('settings')}>
             {t('common.settings')}
           </button>
+
+          <div className="mt-6">
+            <p className="mb-2 font-mono text-[10px] uppercase tracking-wide text-text-muted">
+              {t('options.tagsSection')}
+            </p>
+            <div className="space-y-1">
+              {(store?.tags ?? []).map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  className={
+                    activeTagFilter === tag
+                      ? 'w-full rounded-md border border-[var(--accent-border)] bg-accent-subtle px-2 py-1 text-left text-xs text-accent'
+                      : 'w-full rounded-md border border-transparent px-2 py-1 text-left text-xs text-text-secondary hover:border-[var(--border)] hover:bg-bg-elevated'
+                  }
+                  onClick={() => {
+                    setView('all');
+                    setActiveTagFilter(tag);
+                  }}
+                >
+                  #{tag}
+                </button>
+              ))}
+              {activeTagFilter ? (
+                <button
+                  type="button"
+                  className="w-full rounded-md border border-[var(--border)] px-2 py-1 text-left text-xs text-text-secondary hover:bg-bg-elevated"
+                  onClick={() => setActiveTagFilter(null)}
+                >
+                  {t('options.clearTagFilter')}
+                </button>
+              ) : null}
+            </div>
+          </div>
         </aside>
 
         <section className="flex-1 p-6">
@@ -387,6 +439,29 @@ export default function App(): ReactElement {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
+              {view !== 'settings' ? (
+                <select
+                  className="rounded-md border border-[var(--border)] bg-bg-elevated px-2 py-1 text-xs text-text-secondary"
+                  value={sortMode}
+                  onChange={(event) => setSortMode(event.target.value as SortMode)}
+                >
+                  <option value="saved_desc">
+                    {t('options.sortLabel')}: {t('options.sortNewest')}
+                  </option>
+                  <option value="saved_asc">
+                    {t('options.sortLabel')}: {t('options.sortOldest')}
+                  </option>
+                  <option value="domain_asc">
+                    {t('options.sortLabel')}: {t('options.sortDomain')}
+                  </option>
+                  <option value="title_asc">
+                    {t('options.sortLabel')}: {t('options.sortTitle')}
+                  </option>
+                  <option value="status">
+                    {t('options.sortLabel')}: {t('options.sortStatus')}
+                  </option>
+                </select>
+              ) : null}
               {view !== 'settings' ? (
                 <>
                   <button type="button" className="folio-btn-outline text-xs" onClick={handleExportJson}>
@@ -584,6 +659,17 @@ export default function App(): ReactElement {
                         <span className="rounded-full border border-[var(--border)] px-2 py-1 text-[10px] text-text-secondary">
                           {statusText(item.status, t)}
                         </span>
+                        {item.status === 'unread' &&
+                        Date.now() - item.savedAt >
+                          (store?.settings.staleThreshold ?? 30) *
+                            24 *
+                            60 *
+                            60 *
+                            1000 ? (
+                          <span className="rounded-full border border-[var(--status-unread-border)] bg-[var(--status-unread-bg)] px-2 py-1 text-[10px] text-[var(--status-unread-text)]">
+                            {t('options.staleUnread')}
+                          </span>
+                        ) : null}
                       </div>
                     </div>
 
