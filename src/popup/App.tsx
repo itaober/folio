@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { changeLanguage } from '../shared/i18n';
 import {
@@ -25,13 +25,18 @@ function statusToLabel(status: FolioStatus, t: (key: string) => string): string 
 }
 
 export default function App(): ReactElement {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   const [activePage, setActivePage] = useState<ActivePage | null>(null);
   const [currentItem, setCurrentItem] = useState<FolioItem | null>(null);
   const [recentItems, setRecentItems] = useState<FolioItem[]>([]);
   const [message, setMessage] = useState<string>('');
   const [locale, setLocale] = useState<SupportedLocale>('en');
+  const [isQuickEditOpen, setIsQuickEditOpen] = useState(false);
+  const [quickEditTitle, setQuickEditTitle] = useState('');
+  const [quickEditTags, setQuickEditTags] = useState('');
+  const [quickEditNote, setQuickEditNote] = useState('');
+  const quickEditTimerRef = useRef<number | null>(null);
 
   const canSave = Boolean(activePage?.url);
 
@@ -40,7 +45,33 @@ export default function App(): ReactElement {
     void readStoredLocale().then((saved) => setLocale(saved));
   }, []);
 
-  async function load(): Promise<void> {
+  useEffect(() => {
+    return () => {
+      if (quickEditTimerRef.current !== null) {
+        window.clearTimeout(quickEditTimerRef.current);
+      }
+    };
+  }, []);
+
+  function scheduleQuickEditAutoClose(): void {
+    if (quickEditTimerRef.current !== null) {
+      window.clearTimeout(quickEditTimerRef.current);
+    }
+
+    quickEditTimerRef.current = window.setTimeout(() => {
+      setIsQuickEditOpen(false);
+    }, 3000);
+  }
+
+  function openQuickEdit(item: FolioItem): void {
+    setQuickEditTitle(item.title);
+    setQuickEditTags(item.tags.join(', '));
+    setQuickEditNote(item.note);
+    setIsQuickEditOpen(true);
+    scheduleQuickEditAutoClose();
+  }
+
+  async function load(): Promise<FolioItem | null> {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const url = tab?.url ?? '';
 
@@ -49,7 +80,7 @@ export default function App(): ReactElement {
       setCurrentItem(null);
       setRecentItems([]);
       setMessage(t('popup.noActiveTab'));
-      return;
+      return null;
     }
 
     const page: ActivePage = {
@@ -64,6 +95,7 @@ export default function App(): ReactElement {
     setActivePage(page);
     setCurrentItem(item);
     setRecentItems(selectRecentItems(store, 5));
+    return item;
   }
 
   async function handleSaveCurrentPage(): Promise<void> {
@@ -79,11 +111,21 @@ export default function App(): ReactElement {
     });
 
     if (!result.ok && result.code === 'already_exists') {
-      setMessage(t('popup.alreadySaved'));
+      const statusLabel = result.item ? statusToLabel(result.item.status, t) : '';
+      setMessage(
+        result.item
+          ? t('popup.alreadySavedWithStatus', { status: statusLabel })
+          : t('popup.alreadySaved')
+      );
     } else if (!result.ok) {
       setMessage('Failed to save');
     } else {
       setMessage(t('popup.saved'));
+      const savedItem = await load();
+      if (savedItem) {
+        openQuickEdit(savedItem);
+      }
+      return;
     }
 
     await load();
@@ -127,6 +169,36 @@ export default function App(): ReactElement {
     await changeLanguage(value);
     setLocale(value);
     setMessage('');
+  }
+
+  async function handleApplyQuickEdit(): Promise<void> {
+    if (!currentItem) {
+      return;
+    }
+
+    const tags = quickEditTags
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+
+    const result = await commit({
+      type: 'updateItem',
+      payload: {
+        id: currentItem.id,
+        title: quickEditTitle.trim() || currentItem.title,
+        tags,
+        note: quickEditNote
+      }
+    });
+
+    if (!result.ok) {
+      setMessage('Failed to update');
+      return;
+    }
+
+    setMessage(t('popup.saved'));
+    setIsQuickEditOpen(false);
+    await load();
   }
 
   const statusButtons = useMemo(() => {
@@ -187,6 +259,55 @@ export default function App(): ReactElement {
         )}
 
         {message ? <p className="m-0 text-xs text-text-secondary">{message}</p> : null}
+
+        {currentItem && isQuickEditOpen ? (
+          <div className="folio-card space-y-2 p-3">
+            <label className="block">
+              <span className="mb-1 block text-xs text-text-secondary">{t('popup.quickEditTitle')}</span>
+              <input
+                className="folio-input"
+                value={quickEditTitle}
+                onChange={(event) => {
+                  setQuickEditTitle(event.target.value);
+                  scheduleQuickEditAutoClose();
+                }}
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-1 block text-xs text-text-secondary">{t('popup.quickEditTags')}</span>
+              <input
+                className="folio-input"
+                value={quickEditTags}
+                onChange={(event) => {
+                  setQuickEditTags(event.target.value);
+                  scheduleQuickEditAutoClose();
+                }}
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-1 block text-xs text-text-secondary">{t('popup.quickEditNote')}</span>
+              <input
+                className="folio-input"
+                value={quickEditNote}
+                onChange={(event) => {
+                  setQuickEditNote(event.target.value);
+                  scheduleQuickEditAutoClose();
+                }}
+              />
+            </label>
+
+            <div className="flex items-center gap-2">
+              <button type="button" className="folio-btn-primary flex-1" onClick={() => void handleApplyQuickEdit()}>
+                {t('popup.quickEditApply')}
+              </button>
+              <button type="button" className="folio-btn-outline flex-1" onClick={() => setIsQuickEditOpen(false)}>
+                {t('popup.quickEditDismiss')}
+              </button>
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <section className="p-4 pt-0">

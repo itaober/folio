@@ -1,9 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 @import './tokens.css';
+@import 'tailwindcss';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@theme {
+  --color-bg-base: var(--bg-base);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-sunken: var(--bg-sunken);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-link: var(--text-link);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-subtle: var(--accent-subtle);
+
+  --font-display: 'Lora', Georgia, 'Times New Roman', serif;
+  --font-ui: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+}
 
 @layer base {
   * {
@@ -14,7 +31,7 @@
     margin: 0;
     background: var(--bg-base);
     color: var(--text-primary);
-    font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-ui);
   }
 
   button,
@@ -32,26 +49,70 @@
 
 @layer components {
   .folio-card {
-    @apply rounded-lg border border-[var(--border)] bg-bg-surface;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-surface);
   }
 
   .folio-btn-primary {
-    @apply inline-flex items-center justify-center rounded-md border border-transparent bg-accent px-3 py-2 text-sm font-medium text-[#fff8f2] transition-colors;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: var(--accent);
+    padding: 0.5rem 0.75rem;
+    color: #fff8f2;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    transition: background-color 120ms;
+    cursor: pointer;
   }
 
   .folio-btn-primary:hover {
     background: var(--accent-hover);
   }
 
+  .folio-btn-primary:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
   .folio-btn-outline {
-    @apply inline-flex items-center justify-center rounded-md border border-[var(--border-strong)] bg-transparent px-3 py-2 text-sm font-medium text-text-secondary transition-colors;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    background: transparent;
+    padding: 0.5rem 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    transition: border-color 120ms, color 120ms, background-color 120ms;
+    cursor: pointer;
   }
 
   .folio-btn-outline:hover {
-    @apply border-[var(--accent-border)] text-accent;
+    border-color: var(--accent-border);
+    color: var(--accent);
+    background: var(--bg-elevated);
   }
 
   .folio-input {
-    @apply w-full rounded-md border border-[var(--border)] bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted;
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-elevated);
+    padding: 0.5rem 0.75rem;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .folio-input::placeholder {
+    color: var(--text-muted);
   }
 }
