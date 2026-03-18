@@ -178,13 +178,24 @@ export default function App(): ReactElement {
   }, [store]);
 
   async function handleSetStatus(item: FolioItem, status: FolioStatus): Promise<void> {
-    await commit({ type: 'setStatus', payload: { id: item.id, status } });
+    const result = await commit({
+      type: 'setStatus',
+      payload: { id: item.id, status }
+    });
+    if (!result.ok) {
+      setNotice({ level: 'error', text: t('options.updateFailed') });
+      return;
+    }
     setNotice({ level: 'success', text: t('options.updateSuccess') });
     await refresh();
   }
 
   async function handleDelete(item: FolioItem): Promise<void> {
-    await commit({ type: 'deleteItem', payload: { id: item.id } });
+    const result = await commit({ type: 'deleteItem', payload: { id: item.id } });
+    if (!result.ok) {
+      setNotice({ level: 'error', text: t('options.deleteFailed') });
+      return;
+    }
     if (undoTimerRef.current !== null) {
       window.clearTimeout(undoTimerRef.current);
     }
@@ -315,6 +326,9 @@ export default function App(): ReactElement {
       return;
     }
 
+    let successCount = 0;
+    let failedCount = 0;
+
     for (const item of Object.values(store.items)) {
       if (!item.tags.includes(tagActionTarget)) {
         continue;
@@ -324,16 +338,32 @@ export default function App(): ReactElement {
         tag === tagActionTarget ? newTag : tag
       );
 
-      await commit({
+      const result = await commit({
         type: 'updateItem',
         payload: {
           id: item.id,
           tags: [...new Set(nextTags)]
         }
       });
+
+      if (result.ok) {
+        successCount += 1;
+      } else {
+        failedCount += 1;
+      }
     }
 
-    setNotice({ level: 'success', text: t('options.updateSuccess') });
+    if (failedCount === 0) {
+      setNotice({
+        level: 'success',
+        text: t('options.batchSuccess', { count: successCount })
+      });
+    } else {
+      setNotice({
+        level: 'error',
+        text: t('options.batchPartial', { ok: successCount, failed: failedCount })
+      });
+    }
     setTagActionTarget('');
     setTagRenameValue('');
     setActiveTagFilter(null);
@@ -345,22 +375,41 @@ export default function App(): ReactElement {
       return;
     }
 
+    let successCount = 0;
+    let failedCount = 0;
+
     for (const item of Object.values(store.items)) {
       if (!item.tags.includes(tagActionTarget)) {
         continue;
       }
 
       const nextTags = item.tags.filter((tag) => tag !== tagActionTarget);
-      await commit({
+      const result = await commit({
         type: 'updateItem',
         payload: {
           id: item.id,
           tags: nextTags
         }
       });
+
+      if (result.ok) {
+        successCount += 1;
+      } else {
+        failedCount += 1;
+      }
     }
 
-    setNotice({ level: 'success', text: t('options.updateSuccess') });
+    if (failedCount === 0) {
+      setNotice({
+        level: 'success',
+        text: t('options.batchSuccess', { count: successCount })
+      });
+    } else {
+      setNotice({
+        level: 'error',
+        text: t('options.batchPartial', { ok: successCount, failed: failedCount })
+      });
+    }
     setTagActionTarget('');
     setTagRenameValue('');
     if (activeTagFilter === tagActionTarget) {
@@ -421,21 +470,41 @@ export default function App(): ReactElement {
       return;
     }
 
+    let successCount = 0;
+    let failedCount = 0;
+
     for (const id of selectedIds) {
       const item = store.items[id];
       if (!item) {
+        failedCount += 1;
         continue;
       }
 
       const mutation = createMutation(item);
       if (!mutation) {
+        failedCount += 1;
         continue;
       }
 
-      await commit(mutation);
+      const result = await commit(mutation);
+      if (result.ok) {
+        successCount += 1;
+      } else {
+        failedCount += 1;
+      }
     }
 
-    setNotice({ level: 'success', text: t('options.updateSuccess') });
+    if (failedCount === 0) {
+      setNotice({
+        level: 'success',
+        text: t('options.batchSuccess', { count: successCount })
+      });
+    } else {
+      setNotice({
+        level: 'error',
+        text: t('options.batchPartial', { ok: successCount, failed: failedCount })
+      });
+    }
     setSelectedIds([]);
     await refresh();
   }

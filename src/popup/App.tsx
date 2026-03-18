@@ -160,7 +160,7 @@ export default function App(): ReactElement {
   async function handleStatusChange(status: FolioStatus): Promise<void> {
     if (!currentItem) return;
 
-    await commit({
+    const result = await commit({
       type: 'setStatus',
       payload: {
         id: currentItem.id,
@@ -168,6 +168,12 @@ export default function App(): ReactElement {
       }
     });
 
+    if (!result.ok) {
+      setNotice({ level: 'error', text: t('popup.statusUpdateFailed') });
+      return;
+    }
+
+    setNotice({ level: 'success', text: t('popup.statusUpdated') });
     await load();
   }
 
