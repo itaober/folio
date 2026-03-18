@@ -56,7 +56,18 @@ const zhCN = {
   settings: {
     language: '语言',
     english: 'English',
-    zhCN: '简体中文'
+    zhCN: '简体中文',
+    syncDirectory: '备份目录',
+    chooseDirectory: '选择目录',
+    changeDirectory: '更换目录',
+    clearDirectory: '清除目录',
+    syncNow: '立即同步',
+    notConfigured: '未配置',
+    syncUnavailable: '当前环境不支持文件系统 API',
+    syncSuccess: '备份同步成功',
+    syncFailed: '同步失败：{{error}}',
+    lastSyncedAt: '上次同步',
+    lastSyncError: '最近错误'
   }
 };
 

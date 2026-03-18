@@ -3,6 +3,7 @@ import { emitCommitEvent, subscribeCommitEvent } from './events';
 import type { CommitResult, FolioMutation, FolioStore } from './types';
 import { extractDomain, normalizeUrl } from './url';
 import { isSupportedLocale, writeStoredLocale } from '../shared/i18n/localeStore';
+import { writeBackupToDirectory } from './sync/backupWriter';
 
 function createId(): string {
   return crypto.randomUUID();
@@ -10,6 +11,25 @@ function createId(): string {
 
 async function writeStore(store: FolioStore): Promise<void> {
   await chrome.storage.local.set({ [FOLIO_STORE_KEY]: store });
+}
+
+async function updateSyncMetadata(store: FolioStore): Promise<FolioStore> {
+  if (!store.settings.syncDirectory) {
+    return store;
+  }
+
+  const result = await writeBackupToDirectory(store);
+  const nextStore: FolioStore = {
+    ...store,
+    settings: {
+      ...store.settings,
+      lastSyncedAt: result.ok ? result.syncedAt : store.settings.lastSyncedAt,
+      lastSyncError: result.ok ? null : result.error
+    }
+  };
+
+  await writeStore(nextStore);
+  return nextStore;
 }
 
 export async function getStore(): Promise<FolioStore> {
@@ -149,6 +169,15 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
         break;
       }
 
+      case 'setSyncDirectory': {
+        next.settings.syncDirectory = mutation.payload.name;
+        if (!mutation.payload.name) {
+          next.settings.lastSyncedAt = null;
+          next.settings.lastSyncError = null;
+        }
+        break;
+      }
+
       case 'touchOpenedAt': {
         const item = next.items[mutation.payload.id];
         if (!item) {
@@ -168,12 +197,46 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
     }
 
     await writeStore(next);
-    emitCommitEvent({ mutation, store: next });
+    const syncedStore = await updateSyncMetadata(next);
+    emitCommitEvent({ mutation, store: syncedStore });
 
-    return { ok: true, store: next };
+    return { ok: true, store: syncedStore };
   } catch {
     return { ok: false, code: 'unknown_error', store: current };
   }
+}
+
+export async function syncBackupNow(): Promise<{
+  ok: boolean;
+  error?: string;
+  store: FolioStore;
+}> {
+  const current = await getStore();
+  if (!current.settings.syncDirectory) {
+    return {
+      ok: false,
+      error: 'sync_directory_not_configured',
+      store: current
+    };
+  }
+
+  const result = await writeBackupToDirectory(current);
+  const nextStore: FolioStore = {
+    ...current,
+    settings: {
+      ...current.settings,
+      lastSyncedAt: result.ok ? result.syncedAt : current.settings.lastSyncedAt,
+      lastSyncError: result.ok ? null : result.error
+    }
+  };
+
+  await writeStore(nextStore);
+
+  return {
+    ok: result.ok,
+    error: result.ok ? undefined : result.error,
+    store: nextStore
+  };
 }
 
 export { subscribeCommitEvent };

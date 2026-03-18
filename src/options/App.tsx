@@ -2,11 +2,15 @@ import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { changeLanguage } from '../shared/i18n';
 import { isSupportedLocale, readStoredLocale, type SupportedLocale } from '../shared/i18n/localeStore';
-import { commit, getStore } from '../core/repository';
+import { commit, getStore, syncBackupNow } from '../core/repository';
 import { selectAllItems, selectFilteredItems, selectItemsByStatus } from '../core/selectors';
 import { toCsv, toJson, toMarkdown } from '../core/exportFormats';
 import { downloadTextFile } from '../core/exporters';
 import { computeStats } from '../core/stats';
+import {
+  clearBackupDirectoryHandle,
+  saveBackupDirectoryHandle
+} from '../core/sync/handleStore';
 import type { FolioItem, FolioMutation, FolioStatus, FolioStore } from '../core/types';
 
 type ViewKey = 'all' | FolioStatus | 'settings';
@@ -43,6 +47,7 @@ export default function App(): ReactElement {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
   const [message, setMessage] = useState('');
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     void refresh();
@@ -130,6 +135,71 @@ export default function App(): ReactElement {
     await commit({ type: 'setLocale', payload: { locale: value } });
     await changeLanguage(value);
     setLocale(value);
+  }
+
+  async function handleChooseSyncDirectory(): Promise<void> {
+    const showDirectoryPicker = (
+      window as Window & {
+        showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle>;
+      }
+    ).showDirectoryPicker;
+
+    if (typeof showDirectoryPicker !== 'function') {
+      setMessage(t('settings.syncUnavailable'));
+      return;
+    }
+
+    try {
+      const handle = await showDirectoryPicker();
+      await saveBackupDirectoryHandle(handle);
+
+      await commit({
+        type: 'setSyncDirectory',
+        payload: {
+          name: handle.name
+        }
+      });
+
+      await handleSyncNow();
+      await refresh();
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
+
+      const text = error instanceof Error ? error.message : 'unknown_error';
+      setMessage(t('settings.syncFailed', { error: text }));
+    }
+  }
+
+  async function handleClearSyncDirectory(): Promise<void> {
+    await clearBackupDirectoryHandle();
+    await commit({
+      type: 'setSyncDirectory',
+      payload: {
+        name: null
+      }
+    });
+    await refresh();
+  }
+
+  async function handleSyncNow(): Promise<void> {
+    setIsSyncing(true);
+    try {
+      const result = await syncBackupNow();
+      if (result.ok) {
+        setMessage(t('settings.syncSuccess'));
+      } else {
+        setMessage(
+          t('settings.syncFailed', {
+            error: result.error ?? 'unknown_error'
+          })
+        );
+      }
+      await refresh();
+    } finally {
+      setIsSyncing(false);
+    }
   }
 
   function handleToggleSelect(id: string): void {
@@ -343,6 +413,54 @@ export default function App(): ReactElement {
                 <option value="en">{t('settings.english')}</option>
                 <option value="zh-CN">{t('settings.zhCN')}</option>
               </select>
+
+              <div className="h-px bg-[var(--border)]" />
+
+              <div className="space-y-2">
+                <p className="m-0 text-sm text-text-secondary">{t('settings.syncDirectory')}</p>
+                <p className="m-0 text-xs text-text-muted">
+                  {store?.settings.syncDirectory ?? t('settings.notConfigured')}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="folio-btn-outline"
+                    onClick={() => void handleChooseSyncDirectory()}
+                  >
+                    {store?.settings.syncDirectory
+                      ? t('settings.changeDirectory')
+                      : t('settings.chooseDirectory')}
+                  </button>
+                  <button
+                    type="button"
+                    className="folio-btn-outline"
+                    onClick={() => void handleClearSyncDirectory()}
+                    disabled={!store?.settings.syncDirectory}
+                  >
+                    {t('settings.clearDirectory')}
+                  </button>
+                  <button
+                    type="button"
+                    className="folio-btn-primary"
+                    onClick={() => void handleSyncNow()}
+                    disabled={!store?.settings.syncDirectory || isSyncing}
+                  >
+                    {isSyncing ? '...' : t('settings.syncNow')}
+                  </button>
+                </div>
+                <p className="m-0 text-xs text-text-muted">
+                  {t('settings.lastSyncedAt')}:&nbsp;
+                  {store?.settings.lastSyncedAt
+                    ? new Date(store.settings.lastSyncedAt).toLocaleString(
+                        locale === 'zh-CN' ? 'zh-CN' : 'en-US'
+                      )
+                    : '-'}
+                </p>
+                <p className="m-0 text-xs text-text-muted">
+                  {t('settings.lastSyncError')}:&nbsp;
+                  {store?.settings.lastSyncError ?? '-'}
+                </p>
+              </div>
             </section>
           ) : (
             <>

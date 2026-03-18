@@ -76,6 +76,12 @@ export type FolioMutation =
       };
     }
   | {
+      type: 'setSyncDirectory';
+      payload: {
+        name: string | null;
+      };
+    }
+  | {
       type: 'touchOpenedAt';
       payload: {
         id: string;

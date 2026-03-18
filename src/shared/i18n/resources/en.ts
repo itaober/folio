@@ -56,7 +56,18 @@ const en = {
   settings: {
     language: 'Language',
     english: 'English',
-    zhCN: '简体中文'
+    zhCN: '简体中文',
+    syncDirectory: 'Backup Directory',
+    chooseDirectory: 'Choose Directory',
+    changeDirectory: 'Change Directory',
+    clearDirectory: 'Clear Directory',
+    syncNow: 'Sync Now',
+    notConfigured: 'Not configured',
+    syncUnavailable: 'File system API unavailable in this context',
+    syncSuccess: 'Backup synced',
+    syncFailed: 'Sync failed: {{error}}',
+    lastSyncedAt: 'Last synced',
+    lastSyncError: 'Last sync error'
   }
 };
 
