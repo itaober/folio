@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import './tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .folio-card {
+    @apply rounded-lg border border-[var(--border)] bg-bg-surface;
+  }
+
+  .folio-btn-primary {
+    @apply inline-flex items-center justify-center rounded-md border border-transparent bg-accent px-3 py-2 text-sm font-medium text-[#fff8f2] transition-colors;
+  }
+
+  .folio-btn-primary:hover {
+    background: var(--accent-hover);
+  }
+
+  .folio-btn-outline {
+    @apply inline-flex items-center justify-center rounded-md border border-[var(--border-strong)] bg-transparent px-3 py-2 text-sm font-medium text-text-secondary transition-colors;
+  }
+
+  .folio-btn-outline:hover {
+    @apply border-[var(--accent-border)] text-accent;
+  }
+
+  .folio-input {
+    @apply w-full rounded-md border border-[var(--border)] bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted;
+  }
+}
