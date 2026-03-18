@@ -36,6 +36,7 @@ interface EditDraft {
 }
 
 type NoticeLevel = 'success' | 'error' | 'info';
+type ExportScope = 'current' | 'all';
 
 interface NoticeState {
   level: NoticeLevel;
@@ -77,6 +78,7 @@ export default function App(): ReactElement {
   const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
   const [notice, setNotice] = useState<NoticeState | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [exportScope, setExportScope] = useState<ExportScope>('current');
   const [sortMode, setSortMode] = useState<SortMode>('saved_desc');
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
   const [tagActionTarget, setTagActionTarget] = useState('');
@@ -176,6 +178,18 @@ export default function App(): ReactElement {
 
     return computeStats(store);
   }, [store]);
+
+  const exportItems = useMemo(() => {
+    if (!store) {
+      return [];
+    }
+
+    if (exportScope === 'current') {
+      return displayItems;
+    }
+
+    return sortItems(selectAllItems(store), sortMode);
+  }, [displayItems, exportScope, sortMode, store]);
 
   async function handleSetStatus(item: FolioItem, status: FolioStatus): Promise<void> {
     const result = await commit({
@@ -608,30 +622,55 @@ export default function App(): ReactElement {
     return new Date().toISOString().slice(0, 10);
   }
 
+  function exportScopeToken(): string {
+    return exportScope === 'all' ? 'all' : 'current';
+  }
+
   function handleExportJson(): void {
     if (!store) {
       return;
     }
 
+    if (exportScope === 'all') {
+      downloadTextFile(
+        `folio-${exportDateToken()}-${exportScopeToken()}.json`,
+        toJson(store),
+        'application/json;charset=utf-8'
+      );
+      return;
+    }
+
+    const scopedItems: Record<string, FolioItem> = {};
+    for (const item of displayItems) {
+      scopedItems[item.id] = item;
+    }
+
+    const scopedTags = [...new Set(displayItems.flatMap((item) => item.tags))].sort();
+    const scopedStore: FolioStore = {
+      ...store,
+      items: scopedItems,
+      tags: scopedTags
+    };
+
     downloadTextFile(
-      `folio-${exportDateToken()}.json`,
-      toJson(store),
+      `folio-${exportDateToken()}-${exportScopeToken()}.json`,
+      toJson(scopedStore),
       'application/json;charset=utf-8'
     );
   }
 
   function handleExportCsv(): void {
     downloadTextFile(
-      `folio-${exportDateToken()}.csv`,
-      toCsv(displayItems),
+      `folio-${exportDateToken()}-${exportScopeToken()}.csv`,
+      toCsv(exportItems),
       'text/csv;charset=utf-8'
     );
   }
 
   function handleExportMarkdown(): void {
     downloadTextFile(
-      `folio-${exportDateToken()}.md`,
-      toMarkdown(displayItems),
+      `folio-${exportDateToken()}-${exportScopeToken()}.md`,
+      toMarkdown(exportItems),
       'text/markdown;charset=utf-8'
     );
   }
@@ -778,6 +817,19 @@ export default function App(): ReactElement {
               ) : null}
               {view !== 'settings' ? (
                 <>
+                  <label className="flex items-center gap-2 text-xs text-text-secondary">
+                    <span>{t('options.exportScope')}</span>
+                    <select
+                      className="rounded-md border border-(--border) bg-bg-elevated px-2 py-1 text-xs text-text-secondary"
+                      value={exportScope}
+                      onChange={(event) =>
+                        setExportScope(event.target.value as ExportScope)
+                      }
+                    >
+                      <option value="current">{t('options.exportScopeCurrent')}</option>
+                      <option value="all">{t('options.exportScopeAll')}</option>
+                    </select>
+                  </label>
                   <button type="button" className="folio-btn-outline text-xs" onClick={handleExportJson}>
                     {t('options.exportJson')}
                   </button>
