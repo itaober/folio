@@ -81,6 +81,7 @@ const zhCN = {
     staleThreshold: '久置天数',
     defaultStatus: '默认状态',
     removedUndo: '已删除',
+    removedUndoCount: '已删除 {{count}} 项',
     undo: '撤销',
     statsWeeklyDone: '本周已读',
     statsTotal: '总收藏',

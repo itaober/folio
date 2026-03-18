@@ -86,7 +86,7 @@ export default function App(): ReactElement {
   const [defaultStatusInput, setDefaultStatusInput] = useState<'unread' | 'reading'>(
     'unread'
   );
-  const [undoItem, setUndoItem] = useState<FolioItem | null>(null);
+  const [undoItems, setUndoItems] = useState<FolioItem[]>([]);
   const undoTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -199,9 +199,9 @@ export default function App(): ReactElement {
     if (undoTimerRef.current !== null) {
       window.clearTimeout(undoTimerRef.current);
     }
-    setUndoItem(item);
+    setUndoItems([item]);
     undoTimerRef.current = window.setTimeout(() => {
-      setUndoItem(null);
+      setUndoItems([]);
     }, 3000);
     setSelectedIds((previous) => previous.filter((id) => id !== item.id));
     if (editingId === item.id) {
@@ -212,7 +212,7 @@ export default function App(): ReactElement {
   }
 
   async function handleUndoDelete(): Promise<void> {
-    if (!undoItem) {
+    if (undoItems.length === 0) {
       return;
     }
 
@@ -220,20 +220,39 @@ export default function App(): ReactElement {
       window.clearTimeout(undoTimerRef.current);
     }
 
-    const result = await commit({
-      type: 'restoreItem',
-      payload: {
-        item: undoItem
-      }
-    });
+    let successCount = 0;
+    let failedCount = 0;
 
-    if (!result.ok) {
-      setNotice({ level: 'error', text: t('options.undoFailed') });
-      return;
+    for (const item of undoItems) {
+      const result = await commit({
+        type: 'restoreItem',
+        payload: {
+          item
+        }
+      });
+
+      if (result.ok) {
+        successCount += 1;
+      } else {
+        failedCount += 1;
+      }
     }
 
-    setUndoItem(null);
-    setNotice({ level: 'success', text: t('options.updateSuccess') });
+    setUndoItems([]);
+
+    if (failedCount === 0) {
+      setNotice({
+        level: 'success',
+        text: t('options.batchSuccess', { count: successCount })
+      });
+    } else if (successCount === 0) {
+      setNotice({ level: 'error', text: t('options.undoFailed') });
+    } else {
+      setNotice({
+        level: 'error',
+        text: t('options.batchPartial', { ok: successCount, failed: failedCount })
+      });
+    }
     await refresh();
   }
 
@@ -514,7 +533,58 @@ export default function App(): ReactElement {
   }
 
   async function handleBatchDelete(): Promise<void> {
-    await runBatchMutation((item) => ({ type: 'deleteItem', payload: { id: item.id } }));
+    if (!store || selectedIds.length === 0) {
+      return;
+    }
+
+    let successCount = 0;
+    let failedCount = 0;
+    const deletedItems: FolioItem[] = [];
+
+    for (const id of selectedIds) {
+      const item = store.items[id];
+      if (!item) {
+        failedCount += 1;
+        continue;
+      }
+
+      const result = await commit({ type: 'deleteItem', payload: { id: item.id } });
+      if (result.ok) {
+        successCount += 1;
+        deletedItems.push(item);
+      } else {
+        failedCount += 1;
+      }
+    }
+
+    if (deletedItems.length > 0) {
+      if (undoTimerRef.current !== null) {
+        window.clearTimeout(undoTimerRef.current);
+      }
+      setUndoItems(deletedItems);
+      undoTimerRef.current = window.setTimeout(() => {
+        setUndoItems([]);
+      }, 3000);
+    }
+
+    if (failedCount === 0) {
+      setNotice({
+        level: 'success',
+        text: t('options.batchSuccess', { count: successCount })
+      });
+    } else {
+      setNotice({
+        level: 'error',
+        text: t('options.batchPartial', { ok: successCount, failed: failedCount })
+      });
+    }
+
+    setSelectedIds([]);
+    if (editingId && deletedItems.some((item) => item.id === editingId)) {
+      setEditingId(null);
+      setEditDraft(null);
+    }
+    await refresh();
   }
 
   async function handleBatchApplyTag(): Promise<void> {
@@ -722,9 +792,13 @@ export default function App(): ReactElement {
             </div>
           </header>
 
-          {undoItem ? (
+          {undoItems.length > 0 ? (
             <div className="mb-3 flex items-center gap-2 rounded-md border border-(--border) bg-bg-elevated px-3 py-2 text-sm text-text-secondary">
-              <span>{t('options.removedUndo')}</span>
+              <span>
+                {undoItems.length > 1
+                  ? t('options.removedUndoCount', { count: undoItems.length })
+                  : t('options.removedUndo')}
+              </span>
               <button
                 type="button"
                 className="folio-btn-outline py-1 text-xs"

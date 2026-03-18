@@ -81,6 +81,7 @@ const en = {
     staleThreshold: 'Stale days',
     defaultStatus: 'Default status',
     removedUndo: 'Removed',
+    removedUndoCount: 'Removed {{count}} items',
     undo: 'Undo',
     statsWeeklyDone: 'Done this week',
     statsTotal: 'Total saved',
