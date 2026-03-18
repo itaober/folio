@@ -10,6 +10,12 @@ import {
 import { useTranslation } from 'react-i18next';
 import { changeLanguage } from '../shared/i18n';
 import { isSupportedLocale, readStoredLocale, type SupportedLocale } from '../shared/i18n/localeStore';
+import {
+  DEFAULT_ICON_VARIANT,
+  getIconPath,
+  isFolioIconVariant,
+  type FolioIconVariant
+} from '../shared/icons';
 import { commit, getStore, importStoreFromJson, syncBackupNow } from '../core/repository';
 import {
   selectAllItems,
@@ -130,6 +136,9 @@ export default function App(): ReactElement {
   const [view, setView] = useState<ViewKey>('all');
   const [search, setSearch] = useState('');
   const [locale, setLocale] = useState<SupportedLocale>('en');
+  const [iconVariantInput, setIconVariantInput] = useState<FolioIconVariant>(
+    DEFAULT_ICON_VARIANT
+  );
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [batchTag, setBatchTag] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -213,6 +222,7 @@ export default function App(): ReactElement {
     setStore(nextStore);
     setBacklogThresholdInput(String(nextStore.settings.backlogThreshold));
     setStaleThresholdInput(String(nextStore.settings.staleThreshold));
+    setIconVariantInput(nextStore.settings.iconVariant);
     setBacklogEnabledInput(nextStore.settings.backlogEnabled);
     setStaleEnabledInput(nextStore.settings.staleEnabled);
     setDefaultStatusInput(nextStore.settings.defaultStatus);
@@ -366,6 +376,28 @@ export default function App(): ReactElement {
     await commit({ type: 'setLocale', payload: { locale: value } });
     await changeLanguage(value);
     setLocale(value);
+  }
+
+  async function handleIconVariantChange(value: string): Promise<void> {
+    if (!isFolioIconVariant(value)) {
+      return;
+    }
+
+    setIconVariantInput(value);
+    const result = await commit({
+      type: 'updateSettings',
+      payload: {
+        iconVariant: value
+      }
+    });
+
+    if (!result.ok) {
+      setNotice({ level: 'error', text: t('options.updateFailed') });
+      return;
+    }
+
+    setNotice({ level: 'success', text: t('settings.iconChanged') });
+    await refresh();
   }
 
   async function handleChooseSyncDirectory(): Promise<void> {
@@ -879,8 +911,19 @@ export default function App(): ReactElement {
     <main className="min-h-screen bg-bg-base text-text-primary">
       <div className="mx-auto flex min-h-screen max-w-[1200px]">
         <aside className="w-56 border-r border-(--border) bg-bg-surface p-4">
-          <h1 className="m-0 font-display text-xl italic">Folio</h1>
-          <p className="mb-4 mt-1 font-mono text-[11px] text-text-muted">Reading List</p>
+          <div className="mb-4 mt-0 flex items-center gap-2">
+            <img
+              src={chrome.runtime.getURL(getIconPath(iconVariantInput, 32))}
+              alt="Folio icon"
+              className="h-6 w-6 rounded-sm"
+            />
+            <div>
+              <h1 className="m-0 font-display text-xl italic">Folio</h1>
+              <p className="m-0 mt-1 font-mono text-[11px] text-text-muted">
+                Reading List
+              </p>
+            </div>
+          </div>
 
           <nav className="space-y-1">
             <button type="button" className="folio-btn-outline w-full justify-between" onClick={() => setView('all')}>
@@ -1040,6 +1083,30 @@ export default function App(): ReactElement {
                 <option value="en">{t('settings.english')}</option>
                 <option value="zh-CN">{t('settings.zhCN')}</option>
               </select>
+
+              <div className="space-y-2">
+                <label className="block text-sm text-text-secondary">
+                  {t('settings.iconTheme')}
+                </label>
+                <div className="flex items-center gap-2">
+                  <img
+                    src={chrome.runtime.getURL(getIconPath(iconVariantInput, 32))}
+                    alt="Selected icon preview"
+                    className="h-8 w-8 rounded-sm"
+                  />
+                  <select
+                    className="folio-input"
+                    value={iconVariantInput}
+                    onChange={(event) =>
+                      void handleIconVariantChange(event.target.value)
+                    }
+                  >
+                    <option value="classic">{t('settings.iconThemeClassic')}</option>
+                    <option value="dark">{t('settings.iconThemeDark')}</option>
+                    <option value="cream">{t('settings.iconThemeCream')}</option>
+                  </select>
+                </div>
+              </div>
 
               <div className="h-px bg-(--border)" />
 

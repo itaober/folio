@@ -10,6 +10,7 @@ export function createDefaultStore(): FolioStore {
     tags: [],
     settings: {
       locale: 'en',
+      iconVariant: 'classic',
       defaultStatus: 'unread',
       backlogEnabled: true,
       backlogThreshold: 20,

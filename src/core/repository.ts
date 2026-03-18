@@ -9,6 +9,7 @@ import type {
 } from './types';
 import { extractDomain, normalizeUrl } from './url';
 import { isSupportedLocale, writeStoredLocale } from '../shared/i18n/localeStore';
+import { DEFAULT_ICON_VARIANT, isFolioIconVariant } from '../shared/icons';
 import { writeBackupToDirectory } from './sync/backupWriter';
 
 function createId(): string {
@@ -38,6 +39,9 @@ async function writeStore(store: FolioStore): Promise<void> {
 function normalizeStore(store: FolioStore): FolioStore {
   const normalizedSettings = {
     ...store.settings,
+    iconVariant: isFolioIconVariant(store.settings.iconVariant)
+      ? store.settings.iconVariant
+      : DEFAULT_ICON_VARIANT,
     backlogEnabled: store.settings.backlogEnabled ?? true,
     staleEnabled: store.settings.staleEnabled ?? true
   };
@@ -137,6 +141,9 @@ function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | 
     rawSettings.defaultStatus === 'unread' || rawSettings.defaultStatus === 'reading'
       ? rawSettings.defaultStatus
       : current.settings.defaultStatus;
+  const iconVariant = isFolioIconVariant(rawSettings.iconVariant)
+    ? rawSettings.iconVariant
+    : current.settings.iconVariant;
   const backlogEnabled =
     typeof rawSettings.backlogEnabled === 'boolean'
       ? rawSettings.backlogEnabled
@@ -163,6 +170,7 @@ function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | 
       ...defaultStore.settings,
       ...current.settings,
       locale,
+      iconVariant,
       defaultStatus,
       backlogEnabled,
       backlogThreshold,
@@ -207,6 +215,7 @@ export async function getStore(): Promise<FolioStore> {
   if (store) {
     const normalized = normalizeStore(store);
     if (
+      normalized.settings.iconVariant !== store.settings.iconVariant ||
       normalized.settings.backlogEnabled !== store.settings.backlogEnabled ||
       normalized.settings.staleEnabled !== store.settings.staleEnabled
     ) {
@@ -370,6 +379,10 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
       }
 
       case 'updateSettings': {
+        if (mutation.payload.iconVariant !== undefined) {
+          next.settings.iconVariant = mutation.payload.iconVariant;
+        }
+
         if (mutation.payload.backlogEnabled !== undefined) {
           next.settings.backlogEnabled = mutation.payload.backlogEnabled;
         }

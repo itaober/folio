@@ -1,6 +1,7 @@
 import { commit, getStore } from '../core/repository';
 import { selectItemByUrl } from '../core/selectors';
 import type { FolioStatus } from '../core/types';
+import { getActionIconPathSet } from '../shared/icons';
 
 const SAVE_MENU_ID = 'folio-save-to-list';
 
@@ -29,6 +30,13 @@ async function updateBadge(tabId: number, url?: string): Promise<void> {
     color: colorByStatus(item.status)
   });
   await chrome.action.setBadgeText({ tabId, text: '•' });
+}
+
+async function applyConfiguredActionIcon(): Promise<void> {
+  const store = await getStore();
+  await chrome.action.setIcon({
+    path: getActionIconPathSet(store.settings.iconVariant)
+  });
 }
 
 async function updateBadgeForActiveTab(): Promise<void> {
@@ -68,7 +76,12 @@ chrome.runtime.onInstalled.addListener(() => {
     });
   });
 
+  void applyConfiguredActionIcon();
   void updateBadgeForActiveTab();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  void applyConfiguredActionIcon();
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
@@ -92,5 +105,6 @@ chrome.storage.onChanged.addListener((_changes, areaName) => {
     return;
   }
 
+  void applyConfiguredActionIcon();
   void updateBadgeForActiveTab();
 });

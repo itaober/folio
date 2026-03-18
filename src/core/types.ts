@@ -1,4 +1,5 @@
 import type { SupportedLocale } from '../shared/i18n/localeStore';
+import type { FolioIconVariant } from '../shared/icons';
 
 export type FolioStatus = 'unread' | 'reading' | 'done';
 
@@ -18,6 +19,7 @@ export interface FolioItem {
 
 export interface FolioSettings {
   locale: SupportedLocale;
+  iconVariant: FolioIconVariant;
   defaultStatus: 'unread' | 'reading';
   backlogEnabled: boolean;
   backlogThreshold: number;
@@ -92,6 +94,7 @@ export type FolioMutation =
   | {
       type: 'updateSettings';
       payload: {
+        iconVariant?: FolioIconVariant;
         backlogEnabled?: boolean;
         backlogThreshold?: number;
         staleEnabled?: boolean;

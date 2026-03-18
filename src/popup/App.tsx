@@ -6,6 +6,11 @@ import {
   readStoredLocale,
   type SupportedLocale
 } from '../shared/i18n/localeStore';
+import {
+  DEFAULT_ICON_VARIANT,
+  getIconPath,
+  type FolioIconVariant
+} from '../shared/icons';
 import { commit, getStore } from '../core/repository';
 import { selectItemByUrl, selectRecentItems } from '../core/selectors';
 import type { FolioItem, FolioStatus } from '../core/types';
@@ -49,6 +54,9 @@ export default function App(): ReactElement {
   const [recentItems, setRecentItems] = useState<FolioItem[]>([]);
   const [notice, setNotice] = useState<NoticeState | null>(null);
   const [locale, setLocale] = useState<SupportedLocale>('en');
+  const [iconVariant, setIconVariant] = useState<FolioIconVariant>(
+    DEFAULT_ICON_VARIANT
+  );
   const [backlogCount, setBacklogCount] = useState(0);
   const [isQuickEditOpen, setIsQuickEditOpen] = useState(false);
   const [quickEditTitle, setQuickEditTitle] = useState('');
@@ -118,6 +126,7 @@ export default function App(): ReactElement {
 
     setActivePage(page);
     setCurrentItem(item);
+    setIconVariant(store.settings.iconVariant);
     setRecentItems(selectRecentItems(store, 5));
     setBacklogCount(backlogEnabled && unreadCount > threshold ? unreadCount : 0);
     return item;
@@ -270,9 +279,16 @@ export default function App(): ReactElement {
   return (
     <main className="h-[520px] w-[360px] overflow-y-auto bg-bg-base text-text-primary">
       <header className="flex h-12 items-center justify-between border-b border-(--border) bg-bg-surface px-4">
-        <div>
+        <div className="flex items-center gap-2">
+          <img
+            src={chrome.runtime.getURL(getIconPath(iconVariant, 32))}
+            alt="Folio icon"
+            className="h-5 w-5 rounded-sm"
+          />
+          <div>
           <p className="m-0 font-display text-base italic">{t('popup.title')}</p>
           <p className="m-0 text-[11px] text-text-muted">{t('popup.subtitle')}</p>
+          </div>
         </div>
         <button type="button" className="folio-btn-outline py-1 text-xs" onClick={() => void handleOpenOptions()}>
           {t('popup.openDashboard')}
