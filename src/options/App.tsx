@@ -3,7 +3,8 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactElement
+  type ReactElement,
+  type ReactNode
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { changeLanguage } from '../shared/i18n';
@@ -64,6 +65,47 @@ function parseTags(input: string): string[] {
     .split(',')
     .map((entry) => entry.trim())
     .filter(Boolean);
+}
+
+function renderHighlightedText(text: string, keyword: string): ReactNode {
+  const term = keyword.trim();
+  if (!term) {
+    return text;
+  }
+
+  const loweredText = text.toLowerCase();
+  const loweredTerm = term.toLowerCase();
+  const chunks: ReactNode[] = [];
+  let cursor = 0;
+  let matchIndex = loweredText.indexOf(loweredTerm, cursor);
+
+  while (matchIndex !== -1) {
+    if (matchIndex > cursor) {
+      chunks.push(text.slice(cursor, matchIndex));
+    }
+
+    const end = matchIndex + term.length;
+    chunks.push(
+      <mark
+        key={`${matchIndex}-${end}`}
+        className="rounded-sm bg-accent-subtle px-0.5 text-accent"
+      >
+        {text.slice(matchIndex, end)}
+      </mark>
+    );
+    cursor = end;
+    matchIndex = loweredText.indexOf(loweredTerm, cursor);
+  }
+
+  if (chunks.length === 0) {
+    return text;
+  }
+
+  if (cursor < text.length) {
+    chunks.push(text.slice(cursor));
+  }
+
+  return <>{chunks}</>;
 }
 
 export default function App(): ReactElement {
@@ -1116,9 +1158,21 @@ export default function App(): ReactElement {
                           rel="noreferrer"
                           className="block truncate text-sm font-medium text-text-link"
                         >
-                          {item.title}
+                          {renderHighlightedText(item.title, search)}
                         </a>
-                        <p className="m-0 mt-1 font-mono text-xs text-text-muted">{item.domain}</p>
+                        <p className="m-0 mt-1 font-mono text-xs text-text-muted">
+                          {item.domain}
+                        </p>
+                        {search.trim() && item.url ? (
+                          <p className="m-0 mt-1 truncate font-mono text-[11px] text-text-muted">
+                            {renderHighlightedText(item.url, search)}
+                          </p>
+                        ) : null}
+                        {item.note ? (
+                          <p className="m-0 mt-1 truncate text-xs text-text-secondary">
+                            {renderHighlightedText(item.note, search)}
+                          </p>
+                        ) : null}
 
                         {item.tags.length > 0 ? (
                           <div className="mt-2 flex flex-wrap gap-1">
