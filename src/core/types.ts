@@ -19,7 +19,9 @@ export interface FolioItem {
 export interface FolioSettings {
   locale: SupportedLocale;
   defaultStatus: 'unread' | 'reading';
+  backlogEnabled: boolean;
   backlogThreshold: number;
+  staleEnabled: boolean;
   staleThreshold: number;
   syncDirectory: string | null;
   lastSyncedAt: number | null;
@@ -90,7 +92,9 @@ export type FolioMutation =
   | {
       type: 'updateSettings';
       payload: {
+        backlogEnabled?: boolean;
         backlogThreshold?: number;
+        staleEnabled?: boolean;
         staleThreshold?: number;
         defaultStatus?: 'unread' | 'reading';
       };

@@ -29,6 +29,19 @@ async function writeStore(store: FolioStore): Promise<void> {
   await chrome.storage.local.set({ [FOLIO_STORE_KEY]: store });
 }
 
+function normalizeStore(store: FolioStore): FolioStore {
+  const normalizedSettings = {
+    ...store.settings,
+    backlogEnabled: store.settings.backlogEnabled ?? true,
+    staleEnabled: store.settings.staleEnabled ?? true
+  };
+
+  return {
+    ...store,
+    settings: normalizedSettings
+  };
+}
+
 async function updateSyncMetadata(store: FolioStore): Promise<FolioStore> {
   if (!store.settings.syncDirectory) {
     return store;
@@ -53,7 +66,14 @@ export async function getStore(): Promise<FolioStore> {
   const store = data[FOLIO_STORE_KEY] as FolioStore | undefined;
 
   if (store) {
-    return store;
+    const normalized = normalizeStore(store);
+    if (
+      normalized.settings.backlogEnabled !== store.settings.backlogEnabled ||
+      normalized.settings.staleEnabled !== store.settings.staleEnabled
+    ) {
+      await writeStore(normalized);
+    }
+    return normalized;
   }
 
   const defaultStore = createDefaultStore();
@@ -211,11 +231,19 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
       }
 
       case 'updateSettings': {
+        if (mutation.payload.backlogEnabled !== undefined) {
+          next.settings.backlogEnabled = mutation.payload.backlogEnabled;
+        }
+
         if (mutation.payload.backlogThreshold !== undefined) {
           next.settings.backlogThreshold = Math.max(
             1,
             Math.floor(mutation.payload.backlogThreshold)
           );
+        }
+
+        if (mutation.payload.staleEnabled !== undefined) {
+          next.settings.staleEnabled = mutation.payload.staleEnabled;
         }
 
         if (mutation.payload.staleThreshold !== undefined) {

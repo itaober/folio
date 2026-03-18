@@ -127,6 +127,8 @@ export default function App(): ReactElement {
   const [tagRenameValue, setTagRenameValue] = useState('');
   const [backlogThresholdInput, setBacklogThresholdInput] = useState('20');
   const [staleThresholdInput, setStaleThresholdInput] = useState('30');
+  const [backlogEnabledInput, setBacklogEnabledInput] = useState(true);
+  const [staleEnabledInput, setStaleEnabledInput] = useState(true);
   const [defaultStatusInput, setDefaultStatusInput] = useState<'unread' | 'reading'>(
     'unread'
   );
@@ -169,6 +171,8 @@ export default function App(): ReactElement {
     setStore(nextStore);
     setBacklogThresholdInput(String(nextStore.settings.backlogThreshold));
     setStaleThresholdInput(String(nextStore.settings.staleThreshold));
+    setBacklogEnabledInput(nextStore.settings.backlogEnabled);
+    setStaleEnabledInput(nextStore.settings.staleEnabled);
     setDefaultStatusInput(nextStore.settings.defaultStatus);
   }
 
@@ -504,7 +508,9 @@ export default function App(): ReactElement {
     const result = await commit({
       type: 'updateSettings',
       payload: {
+        backlogEnabled: backlogEnabledInput,
         backlogThreshold,
+        staleEnabled: staleEnabledInput,
         staleThreshold,
         defaultStatus: defaultStatusInput
       }
@@ -928,6 +934,17 @@ export default function App(): ReactElement {
                 <p className="m-0 text-sm text-text-secondary">
                   {t('options.thresholdsTitle')}
                 </p>
+                <label className="flex items-center justify-between gap-2 text-xs text-text-secondary">
+                  <span>{t('options.backlogEnabled')}</span>
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={backlogEnabledInput}
+                    onChange={(event) =>
+                      setBacklogEnabledInput(event.target.checked)
+                    }
+                  />
+                </label>
                 <label className="block text-xs text-text-muted">
                   {t('options.backlogThreshold')}
                 </label>
@@ -939,7 +956,17 @@ export default function App(): ReactElement {
                   onChange={(event) =>
                     setBacklogThresholdInput(event.target.value)
                   }
+                  disabled={!backlogEnabledInput}
                 />
+                <label className="flex items-center justify-between gap-2 text-xs text-text-secondary">
+                  <span>{t('options.staleEnabled')}</span>
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={staleEnabledInput}
+                    onChange={(event) => setStaleEnabledInput(event.target.checked)}
+                  />
+                </label>
                 <label className="block text-xs text-text-muted">
                   {t('options.staleThreshold')}
                 </label>
@@ -949,6 +976,7 @@ export default function App(): ReactElement {
                   min={1}
                   value={staleThresholdInput}
                   onChange={(event) => setStaleThresholdInput(event.target.value)}
+                  disabled={!staleEnabledInput}
                 />
                 <label className="block text-xs text-text-muted">
                   {t('options.defaultStatus')}
@@ -1215,6 +1243,7 @@ export default function App(): ReactElement {
                           {statusText(item.status, t)}
                         </span>
                         {item.status === 'unread' &&
+                        (store?.settings.staleEnabled ?? true) &&
                         Date.now() - item.savedAt >
                           (store?.settings.staleThreshold ?? 30) *
                             24 *

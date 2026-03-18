@@ -11,7 +11,9 @@ export function createDefaultStore(): FolioStore {
     settings: {
       locale: 'en',
       defaultStatus: 'unread',
+      backlogEnabled: true,
       backlogThreshold: 20,
+      staleEnabled: true,
       staleThreshold: 30,
       syncDirectory: null,
       lastSyncedAt: null,

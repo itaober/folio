@@ -114,11 +114,12 @@ export default function App(): ReactElement {
       (entry) => entry.status === 'unread'
     ).length;
     const threshold = store.settings.backlogThreshold;
+    const backlogEnabled = store.settings.backlogEnabled;
 
     setActivePage(page);
     setCurrentItem(item);
     setRecentItems(selectRecentItems(store, 5));
-    setBacklogCount(unreadCount > threshold ? unreadCount : 0);
+    setBacklogCount(backlogEnabled && unreadCount > threshold ? unreadCount : 0);
     return item;
   }
 
