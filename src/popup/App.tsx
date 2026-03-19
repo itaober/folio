@@ -375,8 +375,10 @@ export default function App(): ReactElement {
           {filteredRecentItems.map((item) => (
             <div
               key={item.id}
-              className={`flex items-center gap-2 rounded-md px-2 py-2 hover:bg-bg-surface ${
-                currentItem?.id === item.id ? 'bg-bg-surface' : ''
+              className={`flex items-center gap-2 rounded-md border px-2 py-2 transition-colors ${
+                currentItem?.id === item.id
+                  ? 'border-(--accent-border) bg-bg-surface'
+                  : 'border-transparent hover:border-(--border) hover:bg-bg-surface'
               }`}
             >
               <button
@@ -396,16 +398,16 @@ export default function App(): ReactElement {
                   </span>
                 )}
                 <span className="min-w-0 flex-1">
-                  {currentItem?.id === item.id ? (
-                    <span className="mb-0.5 block font-mono text-[10px] uppercase tracking-wide text-text-muted">
-                      {t('popup.currentPage')}
-                    </span>
-                  ) : null}
                   <span className="block truncate text-sm text-text-primary">
                     {renderHighlightedText(item.title, searchTerm)}
                   </span>
-                  <span className="block truncate font-mono text-[11px] text-text-muted">
-                    {renderHighlightedText(item.domain, searchTerm)}
+                  <span className="flex items-center gap-1">
+                    <span className="block truncate font-mono text-[11px] text-text-muted">
+                      {renderHighlightedText(item.domain, searchTerm)}
+                    </span>
+                    {currentItem?.id === item.id ? (
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+                    ) : null}
                   </span>
                 </span>
               </button>

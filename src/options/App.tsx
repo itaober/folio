@@ -102,7 +102,7 @@ const exportMenuId = 'options-export-menu';
 export default function App(): ReactElement {
   const { t } = useTranslation();
   const [store, setStore] = useState<FolioStore | null>(null);
-  const [view, setView] = useState<ViewKey>('all');
+  const [view, setView] = useState<ViewKey>('unread');
   const [search, setSearch] = useState('');
   const [locale, setLocale] = useState<SupportedLocale>('en');
   const [iconVariantInput, setIconVariantInput] = useState<FolioIconVariant>(
@@ -1104,17 +1104,6 @@ export default function App(): ReactElement {
 
           <div className="mt-6 space-y-4">
             <nav className="space-y-1">
-              <button type="button" className={navItemClass(view === 'all')} onClick={() => handleChangeView('all')}>
-                <span className="flex min-w-0 items-center gap-2">
-                  <svg viewBox="0 0 24 24" className={`h-[15px] w-[15px] shrink-0 ${navIconClass(view === 'all')}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 10.5 12 3l9 7.5" />
-                    <path d="M6 9.5V20h12V9.5" />
-                  </svg>
-                  <span className={`truncate text-[13px] leading-none ${view === 'all' ? 'font-medium' : ''}`}>{t('common.all')}</span>
-                </span>
-                <span className={navCountClass(view === 'all')}>{counts.all}</span>
-              </button>
-
               <button type="button" className={navItemClass(view === 'unread')} onClick={() => handleChangeView('unread')}>
                 <span className="flex min-w-0 items-center gap-2">
                   <svg viewBox="0 0 24 24" className={`h-[15px] w-[15px] shrink-0 ${navIconClass(view === 'unread')}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -1145,6 +1134,17 @@ export default function App(): ReactElement {
                   <span className={`truncate text-[13px] leading-none ${view === 'done' ? 'font-medium' : ''}`}>{t('common.done')}</span>
                 </span>
                 <span className={navCountClass(view === 'done')}>{counts.done}</span>
+              </button>
+
+              <button type="button" className={navItemClass(view === 'all')} onClick={() => handleChangeView('all')}>
+                <span className="flex min-w-0 items-center gap-2">
+                  <svg viewBox="0 0 24 24" className={`h-[15px] w-[15px] shrink-0 ${navIconClass(view === 'all')}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 10.5 12 3l9 7.5" />
+                    <path d="M6 9.5V20h12V9.5" />
+                  </svg>
+                  <span className={`truncate text-[13px] leading-none ${view === 'all' ? 'font-medium' : ''}`}>{t('common.all')}</span>
+                </span>
+                <span className={navCountClass(view === 'all')}>{counts.all}</span>
               </button>
             </nav>
 
