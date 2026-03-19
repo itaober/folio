@@ -8,27 +8,42 @@ type IconSize = 16 | 32 | 48 | 128;
 const ICON_SIZES: IconSize[] = [16, 32, 48, 128];
 const checkedIconCache = new Map<string, Promise<Record<IconSize, ImageData>>>();
 
+function isMissingTabError(error: unknown): boolean {
+  const message =
+    error instanceof Error ? error.message : typeof error === 'string' ? error : '';
+  return message.includes('No tab with id');
+}
+
 async function updateBadge(tabId: number, url?: string): Promise<void> {
-  const store = await getStore();
-  const iconPaths = getActionIconPathSet(store.settings.iconVariant);
+  try {
+    const store = await getStore();
+    const iconPaths = getActionIconPathSet(store.settings.iconVariant);
 
-  if (!url) {
+    if (!url) {
+      await chrome.action.setBadgeText({ tabId, text: '' });
+      await chrome.action.setIcon({ tabId, path: iconPaths });
+      return;
+    }
+
+    const item = selectItemByUrl(store, url);
+
+    if (!item) {
+      await chrome.action.setBadgeText({ tabId, text: '' });
+      await chrome.action.setIcon({ tabId, path: iconPaths });
+      return;
+    }
+
+    const imageData = await getCheckedActionIconImageData(store.settings.iconVariant);
     await chrome.action.setBadgeText({ tabId, text: '' });
-    await chrome.action.setIcon({ tabId, path: iconPaths });
-    return;
+    await chrome.action.setIcon({ tabId, imageData });
+  } catch (error) {
+    if (isMissingTabError(error)) {
+      // Tab may close while async icon/badge work is in flight.
+      return;
+    }
+
+    throw error;
   }
-
-  const item = selectItemByUrl(store, url);
-
-  if (!item) {
-    await chrome.action.setBadgeText({ tabId, text: '' });
-    await chrome.action.setIcon({ tabId, path: iconPaths });
-    return;
-  }
-
-  const imageData = await getCheckedActionIconImageData(store.settings.iconVariant);
-  await chrome.action.setBadgeText({ tabId, text: '' });
-  await chrome.action.setIcon({ tabId, imageData });
 }
 
 async function applyConfiguredActionIcon(): Promise<void> {
