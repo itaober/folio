@@ -15,6 +15,10 @@ const zhCN = {
     title: 'Folio',
     subtitle: '暖色阅读清单',
     saveCurrentPage: '收藏当前页面',
+    saveShort: '保存',
+    savedShort: '已保存',
+    removeCurrent: '移除',
+    currentPage: '当前页面',
     alreadySaved: '已在 Folio 中',
     alreadySavedWithStatus: '已在 Folio 中（{{status}}）',
     saved: '已收藏到 Folio',
@@ -37,7 +41,7 @@ const zhCN = {
     language: '语言'
   },
   options: {
-    title: '你的阅读清单',
+    title: 'Folio',
     searchPlaceholder: '搜索标题、URL 或备注...',
     emptyTitle: '这里还没有内容',
     emptyText: '从 Popup 或右键菜单收藏页面后会显示在这里。',
@@ -63,6 +67,8 @@ const zhCN = {
     exportJson: '导出 JSON',
     exportCsv: '导出 CSV',
     exportMarkdown: '导出 Markdown',
+    export: '导出',
+    exported: '已导出',
     exportScope: '范围',
     exportScopeCurrent: '当前视图',
     exportScopeAll: '全部数据',
@@ -82,11 +88,16 @@ const zhCN = {
     renameTag: '重命名标签',
     deleteTag: '删除标签',
     thresholdsTitle: '阈值设置',
+    thresholdsHint: '按你的阅读节奏调整提醒策略。',
     backlogEnabled: '启用积压提醒',
+    backlogHint: '当待读数量超过阈值时显示提醒。',
     backlogThreshold: '积压阈值',
     staleEnabled: '启用久置标记',
+    staleHint: '待读超过指定天数后标记为久置。',
     staleThreshold: '久置天数',
     defaultStatus: '默认状态',
+    defaultStatusHint: '新收藏页面的默认状态',
+    tagManagerHint: '重命名或清理现有标签。',
     removedUndo: '已删除',
     removedUndoCount: '已删除 {{count}} 项',
     undo: '撤销',
@@ -104,7 +115,11 @@ const zhCN = {
     iconThemeDark: '深色',
     iconThemeCream: '奶油',
     iconChanged: '图标已更新',
+    dataAndBackupTitle: '目录与数据',
+    dataAndBackupHint: '设置本地备份目录，并在需要时恢复数据。',
     syncDirectory: '备份目录',
+    syncDirectoryHelpPrimary: '先选择一个本地目录，Folio 会将浏览器数据同步到该目录。',
+    syncDirectoryHelpSecondary: '这里是浏览器到本地文件的单向备份。',
     chooseDirectory: '选择目录',
     changeDirectory: '更换目录',
     clearDirectory: '清除目录',
@@ -119,7 +134,9 @@ const zhCN = {
     importHint: '导入 Folio JSON 备份并覆盖当前数据。',
     importJson: '导入 JSON',
     importSuccess: '已导入 {{count}} 项',
-    importFailed: '导入失败：{{error}}'
+    importFailed: '导入失败：{{error}}',
+    preferencesTitle: '首选项',
+    preferencesHint: '语言、图标和提醒默认值。'
   }
 };
 

@@ -21,6 +21,14 @@ export function getIconPath(
   return `icons/${normalized}-${size}.png`;
 }
 
+export function getIconSvgPath(
+  variant: unknown,
+  size: 16 | 32 | 48 | 128
+): string {
+  const normalized = normalizeVariant(variant);
+  return `icons/${normalized}-${size}.svg`;
+}
+
 export function getActionIconPathSet(variant: unknown): {
   16: string;
   32: string;

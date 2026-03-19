@@ -8,14 +8,35 @@ import {
   type ReactNode
 } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  ArrowUpDown,
+  BookOpen,
+  CheckCheck,
+  Clock3,
+  FolderOpen,
+  Download,
+  FileJson2,
+  FileSpreadsheet,
+  FileText,
+  Globe2,
+  Info,
+  Pencil,
+  Search,
+  SlidersHorizontal,
+  Tag,
+  Trash2
+} from 'lucide-react';
 import { changeLanguage } from '../shared/i18n';
 import { isSupportedLocale, readStoredLocale, type SupportedLocale } from '../shared/i18n/localeStore';
 import {
   DEFAULT_ICON_VARIANT,
-  getIconPath,
   isFolioIconVariant,
   type FolioIconVariant
 } from '../shared/icons';
+import { FolioMark } from '../shared/ui/FolioMark';
+import { SelectField } from '../shared/ui/SelectField';
+import { TextField } from '../shared/ui/TextField';
+import { ToggleSwitch } from '../shared/ui/ToggleSwitch';
 import { commit, getStore, importStoreFromJson, syncBackupNow } from '../core/repository';
 import {
   selectAllItems,
@@ -26,7 +47,6 @@ import {
 } from '../core/selectors';
 import { toCsv, toJson, toMarkdown } from '../core/exportFormats';
 import { downloadTextFile } from '../core/exporters';
-import { computeStats } from '../core/stats';
 import {
   clearBackupDirectoryHandle,
   saveBackupDirectoryHandle
@@ -57,14 +77,40 @@ function statusText(status: FolioStatus, t: (key: string) => string): string {
   return t('common.done');
 }
 
+function nextStatus(status: FolioStatus): FolioStatus {
+  if (status === 'unread') return 'reading';
+  if (status === 'reading') return 'done';
+  return 'unread';
+}
+
+function statusBadgeClass(status: FolioStatus): string {
+  if (status === 'unread') {
+    return 'bg-(--status-unread-bg) text-(--status-unread-text)';
+  }
+  if (status === 'reading') {
+    return 'bg-(--status-reading-bg) text-(--status-reading-text)';
+  }
+  return 'bg-(--status-done-bg) text-(--status-done-text)';
+}
+
+function statusIcon(status: FolioStatus): ReactElement {
+  if (status === 'unread') {
+    return <Clock3 className="h-3.5 w-3.5" strokeWidth={2} />;
+  }
+  if (status === 'reading') {
+    return <BookOpen className="h-3.5 w-3.5" strokeWidth={2} />;
+  }
+  return <CheckCheck className="h-3.5 w-3.5" strokeWidth={2} />;
+}
+
 function noticeClass(level: NoticeLevel): string {
   if (level === 'success') {
-    return 'border-(--status-done-border) bg-(--status-done-bg) text-(--status-done-text)';
+    return 'border border-(--status-done-border) bg-(--status-done-bg) text-(--status-done-text)';
   }
   if (level === 'error') {
-    return 'border-(--status-unread-border) bg-(--status-unread-bg) text-(--status-unread-text)';
+    return 'border border-(--accent-border) bg-accent-subtle text-accent';
   }
-  return 'border-(--border) bg-bg-elevated text-text-secondary';
+  return 'border border-(--border) bg-bg-surface text-text-secondary';
 }
 
 function parseTags(input: string): string[] {
@@ -146,6 +192,7 @@ export default function App(): ReactElement {
   const [notice, setNotice] = useState<NoticeState | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [exportScope, setExportScope] = useState<ExportScope>('current');
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>('saved_desc');
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
   const [tagActionTarget, setTagActionTarget] = useState('');
@@ -158,9 +205,12 @@ export default function App(): ReactElement {
     'unread'
   );
   const [undoItems, setUndoItems] = useState<FolioItem[]>([]);
+  const [isEditPanelExpanded, setIsEditPanelExpanded] = useState(false);
   const [pendingDangerAction, setPendingDangerAction] = useState<DangerAction | null>(null);
   const undoTimerRef = useRef<number | null>(null);
+  const noticeTimerRef = useRef<number | null>(null);
   const dangerConfirmTimerRef = useRef<number | null>(null);
+  const editPanelTimerRef = useRef<number | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -191,11 +241,33 @@ export default function App(): ReactElement {
       if (undoTimerRef.current !== null) {
         window.clearTimeout(undoTimerRef.current);
       }
+      if (noticeTimerRef.current !== null) {
+        window.clearTimeout(noticeTimerRef.current);
+      }
       if (dangerConfirmTimerRef.current !== null) {
         window.clearTimeout(dangerConfirmTimerRef.current);
       }
+      if (editPanelTimerRef.current !== null) {
+        window.clearTimeout(editPanelTimerRef.current);
+      }
     };
   }, []);
+
+  useEffect(() => {
+    if (noticeTimerRef.current !== null) {
+      window.clearTimeout(noticeTimerRef.current);
+      noticeTimerRef.current = null;
+    }
+
+    if (!notice || notice.level === 'error') {
+      return;
+    }
+
+    noticeTimerRef.current = window.setTimeout(() => {
+      setNotice(null);
+      noticeTimerRef.current = null;
+    }, 3000);
+  }, [notice]);
 
   function armDangerAction(action: DangerAction): void {
     if (dangerConfirmTimerRef.current !== null) {
@@ -215,6 +287,22 @@ export default function App(): ReactElement {
       dangerConfirmTimerRef.current = null;
     }
     setPendingDangerAction(null);
+  }
+
+  function showExportNotice(): void {
+    setNotice({ level: 'success', text: t('options.exported') });
+  }
+
+  function closeInlineEditor(): void {
+    if (editPanelTimerRef.current !== null) {
+      window.clearTimeout(editPanelTimerRef.current);
+    }
+    setIsEditPanelExpanded(false);
+    editPanelTimerRef.current = window.setTimeout(() => {
+      setEditingId(null);
+      setEditDraft(null);
+      editPanelTimerRef.current = null;
+    }, 220);
   }
 
   async function refresh(): Promise<void> {
@@ -264,17 +352,18 @@ export default function App(): ReactElement {
     };
   }, [store]);
 
-  const stats = useMemo(() => {
+  const tagCounts = useMemo(() => {
     if (!store) {
-      return {
-        weeklyDone: 0,
-        total: 0,
-        unread: 0,
-        topDomains: [] as Array<{ domain: string; count: number }>
-      };
+      return {} as Record<string, number>;
     }
 
-    return computeStats(store);
+    const result: Record<string, number> = {};
+    for (const item of Object.values(store.items)) {
+      for (const tag of item.tags) {
+        result[tag] = (result[tag] ?? 0) + 1;
+      }
+    }
+    return result;
   }, [store]);
 
   const exportItems = useMemo(() => {
@@ -830,6 +919,8 @@ export default function App(): ReactElement {
         toJson(store),
         'application/json;charset=utf-8'
       );
+      setIsExportMenuOpen(false);
+      showExportNotice();
       return;
     }
 
@@ -850,6 +941,8 @@ export default function App(): ReactElement {
       toJson(scopedStore),
       'application/json;charset=utf-8'
     );
+    setIsExportMenuOpen(false);
+    showExportNotice();
   }
 
   function handleExportCsv(): void {
@@ -858,6 +951,8 @@ export default function App(): ReactElement {
       toCsv(exportItems),
       'text/csv;charset=utf-8'
     );
+    setIsExportMenuOpen(false);
+    showExportNotice();
   }
 
   function handleExportMarkdown(): void {
@@ -866,9 +961,16 @@ export default function App(): ReactElement {
       toMarkdown(exportItems),
       'text/markdown;charset=utf-8'
     );
+    setIsExportMenuOpen(false);
+    showExportNotice();
   }
 
   function handleStartEdit(item: FolioItem): void {
+    if (editPanelTimerRef.current !== null) {
+      window.clearTimeout(editPanelTimerRef.current);
+      editPanelTimerRef.current = null;
+    }
+    setIsEditPanelExpanded(false);
     setEditingId(item.id);
     setEditDraft({
       title: item.title,
@@ -876,6 +978,9 @@ export default function App(): ReactElement {
       note: item.note,
       tags: item.tags.join(', '),
       status: item.status
+    });
+    window.requestAnimationFrame(() => {
+      setIsEditPanelExpanded(true);
     });
   }
 
@@ -902,393 +1007,512 @@ export default function App(): ReactElement {
     }
 
     setNotice({ level: 'success', text: t('options.updateSuccess') });
-    setEditingId(null);
-    setEditDraft(null);
+    closeInlineEditor();
     await refresh();
+  }
+
+  function navItemClass(active: boolean): string {
+    if (active) {
+      return 'group relative flex h-9 w-full items-center justify-between rounded-[10px] bg-bg-surface px-2.5 text-accent';
+    }
+    return 'group relative flex h-9 w-full items-center justify-between rounded-[10px] bg-transparent px-2.5 text-text-secondary hover:bg-bg-surface';
+  }
+
+  function navIconClass(active: boolean): string {
+    if (active) {
+      return 'text-accent';
+    }
+    return 'text-text-muted group-hover:text-text-secondary';
+  }
+
+  function navCountClass(active: boolean): string {
+    return `min-w-6 text-right font-mono text-[11px] leading-none tabular-nums ${
+      active ? 'text-accent' : 'text-text-muted'
+    }`;
   }
 
   return (
     <main className="min-h-screen bg-bg-base text-text-primary">
-      <div className="mx-auto flex min-h-screen max-w-[1200px]">
-        <aside className="w-56 border-r border-(--border) bg-bg-surface p-4">
-          <div className="mb-4 mt-0 flex items-center gap-2">
-            <img
-              src={chrome.runtime.getURL(getIconPath(iconVariantInput, 32))}
-              alt="Folio icon"
-              className="h-6 w-6 rounded-sm"
-            />
+      <div className="pointer-events-none fixed left-1/2 top-4 z-50 w-max max-w-[min(92vw,560px)] -translate-x-1/2 space-y-2">
+        {notice ? (
+          <p className={`pointer-events-auto m-0 rounded-[10px] px-3 py-2 text-xs shadow-[0_8px_18px_rgba(26,20,16,0.12)] ${noticeClass(notice.level)}`}>
+            {notice.text}
+          </p>
+        ) : null}
+        {undoItems.length > 0 ? (
+          <div className="pointer-events-auto flex items-center gap-2 rounded-[10px] border border-(--border) bg-bg-surface px-3 py-2 text-xs text-text-secondary shadow-[0_8px_18px_rgba(26,20,16,0.12)]">
+            <span>
+              {undoItems.length > 1
+                ? t('options.removedUndoCount', { count: undoItems.length })
+                : t('options.removedUndo')}
+            </span>
+            <button
+              type="button"
+              className="text-xs text-text-link underline underline-offset-2"
+              onClick={() => void handleUndoDelete()}
+            >
+              {t('options.undo')}
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="flex min-h-screen w-full">
+        <aside className="sticky top-0 h-screen w-56 shrink-0 self-start bg-bg-elevated px-3 py-4">
+          <div className="flex items-center gap-2 px-2">
+            <FolioMark variant={iconVariantInput} size={24} className="h-6 w-6" />
             <div>
               <h1 className="m-0 font-display text-xl italic">Folio</h1>
-              <p className="m-0 mt-1 font-mono text-[11px] text-text-muted">
+              <p className="m-0 mt-0.5 font-mono text-[11px] tracking-wide text-text-muted">
                 Reading List
               </p>
             </div>
           </div>
 
-          <nav className="space-y-1">
-            <button type="button" className="folio-btn-outline w-full justify-between" onClick={() => setView('all')}>
-              <span>{t('common.all')}</span>
-              <span className="font-mono text-xs">{counts.all}</span>
-            </button>
-            <button type="button" className="folio-btn-outline w-full justify-between" onClick={() => setView('unread')}>
-              <span>{t('common.unread')}</span>
-              <span className="font-mono text-xs">{counts.unread}</span>
-            </button>
-            <button type="button" className="folio-btn-outline w-full justify-between" onClick={() => setView('reading')}>
-              <span>{t('common.reading')}</span>
-              <span className="font-mono text-xs">{counts.reading}</span>
-            </button>
-            <button type="button" className="folio-btn-outline w-full justify-between" onClick={() => setView('done')}>
-              <span>{t('common.done')}</span>
-              <span className="font-mono text-xs">{counts.done}</span>
-            </button>
-          </nav>
+          <div className="mt-6 space-y-4">
+            <nav className="space-y-1">
+              <button type="button" className={navItemClass(view === 'all')} onClick={() => setView('all')}>
+                <span className="flex min-w-0 items-center gap-2">
+                  <svg viewBox="0 0 24 24" className={`h-[15px] w-[15px] shrink-0 ${navIconClass(view === 'all')}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 10.5 12 3l9 7.5" />
+                    <path d="M6 9.5V20h12V9.5" />
+                  </svg>
+                  <span className={`truncate text-[13px] leading-none ${view === 'all' ? 'font-medium' : ''}`}>{t('common.all')}</span>
+                </span>
+                <span className={navCountClass(view === 'all')}>{counts.all}</span>
+              </button>
 
-          <button type="button" className="folio-btn-outline mt-4 w-full" onClick={() => setView('settings')}>
-            {t('common.settings')}
-          </button>
+              <button type="button" className={navItemClass(view === 'unread')} onClick={() => setView('unread')}>
+                <span className="flex min-w-0 items-center gap-2">
+                  <svg viewBox="0 0 24 24" className={`h-[15px] w-[15px] shrink-0 ${navIconClass(view === 'unread')}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="8.5" />
+                    <path d="M12 7.5v5l3.3 1.9" />
+                  </svg>
+                  <span className={`truncate text-[13px] leading-none ${view === 'unread' ? 'font-medium' : ''}`}>{t('common.unread')}</span>
+                </span>
+                <span className={navCountClass(view === 'unread')}>{counts.unread}</span>
+              </button>
 
-          <div className="mt-6">
-            <p className="mb-2 font-mono text-[10px] uppercase tracking-wide text-text-muted">
-              {t('options.tagsSection')}
-            </p>
-            <div className="space-y-1">
-              {(store?.tags ?? []).map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  className={
-                    activeTagFilter === tag
-                      ? 'w-full rounded-md border border-(--accent-border) bg-accent-subtle px-2 py-1 text-left text-xs text-accent'
-                      : 'w-full rounded-md border border-transparent px-2 py-1 text-left text-xs text-text-secondary hover:border-(--border) hover:bg-bg-elevated'
-                  }
-                  onClick={() => {
-                    setView('all');
-                    setActiveTagFilter(tag);
-                  }}
-                >
-                  #{tag}
-                </button>
-              ))}
-              {activeTagFilter ? (
-                <button
-                  type="button"
-                  className="w-full rounded-md border border-(--border) px-2 py-1 text-left text-xs text-text-secondary hover:bg-bg-elevated"
-                  onClick={() => setActiveTagFilter(null)}
-                >
-                  {t('options.clearTagFilter')}
-                </button>
-              ) : null}
+              <button type="button" className={navItemClass(view === 'reading')} onClick={() => setView('reading')}>
+                <span className="flex min-w-0 items-center gap-2">
+                  <svg viewBox="0 0 24 24" className={`h-[15px] w-[15px] shrink-0 ${navIconClass(view === 'reading')}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 6.5c2.6 0 4.2.6 6 1.9 1.8-1.3 3.4-1.9 6-1.9h3v12h-3c-2.6 0-4.2.6-6 1.9-1.8-1.3-3.4-1.9-6-1.9H1v-12Z" />
+                    <path d="M10 8.4v12" />
+                  </svg>
+                  <span className={`truncate text-[13px] leading-none ${view === 'reading' ? 'font-medium' : ''}`}>{t('common.reading')}</span>
+                </span>
+                <span className={navCountClass(view === 'reading')}>{counts.reading}</span>
+              </button>
+
+              <button type="button" className={navItemClass(view === 'done')} onClick={() => setView('done')}>
+                <span className="flex min-w-0 items-center gap-2">
+                  <svg viewBox="0 0 24 24" className={`h-[15px] w-[15px] shrink-0 ${navIconClass(view === 'done')}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m5.5 12.3 4.1 4.1 8.9-8.9" />
+                  </svg>
+                  <span className={`truncate text-[13px] leading-none ${view === 'done' ? 'font-medium' : ''}`}>{t('common.done')}</span>
+                </span>
+                <span className={navCountClass(view === 'done')}>{counts.done}</span>
+              </button>
+            </nav>
+
+            <div className="h-px bg-(--border)" />
+
+            <div>
+              <p className="mb-2 px-2 font-mono text-[10px] uppercase tracking-wide text-text-muted">
+                {t('options.tagsSection')}
+              </p>
+              <div className="space-y-1">
+                {(store?.tags ?? []).map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    className={navItemClass(activeTagFilter === tag)}
+                    onClick={() => {
+                      setView('all');
+                      setActiveTagFilter(tag);
+                    }}
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <svg viewBox="0 0 24 24" className={`h-[15px] w-[15px] shrink-0 ${navIconClass(activeTagFilter === tag)}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m20 12.5-7.5 7.5a2 2 0 0 1-2.8 0L2.5 12.8a2 2 0 0 1 0-2.8L10 2.5A2 2 0 0 1 11.4 2h7.8A2.8 2.8 0 0 1 22 4.8v7.8a2 2 0 0 1-.6 1.4Z" />
+                        <circle cx="16.2" cy="7.8" r="1.2" />
+                      </svg>
+                      <span className={`truncate text-[13px] leading-none ${activeTagFilter === tag ? 'font-medium' : ''}`}>{tag}</span>
+                    </span>
+                    <span className={navCountClass(activeTagFilter === tag)}>{tagCounts[tag] ?? 0}</span>
+                  </button>
+                ))}
+                {activeTagFilter ? (
+                  <button
+                    type="button"
+                    className="h-8 w-full rounded-[10px] px-2.5 text-left text-[11px] text-text-muted hover:bg-bg-surface hover:text-text-secondary"
+                    onClick={() => setActiveTagFilter(null)}
+                  >
+                    {t('options.clearTagFilter')}
+                  </button>
+                ) : null}
+              </div>
             </div>
+          </div>
+
+          <div className="mt-auto pt-4">
+            <div className="mb-2 h-px bg-(--border)" />
+            <button
+              type="button"
+              className={navItemClass(view === 'settings')}
+              onClick={() => setView('settings')}
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                <svg viewBox="0 0 24 24" className={`h-[15px] w-[15px] shrink-0 ${navIconClass(view === 'settings')}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 2h4l.7 2.2c.5.1 1 .3 1.5.6l2.1-1 2.8 2.8-1 2.1c.3.5.5 1 .6 1.5L23 10v4l-2.2.7c-.1.5-.3 1-.6 1.5l1 2.1-2.8 2.8-2.1-1c-.5.3-1 .5-1.5.6L14 23h-4l-.7-2.2c-.5-.1-1-.3-1.5-.6l-2.1 1-2.8-2.8 1-2.1c-.3-.5-.5-1-.6-1.5L1 14v-4l2.2-.7c.1-.5.3-1 .6-1.5l-1-2.1L5.6 3l2.1 1c.5-.3 1-.5 1.5-.6L10 2Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <span className={`truncate text-[13px] leading-none ${view === 'settings' ? 'font-medium' : ''}`}>{t('common.settings')}</span>
+              </span>
+              <span className="min-w-6" />
+            </button>
           </div>
         </aside>
 
         <section className="flex-1 p-6">
-          <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="mx-auto w-full max-w-[1080px]">
+          <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="m-0 font-display text-3xl">{t('options.title')}</h2>
-              <p className="m-0 font-mono text-sm text-text-muted">{t('options.totalCount', { count: counts.all })}</p>
+              <p className="m-0 font-mono text-sm text-text-muted">
+                {t('options.totalCount', { count: counts.all })}
+              </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                className="folio-input max-w-sm"
-                placeholder={t('options.searchPlaceholder')}
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-              {view !== 'settings' ? (
-                <select
-                  className="rounded-md border border-(--border) bg-bg-elevated px-2 py-1 text-xs text-text-secondary"
+
+            {view !== 'settings' ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <TextField
+                  className="h-8 w-[392px]"
+                  leftIcon={<Search className="h-4 w-4" strokeWidth={1.9} />}
+                  placeholder={t('options.searchPlaceholder')}
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+                <SelectField
+                  className="h-8 text-xs"
+                  wrapperClassName="w-[136px]"
+                  leftIcon={<ArrowUpDown className="h-4 w-4" strokeWidth={1.9} />}
                   value={sortMode}
                   onChange={(event) => setSortMode(event.target.value as SortMode)}
                 >
-                  <option value="saved_desc">
-                    {t('options.sortLabel')}: {t('options.sortNewest')}
-                  </option>
-                  <option value="saved_asc">
-                    {t('options.sortLabel')}: {t('options.sortOldest')}
-                  </option>
-                  <option value="domain_asc">
-                    {t('options.sortLabel')}: {t('options.sortDomain')}
-                  </option>
-                  <option value="title_asc">
-                    {t('options.sortLabel')}: {t('options.sortTitle')}
-                  </option>
-                  <option value="status">
-                    {t('options.sortLabel')}: {t('options.sortStatus')}
-                  </option>
-                </select>
-              ) : null}
-              {view !== 'settings' ? (
-                <>
-                  <label className="flex items-center gap-2 text-xs text-text-secondary">
-                    <span>{t('options.exportScope')}</span>
-                    <select
-                      className="rounded-md border border-(--border) bg-bg-elevated px-2 py-1 text-xs text-text-secondary"
-                      value={exportScope}
-                      onChange={(event) =>
-                        setExportScope(event.target.value as ExportScope)
-                      }
-                    >
-                      <option value="current">{t('options.exportScopeCurrent')}</option>
-                      <option value="all">{t('options.exportScopeAll')}</option>
-                    </select>
-                  </label>
-                  <button type="button" className="folio-btn-outline text-xs" onClick={handleExportJson}>
-                    {t('options.exportJson')}
+                    <option value="saved_desc">{t('options.sortNewest')}</option>
+                    <option value="saved_asc">{t('options.sortOldest')}</option>
+                    <option value="domain_asc">{t('options.sortDomain')}</option>
+                    <option value="title_asc">{t('options.sortTitle')}</option>
+                    <option value="status">{t('options.sortStatus')}</option>
+                </SelectField>
+
+                <div className="relative">
+                  <button
+                    type="button"
+                    className="inline-flex h-8 items-center gap-1.5 rounded-md border border-(--border) bg-bg-surface px-3 text-xs text-text-secondary hover:bg-bg-elevated"
+                    onClick={() => setIsExportMenuOpen((prev) => !prev)}
+                  >
+                    <Download className="h-4 w-4" strokeWidth={1.9} />
+                    {t('options.export')}
                   </button>
-                  <button type="button" className="folio-btn-outline text-xs" onClick={handleExportCsv}>
-                    {t('options.exportCsv')}
-                  </button>
-                  <button type="button" className="folio-btn-outline text-xs" onClick={handleExportMarkdown}>
-                    {t('options.exportMarkdown')}
-                  </button>
-                </>
-              ) : null}
-            </div>
+                  {isExportMenuOpen ? (
+                    <div className="absolute right-0 z-20 mt-2 w-44 rounded-md bg-bg-surface p-2 shadow-md">
+                      <p className="m-0 mb-1 px-2 text-[11px] text-text-muted">{t('options.exportScope')}</p>
+                      <div className="mb-2 flex gap-1">
+                        <button
+                          type="button"
+                          className={
+                            exportScope === 'current'
+                              ? 'flex-1 rounded-md bg-white px-2 py-1 text-[11px] text-text-primary'
+                              : 'flex-1 rounded-md px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-elevated'
+                          }
+                          onClick={() => setExportScope('current')}
+                        >
+                          {t('options.exportScopeCurrent')}
+                        </button>
+                        <button
+                          type="button"
+                          className={
+                            exportScope === 'all'
+                              ? 'flex-1 rounded-md bg-white px-2 py-1 text-[11px] text-text-primary'
+                              : 'flex-1 rounded-md px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-elevated'
+                          }
+                          onClick={() => setExportScope('all')}
+                        >
+                          {t('options.exportScopeAll')}
+                        </button>
+                      </div>
+                      <button type="button" className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs hover:bg-bg-elevated" onClick={handleExportJson}>
+                        <FileJson2 className="h-3.5 w-3.5 text-text-muted" strokeWidth={2} />
+                        <span>{t('options.exportJson')}</span>
+                      </button>
+                      <button type="button" className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs hover:bg-bg-elevated" onClick={handleExportCsv}>
+                        <FileSpreadsheet className="h-3.5 w-3.5 text-text-muted" strokeWidth={2} />
+                        <span>{t('options.exportCsv')}</span>
+                      </button>
+                      <button type="button" className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs hover:bg-bg-elevated" onClick={handleExportMarkdown}>
+                        <FileText className="h-3.5 w-3.5 text-text-muted" strokeWidth={2} />
+                        <span>{t('options.exportMarkdown')}</span>
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </header>
 
-          {undoItems.length > 0 ? (
-            <div className="mb-3 flex items-center gap-2 rounded-md border border-(--border) bg-bg-elevated px-3 py-2 text-sm text-text-secondary">
-              <span>
-                {undoItems.length > 1
-                  ? t('options.removedUndoCount', { count: undoItems.length })
-                  : t('options.removedUndo')}
-              </span>
-              <button
-                type="button"
-                className="folio-btn-outline py-1 text-xs"
-                onClick={() => void handleUndoDelete()}
-              >
-                {t('options.undo')}
-              </button>
-            </div>
-          ) : null}
-
-          {notice ? (
-            <p
-              className={`mb-3 mt-0 rounded-md border px-3 py-2 text-sm ${noticeClass(
-                notice.level
-              )}`}
-            >
-              {notice.text}
-            </p>
-          ) : null}
-
           {view === 'settings' ? (
-            <section className="folio-card max-w-xl space-y-3 p-4">
-              <h3 className="m-0 text-base font-medium">{t('common.settings')}</h3>
-              <label className="block text-sm text-text-secondary">{t('settings.language')}</label>
-              <select className="folio-input" value={locale} onChange={(event) => void handleLocaleChange(event.target.value)}>
-                <option value="en">{t('settings.english')}</option>
-                <option value="zh-CN">{t('settings.zhCN')}</option>
-              </select>
+            <section className="space-y-4">
+              <div className="grid gap-4 xl:grid-cols-[1fr_1.2fr]">
+                <article className="order-2 rounded-[12px] border border-(--border) bg-bg-surface p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="m-0 flex items-center gap-2 text-base font-medium">
+                        <FolderOpen className="h-4 w-4 text-accent" strokeWidth={1.9} />
+                        {t('settings.dataAndBackupTitle')}
+                      </h3>
+                      <p className="m-0 mt-1 text-xs text-text-secondary">
+                        {t('settings.dataAndBackupHint')}
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="space-y-2">
-                <label className="block text-sm text-text-secondary">
-                  {t('settings.iconTheme')}
-                </label>
-                <div className="flex items-center gap-2">
-                  <img
-                    src={chrome.runtime.getURL(getIconPath(iconVariantInput, 32))}
-                    alt="Selected icon preview"
-                    className="h-8 w-8 rounded-sm"
-                  />
-                  <select
-                    className="folio-input"
-                    value={iconVariantInput}
-                    onChange={(event) =>
-                      void handleIconVariantChange(event.target.value)
-                    }
-                  >
-                    <option value="classic">{t('settings.iconThemeClassic')}</option>
-                    <option value="dark">{t('settings.iconThemeDark')}</option>
-                    <option value="cream">{t('settings.iconThemeCream')}</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="h-px bg-(--border)" />
-
-              <div className="space-y-2">
-                <p className="m-0 text-sm text-text-secondary">
-                  {t('options.thresholdsTitle')}
-                </p>
-                <label className="flex items-center justify-between gap-2 text-xs text-text-secondary">
-                  <span>{t('options.backlogEnabled')}</span>
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4"
-                    checked={backlogEnabledInput}
-                    onChange={(event) =>
-                      setBacklogEnabledInput(event.target.checked)
-                    }
-                  />
-                </label>
-                <label className="block text-xs text-text-muted">
-                  {t('options.backlogThreshold')}
-                </label>
-                <input
-                  className="folio-input"
-                  type="number"
-                  min={1}
-                  value={backlogThresholdInput}
-                  onChange={(event) =>
-                    setBacklogThresholdInput(event.target.value)
-                  }
-                  disabled={!backlogEnabledInput}
-                />
-                <label className="flex items-center justify-between gap-2 text-xs text-text-secondary">
-                  <span>{t('options.staleEnabled')}</span>
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4"
-                    checked={staleEnabledInput}
-                    onChange={(event) => setStaleEnabledInput(event.target.checked)}
-                  />
-                </label>
-                <label className="block text-xs text-text-muted">
-                  {t('options.staleThreshold')}
-                </label>
-                <input
-                  className="folio-input"
-                  type="number"
-                  min={1}
-                  value={staleThresholdInput}
-                  onChange={(event) => setStaleThresholdInput(event.target.value)}
-                  disabled={!staleEnabledInput}
-                />
-                <label className="block text-xs text-text-muted">
-                  {t('options.defaultStatus')}
-                </label>
-                <select
-                  className="folio-input"
-                  value={defaultStatusInput}
-                  onChange={(event) =>
-                    setDefaultStatusInput(event.target.value as 'unread' | 'reading')
-                  }
-                >
-                  <option value="unread">{t('common.unread')}</option>
-                  <option value="reading">{t('common.reading')}</option>
-                </select>
-                <button
-                  type="button"
-                  className="folio-btn-primary"
-                  onClick={() => void handleSaveThresholdSettings()}
-                >
-                  {t('common.save')}
-                </button>
-              </div>
-
-              <div className="h-px bg-(--border)" />
-
-              <div className="space-y-2">
-                <p className="m-0 text-sm text-text-secondary">{t('settings.syncDirectory')}</p>
-                <p className="m-0 text-xs text-text-muted">
-                  {store?.settings.syncDirectory ?? t('settings.notConfigured')}
-                </p>
-                <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    className="folio-btn-outline"
+                    className="mt-3 flex h-[160px] w-full flex-col items-center justify-center gap-2 rounded-[12px] border border-(--accent-border) bg-accent-subtle px-4 text-center hover:bg-bg-elevated"
                     onClick={() => void handleChooseSyncDirectory()}
                   >
-                    {store?.settings.syncDirectory
-                      ? t('settings.changeDirectory')
-                      : t('settings.chooseDirectory')}
+                    <FolderOpen className="h-8 w-8 text-accent" strokeWidth={1.9} />
+                    <span className="text-sm font-medium text-text-primary">
+                      {store?.settings.syncDirectory
+                        ? t('settings.changeDirectory')
+                        : t('settings.chooseDirectory')}
+                    </span>
+                    <span className="max-w-[90%] truncate font-mono text-xs text-text-secondary">
+                      {store?.settings.syncDirectory ?? t('settings.notConfigured')}
+                    </span>
                   </button>
-                  <button
-                    type="button"
-                    className="folio-btn-outline"
-                    onClick={() => void handleDangerClearSyncDirectory()}
-                    disabled={!store?.settings.syncDirectory}
-                  >
-                    {pendingDangerAction === 'clearSyncDirectory'
-                      ? t('common.confirmQuestion')
-                      : t('settings.clearDirectory')}
-                  </button>
-                  <button
-                    type="button"
-                    className="folio-btn-primary"
-                    onClick={() => void handleSyncNow()}
-                    disabled={!store?.settings.syncDirectory || isSyncing}
-                  >
-                    {isSyncing ? '...' : t('settings.syncNow')}
-                  </button>
-                </div>
-                <p className="m-0 text-xs text-text-muted">
-                  {t('settings.lastSyncedAt')}:&nbsp;
-                  {store?.settings.lastSyncedAt
-                    ? new Date(store.settings.lastSyncedAt).toLocaleString(
-                        locale === 'zh-CN' ? 'zh-CN' : 'en-US'
-                      )
-                    : '-'}
-                </p>
-                <p className="m-0 text-xs text-text-muted">
-                  {t('settings.lastSyncError')}:&nbsp;
-                  {store?.settings.lastSyncError ?? '-'}
-                </p>
-              </div>
 
-              <div className="h-px bg-(--border)" />
+                  <div className="mt-3 space-y-1">
+                    <p className="m-0 flex items-start gap-1.5 text-xs text-text-muted">
+                      <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.9} />
+                      <span>{t('settings.syncDirectoryHelpPrimary')}</span>
+                    </p>
+                    <p className="m-0 flex items-start gap-1.5 text-xs text-text-muted">
+                      <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.9} />
+                      <span>{t('settings.syncDirectoryHelpSecondary')}</span>
+                    </p>
+                  </div>
 
-              <div className="space-y-2">
-                <p className="m-0 text-sm text-text-secondary">{t('settings.importTitle')}</p>
-                <p className="m-0 text-xs text-text-muted">{t('settings.importHint')}</p>
-                <input
-                  ref={importInputRef}
-                  type="file"
-                  accept="application/json,.json"
-                  className="hidden"
-                  onChange={(event) => void handleImportFileChange(event)}
-                />
-                <button
-                  type="button"
-                  className="folio-btn-outline"
-                  onClick={handleImportClick}
-                >
-                  {t('settings.importJson')}
-                </button>
-              </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="h-9 rounded-md bg-bg-elevated px-3 text-xs text-text-secondary hover:bg-bg-sunken"
+                      onClick={() => void handleDangerClearSyncDirectory()}
+                      disabled={!store?.settings.syncDirectory}
+                    >
+                      {pendingDangerAction === 'clearSyncDirectory'
+                        ? t('common.confirmQuestion')
+                        : t('settings.clearDirectory')}
+                    </button>
+                    <button
+                      type="button"
+                      className="h-9 rounded-md bg-accent px-3 text-xs text-[#fff8f2] hover:bg-accent-hover"
+                      onClick={() => void handleSyncNow()}
+                      disabled={!store?.settings.syncDirectory || isSyncing}
+                    >
+                      {isSyncing ? '...' : t('settings.syncNow')}
+                    </button>
+                  </div>
 
-              <div className="h-px bg-(--border)" />
+                  <div className="mt-3 grid gap-1">
+                    <p className="m-0 text-xs text-text-muted">
+                      {t('settings.lastSyncedAt')}:&nbsp;
+                      {store?.settings.lastSyncedAt
+                        ? new Date(store.settings.lastSyncedAt).toLocaleString(
+                            locale === 'zh-CN' ? 'zh-CN' : 'en-US'
+                          )
+                        : '-'}
+                    </p>
+                    <p className="m-0 text-xs text-text-muted">
+                      {t('settings.lastSyncError')}:&nbsp;
+                      {store?.settings.lastSyncError ?? '-'}
+                    </p>
+                  </div>
 
-              <div className="space-y-2">
-                <p className="m-0 text-sm text-text-secondary">
+                  <div className="my-3 h-px bg-(--border)" />
+
+                  <div className="space-y-2">
+                    <p className="m-0 text-sm text-text-secondary">{t('settings.importTitle')}</p>
+                    <p className="m-0 text-xs text-text-muted">{t('settings.importHint')}</p>
+                    <input
+                      ref={importInputRef}
+                      type="file"
+                      accept="application/json,.json"
+                      className="hidden"
+                      onChange={(event) => void handleImportFileChange(event)}
+                    />
+                    <button
+                      type="button"
+                      className="h-9 rounded-md bg-bg-elevated px-3 text-xs text-text-secondary hover:bg-bg-sunken"
+                      onClick={handleImportClick}
+                    >
+                      {t('settings.importJson')}
+                    </button>
+                  </div>
+                </article>
+
+                <article className="order-1 rounded-[12px] border border-(--border) bg-bg-surface p-4 xl:row-span-2">
+                  <h3 className="m-0 flex items-center gap-2 text-base font-medium">
+                    <SlidersHorizontal className="h-4 w-4 text-accent" strokeWidth={1.9} />
+                    {t('settings.preferencesTitle')}
+                  </h3>
+                  <p className="m-0 mt-1 text-xs text-text-secondary">{t('settings.preferencesHint')}</p>
+
+                  <div className="mt-3 space-y-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-text-secondary">{t('settings.language')}</label>
+                      <SelectField
+                        leftIcon={<Globe2 className="h-4 w-4" strokeWidth={1.9} />}
+                        value={locale}
+                        onChange={(event) => void handleLocaleChange(event.target.value)}
+                      >
+                        <option value="en">{t('settings.english')}</option>
+                        <option value="zh-CN">{t('settings.zhCN')}</option>
+                      </SelectField>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-text-secondary">{t('settings.iconTheme')}</label>
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-bg-elevated">
+                          <FolioMark variant={iconVariantInput} size={20} />
+                        </span>
+                        <SelectField
+                          wrapperClassName="flex-1"
+                          className="text-sm"
+                          value={iconVariantInput}
+                          onChange={(event) => void handleIconVariantChange(event.target.value)}
+                        >
+                          <option value="classic">{t('settings.iconThemeClassic')}</option>
+                          <option value="dark">{t('settings.iconThemeDark')}</option>
+                          <option value="cream">{t('settings.iconThemeCream')}</option>
+                        </SelectField>
+                      </div>
+                    </div>
+
+                    <div className="rounded-[10px] bg-bg-elevated p-3">
+                      <p className="m-0 text-sm text-text-secondary">{t('options.thresholdsTitle')}</p>
+                      <p className="m-0 mt-1 text-xs text-text-muted">{t('options.thresholdsHint')}</p>
+
+                      <div className="mt-3 space-y-2.5">
+                        <div className="flex items-center justify-between gap-2 rounded-[8px] bg-bg-surface px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="m-0 text-xs text-text-secondary">{t('options.backlogEnabled')}</p>
+                            <p className="m-0 mt-0.5 text-[11px] text-text-muted">{t('options.backlogHint')}</p>
+                          </div>
+                          <ToggleSwitch
+                            checked={backlogEnabledInput}
+                            onChange={setBacklogEnabledInput}
+                            ariaLabel={t('options.backlogEnabled')}
+                          />
+                        </div>
+                        <div className="grid gap-1">
+                          <label className="text-[11px] text-text-muted">{t('options.backlogThreshold')}</label>
+                          <input
+                            className="folio-input"
+                            type="number"
+                            min={1}
+                            value={backlogThresholdInput}
+                            onChange={(event) => setBacklogThresholdInput(event.target.value)}
+                            disabled={!backlogEnabledInput}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2 rounded-[8px] bg-bg-surface px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="m-0 text-xs text-text-secondary">{t('options.staleEnabled')}</p>
+                            <p className="m-0 mt-0.5 text-[11px] text-text-muted">{t('options.staleHint')}</p>
+                          </div>
+                          <ToggleSwitch
+                            checked={staleEnabledInput}
+                            onChange={setStaleEnabledInput}
+                            ariaLabel={t('options.staleEnabled')}
+                          />
+                        </div>
+                        <div className="grid gap-1">
+                          <label className="text-[11px] text-text-muted">{t('options.staleThreshold')}</label>
+                          <input
+                            className="folio-input"
+                            type="number"
+                            min={1}
+                            value={staleThresholdInput}
+                            onChange={(event) => setStaleThresholdInput(event.target.value)}
+                            disabled={!staleEnabledInput}
+                          />
+                        </div>
+
+                        <div className="grid gap-1">
+                          <label className="text-[11px] text-text-muted">{t('options.defaultStatusHint')}</label>
+                          <SelectField
+                            className="text-sm"
+                            value={defaultStatusInput}
+                            onChange={(event) =>
+                              setDefaultStatusInput(event.target.value as 'unread' | 'reading')
+                            }
+                          >
+                            <option value="unread">{t('common.unread')}</option>
+                            <option value="reading">{t('common.reading')}</option>
+                          </SelectField>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        className="h-9 rounded-md bg-accent px-3 text-sm text-[#fff8f2] hover:bg-accent-hover"
+                        onClick={() => void handleSaveThresholdSettings()}
+                      >
+                        {t('common.save')}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+
+                <article className="order-3 rounded-[12px] border border-(--border) bg-bg-surface p-4">
+                <h3 className="m-0 flex items-center gap-2 text-base font-medium">
+                  <Tag className="h-4 w-4 text-accent" strokeWidth={1.9} />
                   {t('options.tagManagerTitle')}
-                </p>
-                <label className="block text-xs text-text-muted">
-                  {t('options.tagSelect')}
-                </label>
-                <select
-                  className="folio-input"
-                  value={tagActionTarget}
-                  onChange={(event) => {
-                    setTagActionTarget(event.target.value);
-                    if (pendingDangerAction === 'deleteTag') {
-                      clearDangerAction();
-                    }
-                  }}
-                >
-                  <option value="">-</option>
-                  {(store?.tags ?? []).map((tag) => (
-                    <option key={tag} value={tag}>
-                      {tag}
-                    </option>
-                  ))}
-                </select>
-                <label className="block text-xs text-text-muted">
-                  {t('options.tagNewName')}
-                </label>
-                <input
-                  className="folio-input"
-                  value={tagRenameValue}
-                  onChange={(event) => setTagRenameValue(event.target.value)}
-                />
-                <div className="flex flex-wrap gap-2">
+                </h3>
+                <p className="m-0 mt-1 text-xs text-text-secondary">{t('options.tagManagerHint')}</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
+                  <SelectField
+                    value={tagActionTarget}
+                    onChange={(event) => {
+                      setTagActionTarget(event.target.value);
+                      if (pendingDangerAction === 'deleteTag') {
+                        clearDangerAction();
+                      }
+                    }}
+                  >
+                    <option value="">-</option>
+                    {(store?.tags ?? []).map((tag) => (
+                      <option key={tag} value={tag}>
+                        {tag}
+                      </option>
+                    ))}
+                  </SelectField>
+                  <input
+                    className="folio-input"
+                    value={tagRenameValue}
+                    onChange={(event) => setTagRenameValue(event.target.value)}
+                    placeholder={t('options.tagNewName')}
+                  />
                   <button
                     type="button"
-                    className="folio-btn-outline"
+                    className="h-9 rounded-md bg-bg-elevated px-3 text-xs text-text-secondary hover:bg-bg-sunken"
                     onClick={() => void handleRenameTag()}
                     disabled={!tagActionTarget || !tagRenameValue.trim()}
                   >
@@ -1296,7 +1520,7 @@ export default function App(): ReactElement {
                   </button>
                   <button
                     type="button"
-                    className="folio-btn-outline"
+                    className="h-9 rounded-md bg-bg-elevated px-3 text-xs text-[#9c3d35] hover:bg-bg-sunken"
                     onClick={() => void handleDangerDeleteTag()}
                     disabled={!tagActionTarget}
                   >
@@ -1305,249 +1529,170 @@ export default function App(): ReactElement {
                       : t('options.deleteTag')}
                   </button>
                 </div>
+                </article>
               </div>
             </section>
           ) : (
-            <>
-              <section className="mb-4 grid grid-cols-2 gap-2 xl:grid-cols-4">
-                <div className="folio-card p-3">
-                  <p className="m-0 text-xs text-text-muted">{t('options.statsWeeklyDone')}</p>
-                  <p className="m-0 mt-1 font-display text-2xl">{stats.weeklyDone}</p>
-                </div>
-                <div className="folio-card p-3">
-                  <p className="m-0 text-xs text-text-muted">{t('options.statsTotal')}</p>
-                  <p className="m-0 mt-1 font-display text-2xl">{stats.total}</p>
-                </div>
-                <div className="folio-card p-3">
-                  <p className="m-0 text-xs text-text-muted">{t('options.statsUnread')}</p>
-                  <p className="m-0 mt-1 font-display text-2xl">{stats.unread}</p>
-                </div>
-                <div className="folio-card p-3">
-                  <p className="m-0 text-xs text-text-muted">{t('options.statsTopDomains')}</p>
-                  <p className="m-0 mt-1 truncate text-sm text-text-secondary">
-                    {stats.topDomains.length > 0
-                      ? stats.topDomains.map((entry) => `${entry.domain}(${entry.count})`).join(', ')
-                      : '-'}
-                  </p>
-                </div>
-              </section>
-
-              <section className="folio-card mb-4 flex flex-wrap items-center gap-2 p-3">
-                <button type="button" className="folio-btn-outline text-xs" onClick={handleSelectAllCurrent}>
-                  {t('options.selectAll')}
-                </button>
-                <span className="text-xs text-text-secondary">{t('options.batchSelected', { count: selectedIds.length })}</span>
-                <select
-                  className="rounded-md border border-(--border) bg-bg-elevated px-2 py-1 text-xs"
-                  defaultValue=""
-                  disabled={selectedIds.length === 0}
-                  onChange={(event) => {
-                    const value = event.target.value as FolioStatus | '';
-                    if (!value) return;
-                    void handleBatchSetStatus(value);
-                    event.currentTarget.value = '';
-                  }}
-                >
-                  <option value="">{t('options.status')}</option>
-                  <option value="unread">{t('common.unread')}</option>
-                  <option value="reading">{t('common.reading')}</option>
-                  <option value="done">{t('common.done')}</option>
-                </select>
-                <input
-                  className="folio-input max-w-40"
-                  placeholder={t('options.batchTagPlaceholder')}
-                  value={batchTag}
-                  onChange={(event) => setBatchTag(event.target.value)}
-                />
-                <button
-                  type="button"
-                  className="folio-btn-outline text-xs"
-                  onClick={() => void handleBatchApplyTag()}
-                  disabled={selectedIds.length === 0 || !batchTag.trim()}
-                >
-                  {t('options.applyTag')}
-                </button>
-                <button
-                  type="button"
-                  className="folio-btn-outline text-xs"
-                  onClick={() => void handleBatchDelete()}
-                  disabled={selectedIds.length === 0}
-                >
-                  {t('options.batchDelete')}
-                </button>
-              </section>
-
-              <section className="space-y-2">
-                {displayItems.map((item) => {
-                  const savedAtLabel = formatSavedAtLabel(item.savedAt, locale);
-                  return (
-                    <article key={item.id} className="folio-card p-3">
-                    <div className="flex items-start gap-3">
-                      <input
-                        type="checkbox"
-                        className="mt-1 h-4 w-4"
-                        checked={selectedIds.includes(item.id)}
-                        onChange={() => handleToggleSelect(item.id)}
-                        aria-label={`select-${item.id}`}
-                      />
-
-                      <div className="min-w-0 flex-1">
-                        <a
-                          href={item.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="block truncate text-sm font-medium text-text-link"
-                        >
-                          {renderHighlightedText(item.title, search)}
-                        </a>
-                        <p className="m-0 mt-1 font-mono text-xs text-text-muted">
-                          {item.domain}
-                        </p>
-                        {search.trim() && item.url ? (
-                          <p className="m-0 mt-1 truncate font-mono text-[11px] text-text-muted">
-                            {renderHighlightedText(item.url, search)}
-                          </p>
-                        ) : null}
-                        {item.note ? (
-                          <p className="m-0 mt-1 truncate text-xs text-text-secondary">
-                            {renderHighlightedText(item.note, search)}
-                          </p>
-                        ) : null}
-
-                        {item.tags.length > 0 ? (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {item.tags.map((tag) => (
-                              <span
-                                key={`${item.id}-${tag}`}
-                                className="rounded-full border border-(--border) bg-bg-elevated px-2 py-0.5 text-[10px] text-text-secondary"
-                              >
-                                #{tag}
-                              </span>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <select
-                          className="rounded-md border border-(--border) bg-bg-elevated px-2 py-1 text-xs"
-                          value={item.status}
-                          onChange={(event) => void handleSetStatus(item, event.target.value as FolioStatus)}
-                        >
-                          <option value="unread">{t('common.unread')}</option>
-                          <option value="reading">{t('common.reading')}</option>
-                          <option value="done">{t('common.done')}</option>
-                        </select>
-
-                        <a href={item.url} target="_blank" rel="noreferrer" className="folio-btn-outline py-1 text-xs">
-                          {t('options.open')}
-                        </a>
-
-                        <button type="button" className="folio-btn-outline py-1 text-xs" onClick={() => handleStartEdit(item)}>
-                          {t('options.edit')}
-                        </button>
-
-                        <button type="button" className="folio-btn-outline py-1 text-xs" onClick={() => void handleDelete(item)}>
-                          {t('common.delete')}
-                        </button>
-
-                        <span className="rounded-full border border-(--border) px-2 py-1 text-[10px] text-text-secondary">
-                          {statusText(item.status, t)}
-                        </span>
-                        <span className="font-mono text-[10px] text-text-muted" title={savedAtLabel.full}>
-                          {t('options.savedAt')}: {savedAtLabel.short}
-                        </span>
-                        {item.status === 'unread' &&
-                        (store?.settings.staleEnabled ?? true) &&
-                        Date.now() - item.savedAt >
-                          (store?.settings.staleThreshold ?? 30) *
-                            24 *
-                            60 *
-                            60 *
-                            1000 ? (
-                          <span className="rounded-full border border-(--status-unread-border) bg-(--status-unread-bg) px-2 py-1 text-[10px] text-(--status-unread-text)">
-                            {t('options.staleUnread')}
+		            <section>
+		              {displayItems.map((item) => {
+		                const savedAtLabel = formatSavedAtLabel(item.savedAt, locale);
+		                const isEditingRow = editingId === item.id && editDraft !== null;
+		                return (
+		                  <div key={item.id}>
+	                    <article className="group border-b border-(--border) py-3">
+                      <div className="flex items-start gap-3">
+                        {item.favicon ? (
+                          <img
+                            src={item.favicon}
+                            alt=""
+                            className="mt-1 h-5 w-5 rounded-sm bg-bg-surface object-cover"
+                          />
+                        ) : (
+                          <span className="mt-1 flex h-5 w-5 items-center justify-center rounded-sm bg-bg-surface">
+                            <FolioMark variant={iconVariantInput} size={16} />
                           </span>
-                        ) : null}
-                      </div>
-                    </div>
+                        )}
 
-                    {editingId === item.id && editDraft ? (
-                      <div className="mt-3 grid gap-2 border-t border-(--border) pt-3">
-                        <label>
-                          <span className="mb-1 block text-xs text-text-secondary">Title</span>
-                          <input
-                            className="folio-input"
-                            value={editDraft.title}
-                            onChange={(event) =>
-                              setEditDraft((prev) => (prev ? { ...prev, title: event.target.value } : prev))
-                            }
-                          />
-                        </label>
-
-                        <label>
-                          <span className="mb-1 block text-xs text-text-secondary">{t('options.url')}</span>
-                          <input
-                            className="folio-input"
-                            value={editDraft.url}
-                            onChange={(event) =>
-                              setEditDraft((prev) => (prev ? { ...prev, url: event.target.value } : prev))
-                            }
-                          />
-                        </label>
-
-                        <label>
-                          <span className="mb-1 block text-xs text-text-secondary">{t('options.tags')}</span>
-                          <input
-                            className="folio-input"
-                            value={editDraft.tags}
-                            onChange={(event) =>
-                              setEditDraft((prev) => (prev ? { ...prev, tags: event.target.value } : prev))
-                            }
-                          />
-                        </label>
-
-                        <label>
-                          <span className="mb-1 block text-xs text-text-secondary">{t('options.note')}</span>
-                          <input
-                            className="folio-input"
-                            value={editDraft.note}
-                            onChange={(event) =>
-                              setEditDraft((prev) => (prev ? { ...prev, note: event.target.value } : prev))
-                            }
-                          />
-                        </label>
-
-                        <div className="flex items-center gap-2">
-                          <button type="button" className="folio-btn-primary" onClick={() => void handleSaveEdit()}>
-                            {t('common.save')}
-                          </button>
-                          <button
-                            type="button"
-                            className="folio-btn-outline"
-                            onClick={() => {
-                              setEditingId(null);
-                              setEditDraft(null);
-                            }}
+                        <div className="min-w-0 flex-1">
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="line-clamp-2 text-sm font-medium text-text-primary no-underline hover:text-text-link"
                           >
-                            {t('common.cancel')}
-                          </button>
+                            {renderHighlightedText(item.title, search)}
+                          </a>
+                          <p className="m-0 mt-1 truncate font-mono text-[11px] text-text-muted">
+                            {item.domain}
+                          </p>
+                          {item.note ? (
+                            <p className="m-0 mt-1 truncate text-xs font-light text-text-muted">
+                              {renderHighlightedText(item.note, search)}
+                            </p>
+                          ) : null}
                         </div>
-                      </div>
-                    ) : null}
-                    </article>
-                  );
-                })}
 
-                {displayItems.length === 0 ? (
-                  <div className="folio-card p-6">
-                    <p className="m-0 font-display text-xl">{t('options.emptyTitle')}</p>
-                    <p className="mb-0 mt-2 text-sm text-text-secondary">{t('options.emptyText')}</p>
-                  </div>
-                ) : null}
-              </section>
-            </>
+	                        <div className="ml-2 flex flex-col items-end gap-1">
+	                          <div className="flex w-[92px] items-center justify-end gap-1">
+	                            <button
+	                              type="button"
+	                              className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-bg-surface text-text-secondary opacity-0 pointer-events-none transition-opacity duration-150 hover:bg-bg-elevated group-hover:pointer-events-auto group-hover:opacity-100"
+	                              onClick={() => handleStartEdit(item)}
+	                              title={t('options.edit')}
+	                              aria-label={t('options.edit')}
+	                            >
+	                              <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+	                            </button>
+	                            <button
+	                              type="button"
+	                              className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-bg-surface text-[#b34039] opacity-0 pointer-events-none transition-opacity duration-150 hover:bg-bg-elevated group-hover:pointer-events-auto group-hover:opacity-100"
+	                              onClick={() => void handleDelete(item)}
+	                              title={t('common.delete')}
+	                              aria-label={t('common.delete')}
+	                            >
+	                              <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+	                            </button>
+	                            <button
+	                              type="button"
+	                              className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-(--border) ${statusBadgeClass(item.status)} hover:border-(--accent-border)`}
+	                              onClick={() => void handleSetStatus(item, nextStatus(item.status))}
+	                              title={`${t('options.sortStatus')}: ${statusText(nextStatus(item.status), t)}`}
+	                              aria-label={`${statusText(item.status, t)} → ${statusText(nextStatus(item.status), t)}`}
+	                            >
+	                              {statusIcon(item.status)}
+	                            </button>
+	                          </div>
+	                          <span className="font-mono text-[10px] text-text-muted" title={savedAtLabel.full}>
+	                            {savedAtLabel.short}
+	                          </span>
+	                        </div>
+                      </div>
+
+	                      {isEditingRow ? (
+	                        <div
+	                          className={`grid overflow-hidden transition-[grid-template-rows,opacity,margin] duration-[220ms] ${
+	                            isEditPanelExpanded
+	                              ? 'mt-3 grid-rows-[1fr] opacity-100'
+	                              : 'mt-0 grid-rows-[0fr] opacity-0'
+	                          }`}
+	                        >
+	                          <div className="overflow-hidden">
+		                            <div className="rounded-[10px] bg-bg-elevated px-4 py-[14px]">
+		                              <div className="grid gap-2">
+		                                <label className="flex items-center gap-3">
+		                                  <span className="w-[54px] text-xs text-text-secondary">Title</span>
+		                                  <input
+		                                    className="h-[30px] flex-1 rounded-[6px] border border-(--border) bg-bg-surface px-2.5 text-xs text-text-primary outline-none"
+		                                    value={editDraft.title}
+		                                    onChange={(event) =>
+		                                      setEditDraft((prev) =>
+		                                        prev ? { ...prev, title: event.target.value } : prev
+		                                      )
+		                                    }
+		                                  />
+		                                </label>
+
+		                                <label className="flex items-center gap-3">
+		                                  <span className="w-[54px] text-xs text-text-secondary">{t('options.note')}</span>
+		                                  <input
+		                                    className="h-[30px] flex-1 rounded-[6px] border border-(--border) bg-bg-surface px-2.5 text-xs text-text-primary outline-none"
+		                                    value={editDraft.note}
+		                                    onChange={(event) =>
+		                                      setEditDraft((prev) =>
+		                                        prev ? { ...prev, note: event.target.value } : prev
+		                                      )
+		                                    }
+		                                  />
+		                                </label>
+
+		                                <label className="flex items-center gap-3">
+		                                  <span className="w-[54px] text-xs text-text-secondary">{t('options.tags')}</span>
+		                                  <input
+		                                    className="h-[30px] flex-1 rounded-[6px] border border-(--border) bg-bg-surface px-2.5 text-xs text-text-primary outline-none"
+		                                    value={editDraft.tags}
+		                                    onChange={(event) =>
+		                                      setEditDraft((prev) =>
+		                                        prev ? { ...prev, tags: event.target.value } : prev
+		                                      )
+		                                    }
+		                                  />
+		                                </label>
+
+		                                <div className="mt-1 flex justify-end gap-2">
+		                                  <button
+		                                    type="button"
+		                                    className="h-[30px] rounded-[6px] bg-bg-surface px-3 text-xs text-text-secondary hover:bg-bg-sunken"
+		                                    onClick={closeInlineEditor}
+		                                  >
+		                                    {t('common.cancel')}
+		                                  </button>
+		                                  <button
+		                                    type="button"
+		                                    className="h-[30px] rounded-[6px] bg-accent px-3 text-xs text-[#fff8f2] hover:bg-accent-hover"
+		                                    onClick={() => void handleSaveEdit()}
+		                                  >
+		                                    {t('common.save')}
+		                                  </button>
+		                                </div>
+		                              </div>
+		                            </div>
+	                          </div>
+	                        </div>
+	                      ) : null}
+	                    </article>
+	                  </div>
+		                );
+		              })}
+
+              {displayItems.length === 0 ? (
+                <div className="rounded-lg bg-bg-surface p-6">
+                  <p className="m-0 font-display text-xl">{t('options.emptyTitle')}</p>
+                  <p className="mb-0 mt-2 text-sm text-text-secondary">{t('options.emptyText')}</p>
+                </div>
+              ) : null}
+            </section>
           )}
+          </div>
         </section>
       </div>
     </main>

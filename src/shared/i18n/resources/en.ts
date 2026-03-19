@@ -15,6 +15,10 @@ const en = {
     title: 'Folio',
     subtitle: 'Warm reading list',
     saveCurrentPage: 'Save Current Page',
+    saveShort: 'Save',
+    savedShort: 'Saved',
+    removeCurrent: 'Remove',
+    currentPage: 'Current Page',
     alreadySaved: 'Already in Folio',
     alreadySavedWithStatus: 'Already in Folio ({{status}})',
     saved: 'Saved to Folio',
@@ -37,7 +41,7 @@ const en = {
     language: 'Language'
   },
   options: {
-    title: 'Your Reading List',
+    title: 'Folio',
     searchPlaceholder: 'Search title, URL, or note...',
     emptyTitle: 'Nothing here yet',
     emptyText: 'Save pages from popup or right-click menu to get started.',
@@ -63,6 +67,8 @@ const en = {
     exportJson: 'Export JSON',
     exportCsv: 'Export CSV',
     exportMarkdown: 'Export Markdown',
+    export: 'Export',
+    exported: 'Exported',
     exportScope: 'Scope',
     exportScopeCurrent: 'Current view',
     exportScopeAll: 'All data',
@@ -82,11 +88,16 @@ const en = {
     renameTag: 'Rename Tag',
     deleteTag: 'Delete Tag',
     thresholdsTitle: 'Thresholds',
+    thresholdsHint: 'Tune these reminders for your own reading pace.',
     backlogEnabled: 'Backlog reminder',
+    backlogHint: 'Show a hint when unread items exceed your limit.',
     backlogThreshold: 'Backlog threshold',
     staleEnabled: 'Stale mark',
+    staleHint: 'Mark unread items as stale after this many days.',
     staleThreshold: 'Stale days',
     defaultStatus: 'Default status',
+    defaultStatusHint: 'Default status for new saves',
+    tagManagerHint: 'Rename or clean up existing tags.',
     removedUndo: 'Removed',
     removedUndoCount: 'Removed {{count}} items',
     undo: 'Undo',
@@ -104,7 +115,11 @@ const en = {
     iconThemeDark: 'Dark',
     iconThemeCream: 'Cream',
     iconChanged: 'Icon updated',
+    dataAndBackupTitle: 'Directory & Data',
+    dataAndBackupHint: 'Set where Folio writes local backups and restore data when needed.',
     syncDirectory: 'Backup Directory',
+    syncDirectoryHelpPrimary: 'Choose a local folder once, then Folio syncs browser data there.',
+    syncDirectoryHelpSecondary: 'This is one-way backup from browser to local files.',
     chooseDirectory: 'Choose Directory',
     changeDirectory: 'Change Directory',
     clearDirectory: 'Clear Directory',
@@ -119,7 +134,9 @@ const en = {
     importHint: 'Import a Folio JSON backup and replace current data.',
     importJson: 'Import JSON',
     importSuccess: 'Imported {{count}} items',
-    importFailed: 'Import failed: {{error}}'
+    importFailed: 'Import failed: {{error}}',
+    preferencesTitle: 'Preferences',
+    preferencesHint: 'Language, icon, and reminder defaults.'
   }
 };
 
