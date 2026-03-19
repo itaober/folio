@@ -148,7 +148,7 @@ export default function App(): ReactElement {
     } else if (!result.ok) {
       setNotice({ level: 'error', text: t('popup.saveFailed') });
     } else {
-      setNotice({ level: 'success', text: t('popup.saved') });
+      setNotice(null);
       await load();
       return;
     }
@@ -201,7 +201,7 @@ export default function App(): ReactElement {
     }
 
     setUndoRemovedItem(null);
-    setNotice({ level: 'success', text: t('options.updateSuccess') });
+    setNotice(null);
     await load();
   }
 
@@ -219,7 +219,7 @@ export default function App(): ReactElement {
       return;
     }
 
-    setNotice({ level: 'success', text: t('popup.statusUpdated') });
+    setNotice(null);
     await load();
   }
 

@@ -87,6 +87,7 @@ pnpm build
 - `version`：必填，仅数字版本号，例如 `0.2.0`
 - `draft`：是否创建草稿发布
 - `prerelease`：是否标记为预发布
+- `release_notes`：可选，手动填写发布说明；留空则使用 GitHub 自动生成说明
 
 ## 项目结构
 
@@ -111,5 +112,7 @@ public/
 ## 说明
 
 - 通过 GitHub Release 分发并安装时，需要在 Chrome 开启开发者模式。
+- 项目使用固定的 manifest key 来稳定扩展 ID。
+  升级版本时请保留同一个扩展条目并点击 **重新加载**，以保留 `chrome.storage.local` 数据。
 - 如果要面向大众分发，建议发布到 Chrome Web Store。
 - 可通过 [最新 Release](https://github.com/itaober/folio/releases/latest) 直接拿到当前版本安装包。

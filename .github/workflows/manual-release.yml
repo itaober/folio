@@ -17,6 +17,11 @@ on:
         required: true
         default: false
         type: boolean
+      release_notes:
+        description: "Optional release notes body (leave empty to auto-generate)"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: write
@@ -133,7 +138,22 @@ jobs:
           git tag "$TAG"
           git push origin "$TAG"
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release (manual notes)
+        if: inputs.release_notes != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          target_commitish: main
+          name: v${{ inputs.version }}
+          body: ${{ inputs.release_notes }}
+          draft: ${{ inputs.draft }}
+          prerelease: ${{ inputs.prerelease }}
+          files: |
+            folio-extension-v${{ inputs.version }}.zip
+            folio-extension-v${{ inputs.version }}.sha256.txt
+
+      - name: Create GitHub Release (auto notes)
+        if: inputs.release_notes == ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ inputs.version }}

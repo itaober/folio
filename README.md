@@ -87,6 +87,7 @@ It is triggered from GitHub Actions UI (**Run workflow**) and always uses the la
 - `version`: required, numeric extension version like `0.2.0`
 - `draft`: create draft release
 - `prerelease`: mark as prerelease
+- `release_notes`: optional manual release notes body; leave empty to auto-generate notes from GitHub
 
 ## Project Structure
 
@@ -111,5 +112,7 @@ public/
 ## Notes
 
 - This distribution mode (GitHub Release + Load unpacked) requires Chrome Developer mode for installation.
+- The extension uses a fixed manifest key so the extension ID stays stable across version updates.
+  Keep the same installed extension entry and use **Reload** to preserve `chrome.storage.local` data.
 - For broad public distribution, publish to Chrome Web Store.
 - You can always find the newest package at [Latest Release](https://github.com/itaober/folio/releases/latest).
