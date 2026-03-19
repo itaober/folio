@@ -5,15 +5,11 @@ import {
   useState,
   type ChangeEvent,
   type KeyboardEvent,
-  type ReactElement,
-  type ReactNode
+  type ReactElement
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowUpDown,
-  BookOpen,
-  CheckCheck,
-  Clock3,
   FolderOpen,
   Download,
   FileJson2,
@@ -35,15 +31,25 @@ import {
   type FolioIconVariant
 } from '../shared/icons';
 import { FolioMark } from '../shared/ui/FolioMark';
+import {
+  nextStatus,
+  statusBadgeClass,
+  statusIcon,
+  statusToLabel
+} from '../shared/ui/itemStatus';
+import { noticeClass, type NoticeLevel } from '../shared/ui/notice';
+import { renderHighlightedText } from '../shared/ui/renderHighlightedText';
 import { SelectField } from '../shared/ui/SelectField';
 import { TagInputField } from '../shared/ui/TagInputField';
 import { TextField } from '../shared/ui/TextField';
 import { ToggleSwitch } from '../shared/ui/ToggleSwitch';
+import { useAutoDismissNotice } from '../shared/ui/useAutoDismissNotice';
 import { commit, getStore, importStoreFromJson, syncBackupNow } from '../core/repository';
 import {
   selectAllItems,
   selectFilteredItems,
   selectItemsByStatus,
+  selectStatusCounts,
   sortItems,
   type SortMode
 } from '../core/selectors';
@@ -65,7 +71,6 @@ interface EditDraft {
   status: FolioStatus;
 }
 
-type NoticeLevel = 'success' | 'error' | 'info';
 type ExportScope = 'current' | 'all';
 
 interface NoticeState {
@@ -73,91 +78,8 @@ interface NoticeState {
   text: string;
 }
 
-function statusText(status: FolioStatus, t: (key: string) => string): string {
-  if (status === 'unread') return t('common.unread');
-  if (status === 'reading') return t('common.reading');
-  return t('common.done');
-}
-
-function nextStatus(status: FolioStatus): FolioStatus {
-  if (status === 'unread') return 'reading';
-  if (status === 'reading') return 'done';
-  return 'unread';
-}
-
-function statusBadgeClass(status: FolioStatus): string {
-  if (status === 'unread') {
-    return 'bg-(--status-unread-bg) text-(--status-unread-text)';
-  }
-  if (status === 'reading') {
-    return 'bg-(--status-reading-bg) text-(--status-reading-text)';
-  }
-  return 'bg-(--status-done-bg) text-(--status-done-text)';
-}
-
-function statusIcon(status: FolioStatus): ReactElement {
-  if (status === 'unread') {
-    return <Clock3 className="h-3.5 w-3.5" strokeWidth={2} />;
-  }
-  if (status === 'reading') {
-    return <BookOpen className="h-3.5 w-3.5" strokeWidth={2} />;
-  }
-  return <CheckCheck className="h-3.5 w-3.5" strokeWidth={2} />;
-}
-
-function noticeClass(level: NoticeLevel): string {
-  if (level === 'success') {
-    return 'border border-(--border) bg-bg-surface text-text-secondary';
-  }
-  if (level === 'error') {
-    return 'border border-(--accent-border) bg-accent-subtle text-accent';
-  }
-  return 'border border-(--border) bg-bg-surface text-text-secondary';
-}
-
 function normalizeTag(input: string): string {
   return input.trim().replace(/^#+/, '').replace(/\s+/g, ' ');
-}
-
-function renderHighlightedText(text: string, keyword: string): ReactNode {
-  const term = keyword.trim();
-  if (!term) {
-    return text;
-  }
-
-  const loweredText = text.toLowerCase();
-  const loweredTerm = term.toLowerCase();
-  const chunks: ReactNode[] = [];
-  let cursor = 0;
-  let matchIndex = loweredText.indexOf(loweredTerm, cursor);
-
-  while (matchIndex !== -1) {
-    if (matchIndex > cursor) {
-      chunks.push(text.slice(cursor, matchIndex));
-    }
-
-    const end = matchIndex + term.length;
-    chunks.push(
-      <mark
-        key={`${matchIndex}-${end}`}
-        className="rounded-sm bg-accent-subtle px-0.5 text-accent"
-      >
-        {text.slice(matchIndex, end)}
-      </mark>
-    );
-    cursor = end;
-    matchIndex = loweredText.indexOf(loweredTerm, cursor);
-  }
-
-  if (chunks.length === 0) {
-    return text;
-  }
-
-  if (cursor < text.length) {
-    chunks.push(text.slice(cursor));
-  }
-
-  return <>{chunks}</>;
 }
 
 function formatSavedAtLabel(timestamp: number, locale: SupportedLocale): {
@@ -212,13 +134,14 @@ export default function App(): ReactElement {
   const [deleteHoldItemId, setDeleteHoldItemId] = useState<string | null>(null);
   const [deleteHoldProgress, setDeleteHoldProgress] = useState(0);
   const undoTimerRef = useRef<number | null>(null);
-  const noticeTimerRef = useRef<number | null>(null);
   const dangerConfirmTimerRef = useRef<number | null>(null);
   const deleteHoldRafRef = useRef<number | null>(null);
   const deleteHoldStartRef = useRef(0);
   const deleteHoldTargetRef = useRef<FolioItem | null>(null);
   const editPanelTimerRef = useRef<number | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
+
+  useAutoDismissNotice(notice, setNotice, 3000);
 
   useEffect(() => {
     void refresh();
@@ -248,9 +171,6 @@ export default function App(): ReactElement {
       if (undoTimerRef.current !== null) {
         window.clearTimeout(undoTimerRef.current);
       }
-      if (noticeTimerRef.current !== null) {
-        window.clearTimeout(noticeTimerRef.current);
-      }
       if (dangerConfirmTimerRef.current !== null) {
         window.clearTimeout(dangerConfirmTimerRef.current);
       }
@@ -262,22 +182,6 @@ export default function App(): ReactElement {
       }
     };
   }, []);
-
-  useEffect(() => {
-    if (noticeTimerRef.current !== null) {
-      window.clearTimeout(noticeTimerRef.current);
-      noticeTimerRef.current = null;
-    }
-
-    if (!notice || notice.level === 'error') {
-      return;
-    }
-
-    noticeTimerRef.current = window.setTimeout(() => {
-      setNotice(null);
-      noticeTimerRef.current = null;
-    }, 3000);
-  }, [notice]);
 
   function armDangerAction(action: DangerAction): void {
     if (dangerConfirmTimerRef.current !== null) {
@@ -435,12 +339,12 @@ export default function App(): ReactElement {
       return { all: 0, unread: 0, reading: 0, done: 0 };
     }
 
-    const items = selectAllItems(store);
+    const statusCounts = selectStatusCounts(store);
     return {
-      all: items.length,
-      unread: items.filter((item) => item.status === 'unread').length,
-      reading: items.filter((item) => item.status === 'reading').length,
-      done: items.filter((item) => item.status === 'done').length
+      all: statusCounts.total,
+      unread: statusCounts.unread,
+      reading: statusCounts.reading,
+      done: statusCounts.done
     };
   }, [store]);
 
@@ -1808,8 +1712,8 @@ export default function App(): ReactElement {
                               type="button"
                               className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-(--border) ${statusBadgeClass(item.status)} hover:border-(--accent-border)`}
                               onClick={() => void handleSetStatus(item, nextStatus(item.status))}
-                              title={`${t('options.sortStatus')}: ${statusText(nextStatus(item.status), t)}`}
-                              aria-label={`${statusText(item.status, t)} → ${statusText(nextStatus(item.status), t)}`}
+                              title={`${t('options.sortStatus')}: ${statusToLabel(nextStatus(item.status), t)}`}
+                              aria-label={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}
 	                            >
 	                              {statusIcon(item.status)}
 	                            </button>

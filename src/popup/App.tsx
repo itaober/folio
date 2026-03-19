@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  BookOpen,
   Check,
-  CheckCheck,
-  Clock3,
   ExternalLink,
   Plus,
   Search,
@@ -15,9 +18,23 @@ import {
   type FolioIconVariant
 } from '../shared/icons';
 import { FolioMark } from '../shared/ui/FolioMark';
+import {
+  nextStatus,
+  statusBadgeClass,
+  statusIcon,
+  statusToLabel
+} from '../shared/ui/itemStatus';
+import { noticeClass, type NoticeLevel } from '../shared/ui/notice';
+import { renderHighlightedText } from '../shared/ui/renderHighlightedText';
 import { TextField } from '../shared/ui/TextField';
+import { useAutoDismissNotice } from '../shared/ui/useAutoDismissNotice';
 import { commit, getStore } from '../core/repository';
-import { selectItemByUrl, selectRecentItems } from '../core/selectors';
+import {
+  matchesItemKeyword,
+  selectItemByUrl,
+  selectRecentItems,
+  selectStatusCounts
+} from '../core/selectors';
 import type { FolioItem, FolioStatus } from '../core/types';
 
 interface ActivePage {
@@ -26,54 +43,11 @@ interface ActivePage {
   favicon: string;
 }
 
-type NoticeLevel = 'success' | 'error' | 'info';
 type PopupFilter = 'all' | FolioStatus;
 
 interface NoticeState {
   level: NoticeLevel;
   text: string;
-}
-
-function statusToLabel(status: FolioStatus, t: (key: string) => string): string {
-  if (status === 'unread') return t('common.unread');
-  if (status === 'reading') return t('common.reading');
-  return t('common.done');
-}
-
-function nextStatus(status: FolioStatus): FolioStatus {
-  if (status === 'unread') return 'reading';
-  if (status === 'reading') return 'done';
-  return 'unread';
-}
-
-function noticeClass(level: NoticeLevel): string {
-  if (level === 'success') {
-    return 'border border-(--border) bg-bg-surface text-text-secondary';
-  }
-  if (level === 'error') {
-    return 'border border-(--accent-border) bg-accent-subtle text-accent';
-  }
-  return 'border border-(--border) bg-bg-surface text-text-secondary';
-}
-
-function listBadgeClass(status: FolioStatus): string {
-  if (status === 'unread') {
-    return 'bg-(--status-unread-bg) text-(--status-unread-text)';
-  }
-  if (status === 'reading') {
-    return 'bg-(--status-reading-bg) text-(--status-reading-text)';
-  }
-  return 'bg-(--status-done-bg) text-(--status-done-text)';
-}
-
-function statusIcon(status: FolioStatus): ReactElement {
-  if (status === 'unread') {
-    return <Clock3 className="h-3.5 w-3.5" strokeWidth={2} />;
-  }
-  if (status === 'reading') {
-    return <BookOpen className="h-3.5 w-3.5" strokeWidth={2} />;
-  }
-  return <CheckCheck className="h-3.5 w-3.5" strokeWidth={2} />;
 }
 
 export default function App(): ReactElement {
@@ -92,7 +66,7 @@ export default function App(): ReactElement {
   const [searchTerm, setSearchTerm] = useState('');
 
   const undoRemoveTimerRef = useRef<number | null>(null);
-  const noticeTimerRef = useRef<number | null>(null);
+  useAutoDismissNotice(notice, setNotice, 2500);
 
   const canSave = Boolean(activePage?.url);
 
@@ -105,27 +79,8 @@ export default function App(): ReactElement {
       if (undoRemoveTimerRef.current !== null) {
         window.clearTimeout(undoRemoveTimerRef.current);
       }
-      if (noticeTimerRef.current !== null) {
-        window.clearTimeout(noticeTimerRef.current);
-      }
     };
   }, []);
-
-  useEffect(() => {
-    if (noticeTimerRef.current !== null) {
-      window.clearTimeout(noticeTimerRef.current);
-      noticeTimerRef.current = null;
-    }
-
-    if (!notice || notice.level === 'error') {
-      return;
-    }
-
-    noticeTimerRef.current = window.setTimeout(() => {
-      setNotice(null);
-      noticeTimerRef.current = null;
-    }, 2500);
-  }, [notice]);
 
   function clearUndoRemoveTimer(): void {
     if (undoRemoveTimerRef.current !== null) {
@@ -154,16 +109,18 @@ export default function App(): ReactElement {
 
     const store = await getStore();
     const item = selectItemByUrl(store, url) ?? null;
-    const unreadCount = Object.values(store.items).filter(
-      (entry) => entry.status === 'unread'
-    ).length;
+    const statusCounts = selectStatusCounts(store);
     const threshold = store.settings.backlogThreshold;
 
     setActivePage(page);
     setCurrentItem(item);
     setIconVariant(store.settings.iconVariant);
     setRecentItems(selectRecentItems(store, 60));
-    setBacklogCount(store.settings.backlogEnabled && unreadCount > threshold ? unreadCount : 0);
+    setBacklogCount(
+      store.settings.backlogEnabled && statusCounts.unread > threshold
+        ? statusCounts.unread
+        : 0
+    );
     return item;
   }
 
@@ -283,14 +240,7 @@ export default function App(): ReactElement {
         : recentItems.filter((item) => item.status === popupFilter);
 
     if (keyword) {
-      items = items.filter((item) => {
-        return (
-          item.title.toLowerCase().includes(keyword) ||
-          item.domain.toLowerCase().includes(keyword) ||
-          item.url.toLowerCase().includes(keyword) ||
-          item.note.toLowerCase().includes(keyword)
-        );
-      });
+      items = items.filter((item) => matchesItemKeyword(item, keyword, true));
     }
 
     if (currentItem) {
@@ -405,10 +355,11 @@ export default function App(): ReactElement {
                 <button
                   key={status}
                   type="button"
+                  aria-pressed={active}
                   className={
                     active
-	                      ? 'rounded-full bg-bg-base px-2 py-1 text-xs font-semibold text-text-primary shadow-sm'
-                      : 'rounded-full px-2 py-1 text-xs text-text-muted hover:text-text-secondary'
+                      ? 'rounded-full border border-(--accent-border) bg-accent-subtle px-2 py-1 text-xs font-semibold text-accent'
+                      : 'rounded-full border border-transparent px-2 py-1 text-xs text-text-muted hover:border-(--border) hover:bg-bg-base hover:text-text-secondary'
                   }
                   onClick={() => setPopupFilter(status)}
                 >
@@ -450,14 +401,18 @@ export default function App(): ReactElement {
                       {t('popup.currentPage')}
                     </span>
                   ) : null}
-                  <span className="block truncate text-sm text-text-primary">{item.title}</span>
-                  <span className="block truncate font-mono text-[11px] text-text-muted">{item.domain}</span>
+                  <span className="block truncate text-sm text-text-primary">
+                    {renderHighlightedText(item.title, searchTerm)}
+                  </span>
+                  <span className="block truncate font-mono text-[11px] text-text-muted">
+                    {renderHighlightedText(item.domain, searchTerm)}
+                  </span>
                 </span>
               </button>
 
               <button
                 type="button"
-                className={`inline-flex h-8 w-8 items-center justify-center rounded-md border border-(--border) ${listBadgeClass(item.status)} hover:border-(--accent-border)`}
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-md border border-(--border) ${statusBadgeClass(item.status)} hover:border-(--accent-border)`}
                 onClick={() => void handleStatusChange(item, nextStatus(item.status))}
                 title={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}
                 aria-label={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}
