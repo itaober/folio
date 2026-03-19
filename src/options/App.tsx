@@ -35,6 +35,7 @@ import {
 } from '../shared/icons';
 import { FolioMark } from '../shared/ui/FolioMark';
 import { SelectField } from '../shared/ui/SelectField';
+import { TagInputField } from '../shared/ui/TagInputField';
 import { TextField } from '../shared/ui/TextField';
 import { ToggleSwitch } from '../shared/ui/ToggleSwitch';
 import { commit, getStore, importStoreFromJson, syncBackupNow } from '../core/repository';
@@ -59,7 +60,7 @@ interface EditDraft {
   title: string;
   url: string;
   note: string;
-  tags: string;
+  tags: string[];
   status: FolioStatus;
 }
 
@@ -105,7 +106,7 @@ function statusIcon(status: FolioStatus): ReactElement {
 
 function noticeClass(level: NoticeLevel): string {
   if (level === 'success') {
-    return 'border border-(--status-done-border) bg-(--status-done-bg) text-(--status-done-text)';
+    return 'border border-(--border) bg-bg-surface text-text-secondary';
   }
   if (level === 'error') {
     return 'border border-(--accent-border) bg-accent-subtle text-accent';
@@ -113,11 +114,8 @@ function noticeClass(level: NoticeLevel): string {
   return 'border border-(--border) bg-bg-surface text-text-secondary';
 }
 
-function parseTags(input: string): string[] {
-  return input
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter(Boolean);
+function normalizeTag(input: string): string {
+  return input.trim().replace(/^#+/, '').replace(/\s+/g, ' ');
 }
 
 function renderHighlightedText(text: string, keyword: string): ReactNode {
@@ -175,6 +173,7 @@ function formatSavedAtLabel(timestamp: number, locale: SupportedLocale): {
 }
 
 type DangerAction = 'clearSyncDirectory' | 'deleteTag';
+const DELETE_HOLD_DURATION_MS = 1200;
 
 export default function App(): ReactElement {
   const { t } = useTranslation();
@@ -189,6 +188,7 @@ export default function App(): ReactElement {
   const [batchTag, setBatchTag] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
+  const [editTagInput, setEditTagInput] = useState('');
   const [notice, setNotice] = useState<NoticeState | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [exportScope, setExportScope] = useState<ExportScope>('current');
@@ -207,9 +207,14 @@ export default function App(): ReactElement {
   const [undoItems, setUndoItems] = useState<FolioItem[]>([]);
   const [isEditPanelExpanded, setIsEditPanelExpanded] = useState(false);
   const [pendingDangerAction, setPendingDangerAction] = useState<DangerAction | null>(null);
+  const [deleteHoldItemId, setDeleteHoldItemId] = useState<string | null>(null);
+  const [deleteHoldProgress, setDeleteHoldProgress] = useState(0);
   const undoTimerRef = useRef<number | null>(null);
   const noticeTimerRef = useRef<number | null>(null);
   const dangerConfirmTimerRef = useRef<number | null>(null);
+  const deleteHoldRafRef = useRef<number | null>(null);
+  const deleteHoldStartRef = useRef(0);
+  const deleteHoldTargetRef = useRef<FolioItem | null>(null);
   const editPanelTimerRef = useRef<number | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -246,6 +251,9 @@ export default function App(): ReactElement {
       }
       if (dangerConfirmTimerRef.current !== null) {
         window.clearTimeout(dangerConfirmTimerRef.current);
+      }
+      if (deleteHoldRafRef.current !== null) {
+        window.cancelAnimationFrame(deleteHoldRafRef.current);
       }
       if (editPanelTimerRef.current !== null) {
         window.clearTimeout(editPanelTimerRef.current);
@@ -289,6 +297,43 @@ export default function App(): ReactElement {
     setPendingDangerAction(null);
   }
 
+  function stopDeleteHold(): void {
+    if (deleteHoldRafRef.current !== null) {
+      window.cancelAnimationFrame(deleteHoldRafRef.current);
+      deleteHoldRafRef.current = null;
+    }
+    setDeleteHoldItemId(null);
+    setDeleteHoldProgress(0);
+    deleteHoldTargetRef.current = null;
+  }
+
+  function startDeleteHold(item: FolioItem): void {
+    stopDeleteHold();
+    setDeleteHoldItemId(item.id);
+    setDeleteHoldProgress(0);
+    deleteHoldTargetRef.current = item;
+    deleteHoldStartRef.current = performance.now();
+
+    const step = (timestamp: number): void => {
+      const elapsed = timestamp - deleteHoldStartRef.current;
+      const progress = Math.min(elapsed / DELETE_HOLD_DURATION_MS, 1);
+      setDeleteHoldProgress(progress);
+
+      if (progress >= 1) {
+        const target = deleteHoldTargetRef.current;
+        stopDeleteHold();
+        if (target) {
+          void handleDelete(target);
+        }
+        return;
+      }
+
+      deleteHoldRafRef.current = window.requestAnimationFrame(step);
+    };
+
+    deleteHoldRafRef.current = window.requestAnimationFrame(step);
+  }
+
   function showExportNotice(): void {
     setNotice({ level: 'success', text: t('options.exported') });
   }
@@ -301,8 +346,48 @@ export default function App(): ReactElement {
     editPanelTimerRef.current = window.setTimeout(() => {
       setEditingId(null);
       setEditDraft(null);
+      setEditTagInput('');
       editPanelTimerRef.current = null;
     }, 220);
+  }
+
+  function handleAddEditTag(): void {
+    const normalized = normalizeTag(editTagInput);
+    if (!normalized) {
+      return;
+    }
+
+    setEditDraft((previous) => {
+      if (!previous) {
+        return previous;
+      }
+
+      const exists = previous.tags.some(
+        (tag) => tag.toLowerCase() === normalized.toLowerCase()
+      );
+      if (exists) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        tags: [...previous.tags, normalized]
+      };
+    });
+    setEditTagInput('');
+  }
+
+  function handleRemoveEditTag(targetIndex: number): void {
+    setEditDraft((previous) => {
+      if (!previous) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        tags: previous.tags.filter((_tag, index) => index !== targetIndex)
+      };
+    });
   }
 
   async function refresh(): Promise<void> {
@@ -392,6 +477,7 @@ export default function App(): ReactElement {
   }
 
   async function handleDelete(item: FolioItem): Promise<void> {
+    stopDeleteHold();
     const result = await commit({ type: 'deleteItem', payload: { id: item.id } });
     if (!result.ok) {
       setNotice({ level: 'error', text: t('options.deleteFailed') });
@@ -410,6 +496,14 @@ export default function App(): ReactElement {
       setEditDraft(null);
     }
     await refresh();
+  }
+
+  function handleDeletePointerDown(item: FolioItem): void {
+    startDeleteHold(item);
+  }
+
+  function handleDeletePointerStop(): void {
+    stopDeleteHold();
   }
 
   async function handleUndoDelete(): Promise<void> {
@@ -966,6 +1060,11 @@ export default function App(): ReactElement {
   }
 
   function handleStartEdit(item: FolioItem): void {
+    if (editingId === item.id && isEditPanelExpanded) {
+      closeInlineEditor();
+      return;
+    }
+
     if (editPanelTimerRef.current !== null) {
       window.clearTimeout(editPanelTimerRef.current);
       editPanelTimerRef.current = null;
@@ -976,9 +1075,10 @@ export default function App(): ReactElement {
       title: item.title,
       url: item.url,
       note: item.note,
-      tags: item.tags.join(', '),
+      tags: [...item.tags],
       status: item.status
     });
+    setEditTagInput('');
     window.requestAnimationFrame(() => {
       setIsEditPanelExpanded(true);
     });
@@ -989,6 +1089,12 @@ export default function App(): ReactElement {
       return;
     }
 
+    const pendingTag = normalizeTag(editTagInput);
+    const nextTags = [...editDraft.tags];
+    if (pendingTag && !nextTags.some((tag) => tag.toLowerCase() === pendingTag.toLowerCase())) {
+      nextTags.push(pendingTag);
+    }
+
     const result = await commit({
       type: 'updateItem',
       payload: {
@@ -996,7 +1102,7 @@ export default function App(): ReactElement {
         title: editDraft.title,
         url: editDraft.url,
         note: editDraft.note,
-        tags: parseTags(editDraft.tags),
+        tags: nextTags,
         status: editDraft.status
       }
     });
@@ -1035,12 +1141,12 @@ export default function App(): ReactElement {
     <main className="min-h-screen bg-bg-base text-text-primary">
       <div className="pointer-events-none fixed left-1/2 top-4 z-50 w-max max-w-[min(92vw,560px)] -translate-x-1/2 space-y-2">
         {notice ? (
-          <p className={`pointer-events-auto m-0 rounded-[10px] px-3 py-2 text-xs shadow-[0_8px_18px_rgba(26,20,16,0.12)] ${noticeClass(notice.level)}`}>
+          <p className={`pointer-events-auto m-0 rounded-[6px] px-3 py-2 text-xs shadow-[0_6px_14px_rgba(26,20,16,0.1)] ${noticeClass(notice.level)}`}>
             {notice.text}
           </p>
         ) : null}
         {undoItems.length > 0 ? (
-          <div className="pointer-events-auto flex items-center gap-2 rounded-[10px] border border-(--border) bg-bg-surface px-3 py-2 text-xs text-text-secondary shadow-[0_8px_18px_rgba(26,20,16,0.12)]">
+          <div className="pointer-events-auto flex items-center gap-2 rounded-[6px] border border-(--border) bg-bg-surface px-3 py-2 text-xs text-text-secondary shadow-[0_6px_14px_rgba(26,20,16,0.1)]">
             <span>
               {undoItems.length > 1
                 ? t('options.removedUndoCount', { count: undoItems.length })
@@ -1142,6 +1248,9 @@ export default function App(): ReactElement {
                     <span className={navCountClass(activeTagFilter === tag)}>{tagCounts[tag] ?? 0}</span>
                   </button>
                 ))}
+                {(store?.tags ?? []).length === 0 ? (
+                  <p className="m-0 px-2 py-1 text-[11px] text-text-muted">{t('options.tagsEmpty')}</p>
+                ) : null}
                 {activeTagFilter ? (
                   <button
                     type="button"
@@ -1562,9 +1671,24 @@ export default function App(): ReactElement {
                           >
                             {renderHighlightedText(item.title, search)}
                           </a>
-                          <p className="m-0 mt-1 truncate font-mono text-[11px] text-text-muted">
-                            {item.domain}
-                          </p>
+                          <div className="mt-1 flex items-center gap-1.5 overflow-hidden">
+                            <p className="m-0 shrink-0 truncate font-mono text-[11px] text-text-muted">
+                              {item.domain}
+                            </p>
+                            {item.tags.length > 0 ? (
+                              <div className="min-w-0 flex items-center gap-1 overflow-hidden">
+                                {item.tags.map((tag) => (
+                                  <span
+                                    key={`${item.id}-${tag}`}
+                                    className="truncate rounded-[6px] bg-bg-elevated px-1.5 py-0.5 text-[10px] text-text-muted"
+                                    title={tag}
+                                  >
+                                    #{tag}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
                           {item.note ? (
                             <p className="m-0 mt-1 truncate text-xs font-light text-text-muted">
                               {renderHighlightedText(item.note, search)}
@@ -1585,12 +1709,35 @@ export default function App(): ReactElement {
 	                            </button>
 	                            <button
 	                              type="button"
-	                              className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-bg-surface text-[#b34039] opacity-0 pointer-events-none transition-opacity duration-150 hover:bg-bg-elevated group-hover:pointer-events-auto group-hover:opacity-100"
-	                              onClick={() => void handleDelete(item)}
+	                              className={`relative inline-flex h-7 w-7 items-center justify-center rounded-md text-[#b34039] transition-opacity duration-150 ${
+	                                deleteHoldItemId === item.id
+	                                  ? 'opacity-100 pointer-events-auto'
+	                                  : 'opacity-0 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100'
+	                              }`}
+	                              onPointerDown={() => handleDeletePointerDown(item)}
+	                              onPointerUp={handleDeletePointerStop}
+	                              onPointerLeave={handleDeletePointerStop}
+	                              onPointerCancel={handleDeletePointerStop}
+	                              onContextMenu={(event) => event.preventDefault()}
 	                              title={t('common.delete')}
 	                              aria-label={t('common.delete')}
 	                            >
-	                              <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+	                              {deleteHoldItemId === item.id ? (
+	                                <>
+	                                  <span
+	                                    className="absolute inset-0 rounded-md"
+	                                    style={{
+	                                      background: `conic-gradient(var(--accent) ${
+	                                        deleteHoldProgress * 360
+	                                      }deg, transparent 0deg)`
+	                                    }}
+	                                  />
+	                                  <span className="absolute inset-[1.5px] rounded-[6px] bg-bg-surface" />
+	                                </>
+	                              ) : (
+	                                <span className="absolute inset-0 rounded-md bg-bg-surface hover:bg-bg-elevated" />
+	                              )}
+	                              <Trash2 className="relative z-[2] h-3.5 w-3.5" strokeWidth={2} />
 	                            </button>
 	                            <button
 	                              type="button"
@@ -1645,18 +1792,19 @@ export default function App(): ReactElement {
 		                                  />
 		                                </label>
 
-		                                <label className="flex items-center gap-3">
+		                                <div className="flex items-center gap-3">
 		                                  <span className="w-[54px] text-xs text-text-secondary">{t('options.tags')}</span>
-		                                  <input
-		                                    className="h-[30px] flex-1 rounded-[6px] border border-(--border) bg-bg-surface px-2.5 text-xs text-text-primary outline-none"
-		                                    value={editDraft.tags}
-		                                    onChange={(event) =>
-		                                      setEditDraft((prev) =>
-		                                        prev ? { ...prev, tags: event.target.value } : prev
-		                                      )
-		                                    }
-		                                  />
-		                                </label>
+		                                  <div className="flex-1">
+		                                    <TagInputField
+		                                      tags={editDraft.tags}
+		                                      inputValue={editTagInput}
+		                                      placeholder={t('options.tagInputPlaceholder')}
+		                                      onInputChange={setEditTagInput}
+		                                      onAddTag={handleAddEditTag}
+		                                      onRemoveTag={handleRemoveEditTag}
+		                                    />
+		                                  </div>
+		                                </div>
 
 		                                <div className="mt-1 flex justify-end gap-2">
 		                                  <button

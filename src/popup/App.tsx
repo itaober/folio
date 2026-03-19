@@ -48,7 +48,7 @@ function nextStatus(status: FolioStatus): FolioStatus {
 
 function noticeClass(level: NoticeLevel): string {
   if (level === 'success') {
-    return 'border border-(--status-done-border) bg-(--status-done-bg) text-(--status-done-text)';
+    return 'border border-(--border) bg-bg-surface text-text-secondary';
   }
   if (level === 'error') {
     return 'border border-(--accent-border) bg-accent-subtle text-accent';
@@ -320,12 +320,12 @@ export default function App(): ReactElement {
     <main className="relative h-[520px] w-[360px] overflow-y-auto bg-bg-base text-text-primary">
       <div className="pointer-events-none absolute left-1/2 top-3 z-20 w-max max-w-[332px] -translate-x-1/2 space-y-2">
         {notice ? (
-          <p className={`pointer-events-auto m-0 rounded-[10px] px-3 py-2 text-xs shadow-[0_8px_18px_rgba(26,20,16,0.12)] ${noticeClass(notice.level)}`}>
+          <p className={`pointer-events-auto m-0 rounded-[6px] px-3 py-2 text-xs shadow-[0_6px_14px_rgba(26,20,16,0.1)] ${noticeClass(notice.level)}`}>
             {notice.text}
           </p>
         ) : null}
         {undoRemovedItem ? (
-          <div className="pointer-events-auto flex items-center gap-2 rounded-[10px] border border-(--border) bg-bg-surface px-3 py-2 text-xs text-text-secondary shadow-[0_8px_18px_rgba(26,20,16,0.12)]">
+          <div className="pointer-events-auto flex items-center gap-2 rounded-[6px] border border-(--border) bg-bg-surface px-3 py-2 text-xs text-text-secondary shadow-[0_6px_14px_rgba(26,20,16,0.1)]">
             <span>{t('options.removedUndo')}</span>
             <button
               type="button"
