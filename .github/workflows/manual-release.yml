@@ -1,0 +1,147 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (for example: 0.2.0)"
+        required: true
+        type: string
+      draft:
+        description: "Create release as draft"
+        required: true
+        default: false
+        type: boolean
+      prerelease:
+        description: "Mark release as prerelease"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: manual-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: refs/heads/main
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Validate version input
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version: $VERSION"
+            echo "Expected numeric extension version, e.g. 0.2.0"
+            exit 1
+          fi
+
+      - name: Ensure tag does not exist
+        run: |
+          TAG="v${{ inputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists. Please choose a new version."
+            exit 1
+          fi
+
+      - name: Update package and manifest versions
+        run: |
+          VERSION="${{ inputs.version }}" node - <<'NODE'
+          const fs = require('node:fs');
+          const version = process.env.VERSION;
+          if (!version) {
+            throw new Error('VERSION is missing in environment');
+          }
+          const pkgPath = 'package.json';
+          const manifestPath = 'src/manifest.ts';
+
+          const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+          pkg.version = version;
+          fs.writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
+
+          const manifestRaw = fs.readFileSync(manifestPath, 'utf8');
+          const nextManifest = manifestRaw.replace(
+            /version:\s*'[^']*'/,
+            `version: '${version}'`
+          );
+
+          if (manifestRaw === nextManifest) {
+            throw new Error('Failed to update version in src/manifest.ts');
+          }
+
+          fs.writeFileSync(manifestPath, nextManifest);
+          NODE
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Package extension
+        run: |
+          VERSION="${{ inputs.version }}"
+          ZIP_NAME="folio-extension-v${VERSION}.zip"
+          cd dist
+          zip -r "../${ZIP_NAME}" .
+          cd ..
+          sha256sum "${ZIP_NAME}" > "folio-extension-v${VERSION}.sha256.txt"
+
+      - name: Commit release version changes
+        id: commit_version
+        run: |
+          VERSION="${{ inputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json src/manifest.ts
+          if git diff --cached --quiet; then
+            echo "No version file changes to commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "chore(release): v${VERSION}"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push version bump to main
+        if: steps.commit_version.outputs.changed == 'true'
+        run: git push origin HEAD:main
+
+      - name: Create and push tag
+        run: |
+          VERSION="${{ inputs.version }}"
+          TAG="v${VERSION}"
+          git tag "$TAG"
+          git push origin "$TAG"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          target_commitish: main
+          name: v${{ inputs.version }}
+          generate_release_notes: true
+          draft: ${{ inputs.draft }}
+          prerelease: ${{ inputs.prerelease }}
+          files: |
+            folio-extension-v${{ inputs.version }}.zip
+            folio-extension-v${{ inputs.version }}.sha256.txt
