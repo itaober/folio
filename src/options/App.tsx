@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type KeyboardEvent,
   type ReactElement,
   type ReactNode
 } from 'react';
@@ -174,6 +175,7 @@ function formatSavedAtLabel(timestamp: number, locale: SupportedLocale): {
 
 type DangerAction = 'clearSyncDirectory' | 'deleteTag';
 const DELETE_HOLD_DURATION_MS = 1200;
+const exportMenuId = 'options-export-menu';
 
 export default function App(): ReactElement {
   const { t } = useTranslation();
@@ -332,6 +334,11 @@ export default function App(): ReactElement {
     };
 
     deleteHoldRafRef.current = window.requestAnimationFrame(step);
+  }
+
+  function handleChangeView(nextView: ViewKey): void {
+    setView(nextView);
+    setActiveTagFilter(null);
   }
 
   function showExportNotice(): void {
@@ -1059,6 +1066,12 @@ export default function App(): ReactElement {
     showExportNotice();
   }
 
+  function handleExportMenuKeyDown(event: KeyboardEvent<HTMLElement>): void {
+    if (event.key === 'Escape') {
+      setIsExportMenuOpen(false);
+    }
+  }
+
   function handleStartEdit(item: FolioItem): void {
     if (editingId === item.id && isEditPanelExpanded) {
       closeInlineEditor();
@@ -1141,12 +1154,22 @@ export default function App(): ReactElement {
     <main className="min-h-screen bg-bg-base text-text-primary">
       <div className="pointer-events-none fixed left-1/2 top-4 z-50 w-max max-w-[min(92vw,560px)] -translate-x-1/2 space-y-2">
         {notice ? (
-          <p className={`pointer-events-auto m-0 rounded-[6px] px-3 py-2 text-xs shadow-[0_6px_14px_rgba(26,20,16,0.1)] ${noticeClass(notice.level)}`}>
+          <p
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className={`pointer-events-auto m-0 rounded-[6px] px-3 py-2 text-xs shadow-[var(--shadow-soft)] ${noticeClass(notice.level)}`}
+          >
             {notice.text}
           </p>
         ) : null}
         {undoItems.length > 0 ? (
-          <div className="pointer-events-auto flex items-center gap-2 rounded-[6px] border border-(--border) bg-bg-surface px-3 py-2 text-xs text-text-secondary shadow-[0_6px_14px_rgba(26,20,16,0.1)]">
+          <div
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className="pointer-events-auto flex items-center gap-2 rounded-[6px] border border-(--border) bg-bg-surface px-3 py-2 text-xs text-text-secondary shadow-[var(--shadow-soft)]"
+          >
             <span>
               {undoItems.length > 1
                 ? t('options.removedUndoCount', { count: undoItems.length })
@@ -1170,14 +1193,14 @@ export default function App(): ReactElement {
             <div>
               <h1 className="m-0 font-display text-xl italic">Folio</h1>
               <p className="m-0 mt-0.5 font-mono text-[11px] tracking-wide text-text-muted">
-                Reading List
+                {t('options.readingList')}
               </p>
             </div>
           </div>
 
           <div className="mt-6 space-y-4">
             <nav className="space-y-1">
-              <button type="button" className={navItemClass(view === 'all')} onClick={() => setView('all')}>
+              <button type="button" className={navItemClass(view === 'all')} onClick={() => handleChangeView('all')}>
                 <span className="flex min-w-0 items-center gap-2">
                   <svg viewBox="0 0 24 24" className={`h-[15px] w-[15px] shrink-0 ${navIconClass(view === 'all')}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 10.5 12 3l9 7.5" />
@@ -1188,7 +1211,7 @@ export default function App(): ReactElement {
                 <span className={navCountClass(view === 'all')}>{counts.all}</span>
               </button>
 
-              <button type="button" className={navItemClass(view === 'unread')} onClick={() => setView('unread')}>
+              <button type="button" className={navItemClass(view === 'unread')} onClick={() => handleChangeView('unread')}>
                 <span className="flex min-w-0 items-center gap-2">
                   <svg viewBox="0 0 24 24" className={`h-[15px] w-[15px] shrink-0 ${navIconClass(view === 'unread')}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="8.5" />
@@ -1199,7 +1222,7 @@ export default function App(): ReactElement {
                 <span className={navCountClass(view === 'unread')}>{counts.unread}</span>
               </button>
 
-              <button type="button" className={navItemClass(view === 'reading')} onClick={() => setView('reading')}>
+              <button type="button" className={navItemClass(view === 'reading')} onClick={() => handleChangeView('reading')}>
                 <span className="flex min-w-0 items-center gap-2">
                   <svg viewBox="0 0 24 24" className={`h-[15px] w-[15px] shrink-0 ${navIconClass(view === 'reading')}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 6.5c2.6 0 4.2.6 6 1.9 1.8-1.3 3.4-1.9 6-1.9h3v12h-3c-2.6 0-4.2.6-6 1.9-1.8-1.3-3.4-1.9-6-1.9H1v-12Z" />
@@ -1210,7 +1233,7 @@ export default function App(): ReactElement {
                 <span className={navCountClass(view === 'reading')}>{counts.reading}</span>
               </button>
 
-              <button type="button" className={navItemClass(view === 'done')} onClick={() => setView('done')}>
+              <button type="button" className={navItemClass(view === 'done')} onClick={() => handleChangeView('done')}>
                 <span className="flex min-w-0 items-center gap-2">
                   <svg viewBox="0 0 24 24" className={`h-[15px] w-[15px] shrink-0 ${navIconClass(view === 'done')}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d="m5.5 12.3 4.1 4.1 8.9-8.9" />
@@ -1234,7 +1257,7 @@ export default function App(): ReactElement {
                     type="button"
                     className={navItemClass(activeTagFilter === tag)}
                     onClick={() => {
-                      setView('all');
+                      handleChangeView('all');
                       setActiveTagFilter(tag);
                     }}
                   >
@@ -1266,10 +1289,10 @@ export default function App(): ReactElement {
 
           <div className="mt-auto pt-4">
             <div className="mb-2 h-px bg-(--border)" />
-            <button
+              <button
               type="button"
               className={navItemClass(view === 'settings')}
-              onClick={() => setView('settings')}
+              onClick={() => handleChangeView('settings')}
             >
               <span className="flex min-w-0 items-center gap-2">
                 <svg viewBox="0 0 24 24" className={`h-[15px] w-[15px] shrink-0 ${navIconClass(view === 'settings')}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -1296,15 +1319,19 @@ export default function App(): ReactElement {
             {view !== 'settings' ? (
               <div className="flex flex-wrap items-center gap-2">
                 <TextField
-                  className="h-8 w-[392px]"
+                  id="options-search"
+                  aria-label={t('options.searchPlaceholder')}
+                  className="h-9 w-[min(40vw,392px)] min-w-[220px]"
                   leftIcon={<Search className="h-4 w-4" strokeWidth={1.9} />}
                   placeholder={t('options.searchPlaceholder')}
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                 />
                 <SelectField
-                  className="h-8 text-xs"
-                  wrapperClassName="w-[136px]"
+                  id="options-sort"
+                  aria-label={t('options.sortLabel')}
+                  className="h-9 text-xs"
+                  wrapperClassName="w-[min(22vw,180px)] min-w-[140px]"
                   leftIcon={<ArrowUpDown className="h-4 w-4" strokeWidth={1.9} />}
                   value={sortMode}
                   onChange={(event) => setSortMode(event.target.value as SortMode)}
@@ -1321,19 +1348,30 @@ export default function App(): ReactElement {
                     type="button"
                     className="inline-flex h-8 items-center gap-1.5 rounded-md border border-(--border) bg-bg-surface px-3 text-xs text-text-secondary hover:bg-bg-elevated"
                     onClick={() => setIsExportMenuOpen((prev) => !prev)}
+                    onKeyDown={handleExportMenuKeyDown}
+                    aria-haspopup="menu"
+                    aria-expanded={isExportMenuOpen}
+                    aria-controls={isExportMenuOpen ? exportMenuId : undefined}
                   >
                     <Download className="h-4 w-4" strokeWidth={1.9} />
                     {t('options.export')}
                   </button>
                   {isExportMenuOpen ? (
-                    <div className="absolute right-0 z-20 mt-2 w-44 rounded-md bg-bg-surface p-2 shadow-md">
+                    <div
+                      id={exportMenuId}
+                      role="menu"
+                      onKeyDown={handleExportMenuKeyDown}
+                      className="absolute right-0 z-20 mt-2 w-44 rounded-md bg-bg-surface p-2 shadow-md"
+                    >
                       <p className="m-0 mb-1 px-2 text-[11px] text-text-muted">{t('options.exportScope')}</p>
                       <div className="mb-2 flex gap-1">
                         <button
                           type="button"
+                          role="menuitemradio"
+                          aria-checked={exportScope === 'current'}
                           className={
                             exportScope === 'current'
-                              ? 'flex-1 rounded-md bg-white px-2 py-1 text-[11px] text-text-primary'
+                              ? 'flex-1 rounded-md bg-bg-base px-2 py-1 text-[11px] text-text-primary'
                               : 'flex-1 rounded-md px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-elevated'
                           }
                           onClick={() => setExportScope('current')}
@@ -1342,9 +1380,11 @@ export default function App(): ReactElement {
                         </button>
                         <button
                           type="button"
+                          role="menuitemradio"
+                          aria-checked={exportScope === 'all'}
                           className={
                             exportScope === 'all'
-                              ? 'flex-1 rounded-md bg-white px-2 py-1 text-[11px] text-text-primary'
+                              ? 'flex-1 rounded-md bg-bg-base px-2 py-1 text-[11px] text-text-primary'
                               : 'flex-1 rounded-md px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-elevated'
                           }
                           onClick={() => setExportScope('all')}
@@ -1352,15 +1392,15 @@ export default function App(): ReactElement {
                           {t('options.exportScopeAll')}
                         </button>
                       </div>
-                      <button type="button" className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs hover:bg-bg-elevated" onClick={handleExportJson}>
+                      <button type="button" role="menuitem" className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs hover:bg-bg-elevated" onClick={handleExportJson}>
                         <FileJson2 className="h-3.5 w-3.5 text-text-muted" strokeWidth={2} />
                         <span>{t('options.exportJson')}</span>
                       </button>
-                      <button type="button" className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs hover:bg-bg-elevated" onClick={handleExportCsv}>
+                      <button type="button" role="menuitem" className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs hover:bg-bg-elevated" onClick={handleExportCsv}>
                         <FileSpreadsheet className="h-3.5 w-3.5 text-text-muted" strokeWidth={2} />
                         <span>{t('options.exportCsv')}</span>
                       </button>
-                      <button type="button" className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs hover:bg-bg-elevated" onClick={handleExportMarkdown}>
+                      <button type="button" role="menuitem" className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs hover:bg-bg-elevated" onClick={handleExportMarkdown}>
                         <FileText className="h-3.5 w-3.5 text-text-muted" strokeWidth={2} />
                         <span>{t('options.exportMarkdown')}</span>
                       </button>
@@ -1422,12 +1462,12 @@ export default function App(): ReactElement {
                       disabled={!store?.settings.syncDirectory}
                     >
                       {pendingDangerAction === 'clearSyncDirectory'
-                        ? t('common.confirmQuestion')
+                        ? t('settings.clearDirectoryConfirm')
                         : t('settings.clearDirectory')}
                     </button>
                     <button
                       type="button"
-                      className="h-9 rounded-md bg-accent px-3 text-xs text-[#fff8f2] hover:bg-accent-hover"
+                      className="h-9 rounded-md bg-accent px-3 text-xs text-on-accent hover:bg-accent-hover"
                       onClick={() => void handleSyncNow()}
                       disabled={!store?.settings.syncDirectory || isSyncing}
                     >
@@ -1481,8 +1521,11 @@ export default function App(): ReactElement {
 
                   <div className="mt-3 space-y-3">
                     <div className="space-y-1.5">
-                      <label className="text-xs text-text-secondary">{t('settings.language')}</label>
+                      <label htmlFor="settings-language" className="text-xs text-text-secondary">
+                        {t('settings.language')}
+                      </label>
                       <SelectField
+                        id="settings-language"
                         leftIcon={<Globe2 className="h-4 w-4" strokeWidth={1.9} />}
                         value={locale}
                         onChange={(event) => void handleLocaleChange(event.target.value)}
@@ -1493,12 +1536,15 @@ export default function App(): ReactElement {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs text-text-secondary">{t('settings.iconTheme')}</label>
+                      <label htmlFor="settings-icon-theme" className="text-xs text-text-secondary">
+                        {t('settings.iconTheme')}
+                      </label>
                       <div className="flex items-center gap-2">
                         <span className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-bg-elevated">
                           <FolioMark variant={iconVariantInput} size={20} />
                         </span>
                         <SelectField
+                          id="settings-icon-theme"
                           wrapperClassName="flex-1"
                           className="text-sm"
                           value={iconVariantInput}
@@ -1511,12 +1557,12 @@ export default function App(): ReactElement {
                       </div>
                     </div>
 
-                    <div className="rounded-[10px] bg-bg-elevated p-3">
+                    <div className="border-t border-(--border) pt-3">
                       <p className="m-0 text-sm text-text-secondary">{t('options.thresholdsTitle')}</p>
                       <p className="m-0 mt-1 text-xs text-text-muted">{t('options.thresholdsHint')}</p>
 
                       <div className="mt-3 space-y-2.5">
-                        <div className="flex items-center justify-between gap-2 rounded-[8px] bg-bg-surface px-3 py-2">
+                        <div className="flex items-center justify-between gap-2 px-1 py-1.5">
                           <div className="min-w-0">
                             <p className="m-0 text-xs text-text-secondary">{t('options.backlogEnabled')}</p>
                             <p className="m-0 mt-0.5 text-[11px] text-text-muted">{t('options.backlogHint')}</p>
@@ -1528,8 +1574,11 @@ export default function App(): ReactElement {
                           />
                         </div>
                         <div className="grid gap-1">
-                          <label className="text-[11px] text-text-muted">{t('options.backlogThreshold')}</label>
+                          <label htmlFor="settings-backlog-threshold" className="text-[11px] text-text-muted">
+                            {t('options.backlogThreshold')}
+                          </label>
                           <input
+                            id="settings-backlog-threshold"
                             className="folio-input"
                             type="number"
                             min={1}
@@ -1539,7 +1588,7 @@ export default function App(): ReactElement {
                           />
                         </div>
 
-                        <div className="flex items-center justify-between gap-2 rounded-[8px] bg-bg-surface px-3 py-2">
+                        <div className="flex items-center justify-between gap-2 px-1 py-1.5">
                           <div className="min-w-0">
                             <p className="m-0 text-xs text-text-secondary">{t('options.staleEnabled')}</p>
                             <p className="m-0 mt-0.5 text-[11px] text-text-muted">{t('options.staleHint')}</p>
@@ -1551,8 +1600,11 @@ export default function App(): ReactElement {
                           />
                         </div>
                         <div className="grid gap-1">
-                          <label className="text-[11px] text-text-muted">{t('options.staleThreshold')}</label>
+                          <label htmlFor="settings-stale-threshold" className="text-[11px] text-text-muted">
+                            {t('options.staleThreshold')}
+                          </label>
                           <input
+                            id="settings-stale-threshold"
                             className="folio-input"
                             type="number"
                             min={1}
@@ -1563,8 +1615,11 @@ export default function App(): ReactElement {
                         </div>
 
                         <div className="grid gap-1">
-                          <label className="text-[11px] text-text-muted">{t('options.defaultStatusHint')}</label>
+                          <label htmlFor="settings-default-status" className="text-[11px] text-text-muted">
+                            {t('options.defaultStatusHint')}
+                          </label>
                           <SelectField
+                            id="settings-default-status"
                             className="text-sm"
                             value={defaultStatusInput}
                             onChange={(event) =>
@@ -1581,7 +1636,7 @@ export default function App(): ReactElement {
                     <div className="flex justify-end">
                       <button
                         type="button"
-                        className="h-9 rounded-md bg-accent px-3 text-sm text-[#fff8f2] hover:bg-accent-hover"
+                        className="h-9 rounded-md bg-accent px-3 text-sm text-on-accent hover:bg-accent-hover"
                         onClick={() => void handleSaveThresholdSettings()}
                       >
                         {t('common.save')}
@@ -1597,7 +1652,12 @@ export default function App(): ReactElement {
                 </h3>
                 <p className="m-0 mt-1 text-xs text-text-secondary">{t('options.tagManagerHint')}</p>
                 <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
+                  <label htmlFor="tag-action-target" className="sr-only">
+                    {t('options.tagManagerTitle')}
+                  </label>
                   <SelectField
+                    id="tag-action-target"
+                    aria-label={t('options.tagManagerTitle')}
                     value={tagActionTarget}
                     onChange={(event) => {
                       setTagActionTarget(event.target.value);
@@ -1613,7 +1673,12 @@ export default function App(): ReactElement {
                       </option>
                     ))}
                   </SelectField>
+                  <label htmlFor="tag-rename-value" className="sr-only">
+                    {t('options.tagNewName')}
+                  </label>
                   <input
+                    id="tag-rename-value"
+                    aria-label={t('options.tagNewName')}
                     className="folio-input"
                     value={tagRenameValue}
                     onChange={(event) => setTagRenameValue(event.target.value)}
@@ -1629,12 +1694,12 @@ export default function App(): ReactElement {
                   </button>
                   <button
                     type="button"
-                    className="h-9 rounded-md bg-bg-elevated px-3 text-xs text-[#9c3d35] hover:bg-bg-sunken"
+                    className="h-9 rounded-md bg-bg-elevated px-3 text-xs text-danger hover:bg-bg-sunken"
                     onClick={() => void handleDangerDeleteTag()}
                     disabled={!tagActionTarget}
                   >
                     {pendingDangerAction === 'deleteTag'
-                      ? t('common.confirmQuestion')
+                      ? t('options.deleteTagConfirm')
                       : t('options.deleteTag')}
                   </button>
                 </div>
@@ -1643,11 +1708,11 @@ export default function App(): ReactElement {
             </section>
           ) : (
 		            <section>
-		              {displayItems.map((item) => {
-		                const savedAtLabel = formatSavedAtLabel(item.savedAt, locale);
-		                const isEditingRow = editingId === item.id && editDraft !== null;
-		                return (
-		                  <div key={item.id}>
+              {displayItems.map((item) => {
+                const savedAtLabel = formatSavedAtLabel(item.savedAt, locale);
+                const isEditingRow = editingId === item.id && editDraft !== null;
+                return (
+                  <div key={item.id}>
 	                    <article className="group border-b border-(--border) py-3">
                       <div className="flex items-start gap-3">
                         {item.favicon ? (
@@ -1696,55 +1761,55 @@ export default function App(): ReactElement {
                           ) : null}
                         </div>
 
-	                        <div className="ml-2 flex flex-col items-end gap-1">
-	                          <div className="flex w-[92px] items-center justify-end gap-1">
-	                            <button
-	                              type="button"
-	                              className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-bg-surface text-text-secondary opacity-0 pointer-events-none transition-opacity duration-150 hover:bg-bg-elevated group-hover:pointer-events-auto group-hover:opacity-100"
-	                              onClick={() => handleStartEdit(item)}
-	                              title={t('options.edit')}
-	                              aria-label={t('options.edit')}
-	                            >
-	                              <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-	                            </button>
-	                            <button
-	                              type="button"
-	                              className={`relative inline-flex h-7 w-7 items-center justify-center rounded-md text-[#b34039] transition-opacity duration-150 ${
-	                                deleteHoldItemId === item.id
-	                                  ? 'opacity-100 pointer-events-auto'
-	                                  : 'opacity-0 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100'
-	                              }`}
-	                              onPointerDown={() => handleDeletePointerDown(item)}
-	                              onPointerUp={handleDeletePointerStop}
-	                              onPointerLeave={handleDeletePointerStop}
-	                              onPointerCancel={handleDeletePointerStop}
-	                              onContextMenu={(event) => event.preventDefault()}
-	                              title={t('common.delete')}
-	                              aria-label={t('common.delete')}
-	                            >
-	                              {deleteHoldItemId === item.id ? (
-	                                <>
-	                                  <span
-	                                    className="absolute inset-0 rounded-md"
-	                                    style={{
-	                                      background: `conic-gradient(var(--accent) ${
-	                                        deleteHoldProgress * 360
-	                                      }deg, transparent 0deg)`
-	                                    }}
-	                                  />
-	                                  <span className="absolute inset-[1.5px] rounded-[6px] bg-bg-surface" />
-	                                </>
-	                              ) : (
-	                                <span className="absolute inset-0 rounded-md bg-bg-surface hover:bg-bg-elevated" />
-	                              )}
-	                              <Trash2 className="relative z-[2] h-3.5 w-3.5" strokeWidth={2} />
-	                            </button>
-	                            <button
-	                              type="button"
-	                              className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-(--border) ${statusBadgeClass(item.status)} hover:border-(--accent-border)`}
-	                              onClick={() => void handleSetStatus(item, nextStatus(item.status))}
-	                              title={`${t('options.sortStatus')}: ${statusText(nextStatus(item.status), t)}`}
-	                              aria-label={`${statusText(item.status, t)} → ${statusText(nextStatus(item.status), t)}`}
+                        <div className="ml-2 flex flex-col items-end gap-1">
+                          <div className="flex w-[92px] items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-bg-surface text-text-secondary opacity-0 pointer-events-none transition-opacity duration-150 hover:bg-bg-elevated group-hover:pointer-events-auto group-hover:opacity-100"
+                              onClick={() => handleStartEdit(item)}
+                              title={t('options.edit')}
+                              aria-label={t('options.edit')}
+                            >
+                              <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+                            </button>
+                            <button
+                              type="button"
+                              className={`relative inline-flex h-7 w-7 items-center justify-center rounded-md text-danger transition-opacity duration-150 ${
+                                deleteHoldItemId === item.id
+                                  ? 'opacity-100 pointer-events-auto'
+                                  : 'opacity-0 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100'
+                              }`}
+                              onPointerDown={() => handleDeletePointerDown(item)}
+                              onPointerUp={handleDeletePointerStop}
+                              onPointerLeave={handleDeletePointerStop}
+                              onPointerCancel={handleDeletePointerStop}
+                              onContextMenu={(event) => event.preventDefault()}
+                              title={t('common.delete')}
+                              aria-label={t('common.delete')}
+                            >
+                              {deleteHoldItemId === item.id ? (
+                                <>
+                                  <span
+                                    className="absolute inset-0 rounded-md"
+                                    style={{
+                                      background: `conic-gradient(var(--accent) ${
+                                        deleteHoldProgress * 360
+                                      }deg, transparent 0deg)`
+                                    }}
+                                  />
+                                  <span className="absolute inset-[1.5px] rounded-[6px] bg-bg-surface" />
+                                </>
+                              ) : (
+                                <span className="absolute inset-0 rounded-md bg-bg-surface hover:bg-bg-elevated" />
+                              )}
+                              <Trash2 className="relative z-[2] h-3.5 w-3.5" strokeWidth={2} />
+                            </button>
+                            <button
+                              type="button"
+                              className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-(--border) ${statusBadgeClass(item.status)} hover:border-(--accent-border)`}
+                              onClick={() => void handleSetStatus(item, nextStatus(item.status))}
+                              title={`${t('options.sortStatus')}: ${statusText(nextStatus(item.status), t)}`}
+                              aria-label={`${statusText(item.status, t)} → ${statusText(nextStatus(item.status), t)}`}
 	                            >
 	                              {statusIcon(item.status)}
 	                            </button>
@@ -1755,37 +1820,39 @@ export default function App(): ReactElement {
 	                        </div>
                       </div>
 
-	                      {isEditingRow ? (
-	                        <div
-	                          className={`grid overflow-hidden transition-[grid-template-rows,opacity,margin] duration-[220ms] ${
-	                            isEditPanelExpanded
-	                              ? 'mt-3 grid-rows-[1fr] opacity-100'
-	                              : 'mt-0 grid-rows-[0fr] opacity-0'
+                      {isEditingRow ? (
+                        <div
+                          className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-[220ms] ${
+                            isEditPanelExpanded
+                              ? 'mt-3 grid-rows-[1fr] opacity-100'
+                              : 'mt-0 grid-rows-[0fr] opacity-0'
 	                          }`}
 	                        >
 	                          <div className="overflow-hidden">
 		                            <div className="rounded-[10px] bg-bg-elevated px-4 py-[14px]">
 		                              <div className="grid gap-2">
-		                                <label className="flex items-center gap-3">
-		                                  <span className="w-[54px] text-xs text-text-secondary">Title</span>
-		                                  <input
-		                                    className="h-[30px] flex-1 rounded-[6px] border border-(--border) bg-bg-surface px-2.5 text-xs text-text-primary outline-none"
-		                                    value={editDraft.title}
-		                                    onChange={(event) =>
-		                                      setEditDraft((prev) =>
+                                <label className="flex items-center gap-3">
+                                  <span className="w-[54px] text-xs text-text-secondary">
+                                    {t('popup.quickEditTitle')}
+                                  </span>
+                                  <input
+                                    className="h-[30px] flex-1 rounded-[6px] border border-(--border) bg-bg-surface px-2.5 text-xs text-text-primary"
+                                    value={editDraft.title}
+                                    onChange={(event) =>
+                                      setEditDraft((prev) =>
 		                                        prev ? { ...prev, title: event.target.value } : prev
 		                                      )
 		                                    }
 		                                  />
 		                                </label>
 
-		                                <label className="flex items-center gap-3">
-		                                  <span className="w-[54px] text-xs text-text-secondary">{t('options.note')}</span>
-		                                  <input
-		                                    className="h-[30px] flex-1 rounded-[6px] border border-(--border) bg-bg-surface px-2.5 text-xs text-text-primary outline-none"
-		                                    value={editDraft.note}
-		                                    onChange={(event) =>
-		                                      setEditDraft((prev) =>
+                                <label className="flex items-center gap-3">
+                                  <span className="w-[54px] text-xs text-text-secondary">{t('options.note')}</span>
+                                  <input
+                                    className="h-[30px] flex-1 rounded-[6px] border border-(--border) bg-bg-surface px-2.5 text-xs text-text-primary"
+                                    value={editDraft.note}
+                                    onChange={(event) =>
+                                      setEditDraft((prev) =>
 		                                        prev ? { ...prev, note: event.target.value } : prev
 		                                      )
 		                                    }
@@ -1795,13 +1862,17 @@ export default function App(): ReactElement {
 		                                <div className="flex items-center gap-3">
 		                                  <span className="w-[54px] text-xs text-text-secondary">{t('options.tags')}</span>
 		                                  <div className="flex-1">
-		                                    <TagInputField
-		                                      tags={editDraft.tags}
-		                                      inputValue={editTagInput}
-		                                      placeholder={t('options.tagInputPlaceholder')}
-		                                      onInputChange={setEditTagInput}
-		                                      onAddTag={handleAddEditTag}
-		                                      onRemoveTag={handleRemoveEditTag}
+                                    <TagInputField
+                                      tags={editDraft.tags}
+                                      inputValue={editTagInput}
+                                      placeholder={t('options.tagInputPlaceholder')}
+                                      removeButtonTitle={t('common.delete')}
+                                      removeButtonLabel={(tag) =>
+                                        t('options.removeTagAria', { tag })
+                                      }
+                                      onInputChange={setEditTagInput}
+                                      onAddTag={handleAddEditTag}
+                                      onRemoveTag={handleRemoveEditTag}
 		                                    />
 		                                  </div>
 		                                </div>
@@ -1814,12 +1885,12 @@ export default function App(): ReactElement {
 		                                  >
 		                                    {t('common.cancel')}
 		                                  </button>
-		                                  <button
-		                                    type="button"
-		                                    className="h-[30px] rounded-[6px] bg-accent px-3 text-xs text-[#fff8f2] hover:bg-accent-hover"
-		                                    onClick={() => void handleSaveEdit()}
-		                                  >
-		                                    {t('common.save')}
+                                  <button
+                                    type="button"
+                                    className="h-[30px] rounded-[6px] bg-accent px-3 text-xs text-on-accent hover:bg-accent-hover"
+                                    onClick={() => void handleSaveEdit()}
+                                  >
+                                    {t('common.save')}
 		                                  </button>
 		                                </div>
 		                              </div>

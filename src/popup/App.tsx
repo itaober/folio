@@ -88,7 +88,6 @@ export default function App(): ReactElement {
   );
   const [backlogCount, setBacklogCount] = useState(0);
   const [popupFilter, setPopupFilter] = useState<PopupFilter>('all');
-  const [isRemoveHover, setIsRemoveHover] = useState(false);
   const [undoRemovedItem, setUndoRemovedItem] = useState<FolioItem | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -222,7 +221,6 @@ export default function App(): ReactElement {
       setUndoRemovedItem(null);
     }, 3000);
 
-    setIsRemoveHover(false);
     setNotice(null);
     await load();
   }
@@ -306,26 +304,21 @@ export default function App(): ReactElement {
     return items;
   }, [currentItem, popupFilter, recentItems, searchTerm]);
 
-  const saveButtonMeta = useMemo(() => {
-    if (!currentItem) {
-      return { mode: 'save' as const, text: t('popup.saveShort') };
-    }
-    if (isRemoveHover) {
-      return { mode: 'remove' as const, text: t('popup.removeCurrent') };
-    }
-    return { mode: 'saved' as const, text: t('popup.savedShort') };
-  }, [currentItem, isRemoveHover, t]);
-
   return (
     <main className="relative h-[520px] w-[360px] overflow-y-auto bg-bg-base text-text-primary">
-      <div className="pointer-events-none absolute left-1/2 top-3 z-20 w-max max-w-[332px] -translate-x-1/2 space-y-2">
+      <div
+        className="pointer-events-none absolute left-1/2 top-3 z-20 w-max max-w-[332px] -translate-x-1/2 space-y-2"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
         {notice ? (
-          <p className={`pointer-events-auto m-0 rounded-[6px] px-3 py-2 text-xs shadow-[0_6px_14px_rgba(26,20,16,0.1)] ${noticeClass(notice.level)}`}>
+          <p className={`pointer-events-auto m-0 rounded-[6px] px-3 py-2 text-xs shadow-[0_6px_14px_var(--shadow-soft)] ${noticeClass(notice.level)}`}>
             {notice.text}
           </p>
         ) : null}
         {undoRemovedItem ? (
-          <div className="pointer-events-auto flex items-center gap-2 rounded-[6px] border border-(--border) bg-bg-surface px-3 py-2 text-xs text-text-secondary shadow-[0_6px_14px_rgba(26,20,16,0.1)]">
+          <div className="pointer-events-auto flex items-center gap-2 rounded-[6px] border border-(--border) bg-bg-surface px-3 py-2 text-xs text-text-secondary shadow-[0_6px_14px_var(--shadow-soft)]">
             <span>{t('options.removedUndo')}</span>
             <button
               type="button"
@@ -345,54 +338,53 @@ export default function App(): ReactElement {
             <span className="font-display text-base italic">{t('popup.title')}</span>
           </div>
 
-	          <div className="flex items-center gap-1.5">
-	            <button
-	              type="button"
-	              className={
-	                !currentItem
-	                  ? 'inline-flex h-[30px] items-center gap-1 rounded-md bg-accent px-2.5 text-xs font-medium text-[#fff8f2] hover:bg-accent-hover'
-	                  : isRemoveHover
-	                    ? 'inline-flex h-[30px] items-center gap-1 rounded-md bg-accent-subtle px-2.5 text-xs font-medium text-accent'
-	                    : 'inline-flex h-[30px] items-center gap-1 rounded-md bg-bg-surface px-2.5 text-xs font-medium text-text-secondary hover:bg-bg-elevated'
-	              }
-              disabled={!canSave}
-              onMouseEnter={() => {
-                if (currentItem) {
-                  setIsRemoveHover(true);
-                }
-              }}
-              onMouseLeave={() => setIsRemoveHover(false)}
-              onClick={() => void (currentItem ? handleRemoveCurrentPage() : handleSaveCurrentPage())}
-	            >
-	              {saveButtonMeta.mode === 'save' ? (
-	                <Plus className="h-3.5 w-3.5" strokeWidth={2.2} />
-	              ) : null}
-	              {saveButtonMeta.mode === 'saved' ? (
-	                <Check className="h-3.5 w-3.5" strokeWidth={2.2} />
-	              ) : null}
-	              {saveButtonMeta.mode === 'remove' ? (
-	                <X className="h-3.5 w-3.5" strokeWidth={2.2} />
-	              ) : null}
-	              <span>{saveButtonMeta.text}</span>
-	            </button>
+		          <div className="flex items-center gap-1.5">
+                {!currentItem ? (
+                  <button
+                    type="button"
+                    className="inline-flex h-9 items-center gap-1 rounded-md bg-accent px-2.5 text-xs font-medium text-on-accent hover:bg-accent-hover"
+                    disabled={!canSave}
+                    onClick={() => void handleSaveCurrentPage()}
+                  >
+                    <Plus className="h-3.5 w-3.5" strokeWidth={2.2} />
+                    <span>{t('popup.saveShort')}</span>
+                  </button>
+                ) : (
+                  <>
+                    <span className="inline-flex h-9 items-center gap-1 rounded-md bg-bg-surface px-2.5 text-xs font-medium text-text-secondary">
+                      <Check className="h-3.5 w-3.5" strokeWidth={2.2} />
+                      <span>{t('popup.savedShort')}</span>
+                    </span>
+                    <button
+                      type="button"
+                      className="inline-flex h-9 items-center gap-1 rounded-md bg-danger-subtle px-2.5 text-xs font-medium text-danger hover:bg-danger-subtle-hover"
+                      onClick={() => void handleRemoveCurrentPage()}
+                    >
+                      <X className="h-3.5 w-3.5" strokeWidth={2.2} />
+                      <span>{t('popup.removeCurrent')}</span>
+                    </button>
+                  </>
+                )}
 
-	            <button
-	              type="button"
-	              className="inline-flex h-[30px] items-center gap-1 rounded-md bg-bg-surface px-2.5 text-xs text-text-secondary hover:bg-bg-elevated"
-	              onClick={() => void handleOpenOptions()}
-	            >
-	              <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} />
-	              {t('popup.openDashboard')}
-	            </button>
-	          </div>
+		            <button
+		              type="button"
+		              className="inline-flex h-9 items-center gap-1 rounded-md bg-bg-surface px-2.5 text-xs text-text-secondary hover:bg-bg-elevated"
+		              onClick={() => void handleOpenOptions()}
+		            >
+		              <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} />
+		              {t('popup.openDashboard')}
+		            </button>
+		          </div>
 	        </div>
 
-	        <TextField
-	          leftIcon={<Search className="h-3.5 w-3.5" strokeWidth={2} />}
-	          placeholder={t('popup.searchPlaceholder')}
-	          value={searchTerm}
-	          onChange={(event) => setSearchTerm(event.target.value)}
-	        />
+		        <TextField
+              id="popup-search"
+              aria-label={t('popup.searchAction')}
+		          leftIcon={<Search className="h-3.5 w-3.5" strokeWidth={2} />}
+		          placeholder={t('popup.searchPlaceholder')}
+		          value={searchTerm}
+		          onChange={(event) => setSearchTerm(event.target.value)}
+		        />
 
         {backlogCount > 0 ? (
           <p className="m-0 rounded-md border border-(--status-unread-border) bg-(--status-unread-bg) px-2 py-1 text-xs text-(--status-unread-text)">
@@ -415,7 +407,7 @@ export default function App(): ReactElement {
                   type="button"
                   className={
                     active
-                      ? 'rounded-full bg-white px-2 py-1 text-xs font-semibold text-text-primary shadow-sm'
+	                      ? 'rounded-full bg-bg-base px-2 py-1 text-xs font-semibold text-text-primary shadow-sm'
                       : 'rounded-full px-2 py-1 text-xs text-text-muted hover:text-text-secondary'
                   }
                   onClick={() => setPopupFilter(status)}
@@ -465,7 +457,7 @@ export default function App(): ReactElement {
 
               <button
                 type="button"
-                className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-(--border) ${listBadgeClass(item.status)} hover:border-(--accent-border)`}
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-md border border-(--border) ${listBadgeClass(item.status)} hover:border-(--accent-border)`}
                 onClick={() => void handleStatusChange(item, nextStatus(item.status))}
                 title={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}
                 aria-label={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}

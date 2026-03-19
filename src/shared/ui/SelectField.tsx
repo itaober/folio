@@ -14,7 +14,7 @@ export function SelectField({
 }: SelectFieldProps): ReactElement {
   const hasLeftIcon = Boolean(leftIcon);
   const baseClass =
-    'folio-select h-10 w-full rounded-md border border-(--border) bg-bg-surface px-3 text-sm text-text-secondary outline-none';
+    'folio-select h-10 w-full rounded-md border border-(--border) bg-bg-surface px-3 text-sm text-text-secondary';
 
   return (
     <label className={`relative block ${wrapperClassName ?? ''}`.trim()}>

@@ -6,6 +6,15 @@ import { readStoredLocale, type SupportedLocale } from './localeStore';
 
 let isInitialized = false;
 
+function applyDocumentLocale(locale: SupportedLocale): void {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  document.documentElement.lang = locale === 'zh-CN' ? 'zh-CN' : 'en';
+  document.documentElement.dir = 'ltr';
+}
+
 export async function initI18n(): Promise<void> {
   if (isInitialized) {
     return;
@@ -27,11 +36,13 @@ export async function initI18n(): Promise<void> {
       }
     });
 
+  applyDocumentLocale(locale);
   isInitialized = true;
 }
 
 export async function changeLanguage(locale: SupportedLocale): Promise<void> {
   await i18n.changeLanguage(locale);
+  applyDocumentLocale(locale);
 }
 
 export default i18n;

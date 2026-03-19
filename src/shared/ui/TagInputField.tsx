@@ -4,6 +4,8 @@ interface TagInputFieldProps {
   tags: string[];
   inputValue: string;
   placeholder?: string;
+  removeButtonTitle?: string;
+  removeButtonLabel?: (tag: string) => string;
   onInputChange: (value: string) => void;
   onAddTag: () => void;
   onRemoveTag: (index: number) => void;
@@ -13,6 +15,8 @@ export function TagInputField({
   tags,
   inputValue,
   placeholder,
+  removeButtonTitle = 'Remove',
+  removeButtonLabel = (tag: string) => `Remove ${tag}`,
   onInputChange,
   onAddTag,
   onRemoveTag
@@ -37,7 +41,7 @@ export function TagInputField({
               <span className="truncate">#{tag}</span>
               <button
                 type="button"
-                className="absolute -right-1 -top-1 inline-flex h-4 w-4 items-center justify-center rounded-full border border-(--border) bg-bg-surface text-[11px] leading-none text-text-muted opacity-0 pointer-events-none transition-opacity group-hover/tag:pointer-events-auto group-hover/tag:opacity-100 hover:bg-bg-sunken hover:text-text-secondary"
+                className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-(--border) bg-bg-surface text-[11px] leading-none text-text-muted opacity-70 transition-opacity hover:bg-bg-sunken hover:text-text-secondary hover:opacity-100 focus-visible:opacity-100"
                 onPointerDown={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
@@ -51,8 +55,8 @@ export function TagInputField({
                   event.stopPropagation();
                   onRemoveTag(index);
                 }}
-                aria-label={`Remove ${tag}`}
-                title="Remove"
+                aria-label={removeButtonLabel(tag)}
+                title={removeButtonTitle}
               >
                 ×
               </button>
@@ -61,7 +65,7 @@ export function TagInputField({
         </div>
       ) : null}
       <input
-        className="h-6 w-full border-0 bg-transparent px-0 text-xs text-text-primary outline-none placeholder:text-text-muted"
+        className="h-6 w-full border-0 bg-transparent px-0 text-xs text-text-primary placeholder:text-text-muted"
         value={inputValue}
         onChange={(event) => onInputChange(event.target.value)}
         onKeyDown={handleKeyDown}

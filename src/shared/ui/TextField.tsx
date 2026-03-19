@@ -11,7 +11,7 @@ export function TextField({
 }: TextFieldProps): ReactElement {
   const hasLeftIcon = Boolean(leftIcon);
   const baseClass =
-    'h-10 w-full rounded-md border border-(--border) bg-bg-surface px-3 text-sm text-text-primary outline-none placeholder:text-text-muted';
+    'h-10 w-full rounded-md border border-(--border) bg-bg-surface px-3 text-sm text-text-primary placeholder:text-text-muted';
 
   return (
     <label className="relative block">
