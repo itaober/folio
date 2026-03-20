@@ -37,12 +37,11 @@ import {
   statusIcon,
   statusToLabel
 } from '../shared/ui/itemStatus';
-import { noticeClass, type NoticeLevel } from '../shared/ui/notice';
+import type { NoticeLevel } from '../shared/ui/notice';
 import { renderHighlightedText } from '../shared/ui/renderHighlightedText';
 import { SelectField } from '../shared/ui/SelectField';
 import { TagInputField } from '../shared/ui/TagInputField';
 import { TextField } from '../shared/ui/TextField';
-import { ToggleSwitch } from '../shared/ui/ToggleSwitch';
 import { useAutoDismissNotice } from '../shared/ui/useAutoDismissNotice';
 import { commit, getStore, importStoreFromJson, syncBackupNow } from '../core/repository';
 import {
@@ -82,7 +81,7 @@ function normalizeTag(input: string): string {
   return input.trim().replace(/^#+/, '').replace(/\s+/g, ' ');
 }
 
-function formatSavedAtLabel(timestamp: number, locale: SupportedLocale): {
+function formatCreatedAtLabel(timestamp: number, locale: SupportedLocale): {
   short: string;
   full: string;
 } {
@@ -121,10 +120,6 @@ export default function App(): ReactElement {
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
   const [tagActionTarget, setTagActionTarget] = useState('');
   const [tagRenameValue, setTagRenameValue] = useState('');
-  const [backlogThresholdInput, setBacklogThresholdInput] = useState('20');
-  const [staleThresholdInput, setStaleThresholdInput] = useState('30');
-  const [backlogEnabledInput, setBacklogEnabledInput] = useState(true);
-  const [staleEnabledInput, setStaleEnabledInput] = useState(true);
   const [defaultStatusInput, setDefaultStatusInput] = useState<'unread' | 'reading'>(
     'unread'
   );
@@ -304,11 +299,7 @@ export default function App(): ReactElement {
   async function refresh(): Promise<void> {
     const nextStore = await getStore();
     setStore(nextStore);
-    setBacklogThresholdInput(String(nextStore.settings.backlogThreshold));
-    setStaleThresholdInput(String(nextStore.settings.staleThreshold));
     setIconVariantInput(nextStore.settings.iconVariant);
-    setBacklogEnabledInput(nextStore.settings.backlogEnabled);
-    setStaleEnabledInput(nextStore.settings.staleEnabled);
     setDefaultStatusInput(nextStore.settings.defaultStatus);
   }
 
@@ -736,21 +727,10 @@ export default function App(): ReactElement {
     await handleDeleteTag();
   }
 
-  async function handleSaveThresholdSettings(): Promise<void> {
-    const backlogThreshold = Number(backlogThresholdInput);
-    const staleThreshold = Number(staleThresholdInput);
-    if (!Number.isFinite(backlogThreshold) || !Number.isFinite(staleThreshold)) {
-      setNotice({ level: 'error', text: t('options.updateFailed') });
-      return;
-    }
-
+  async function handleSavePreferences(): Promise<void> {
     const result = await commit({
       type: 'updateSettings',
       payload: {
-        backlogEnabled: backlogEnabledInput,
-        backlogThreshold,
-        staleEnabled: staleEnabledInput,
-        staleThreshold,
         defaultStatus: defaultStatusInput
       }
     });
@@ -1054,15 +1034,35 @@ export default function App(): ReactElement {
     }`;
   }
 
+  function getViewTitle(): string {
+    if (view === 'settings') {
+      return t('common.settings');
+    }
+    if (activeTagFilter) {
+      return `${t('options.tagsSection')} · ${activeTagFilter}`;
+    }
+    if (view === 'all') {
+      return t('common.all');
+    }
+    return statusToLabel(view, t);
+  }
+
+  function optionsToastClass(level: NoticeLevel): string {
+    if (level === 'error') {
+      return 'border border-[#d07a4f]/55 bg-black/68 text-white';
+    }
+    return 'border border-white/15 bg-black/62 text-white';
+  }
+
   return (
     <main className="min-h-screen bg-bg-base text-text-primary">
-      <div className="pointer-events-none fixed left-1/2 top-4 z-50 w-max max-w-[min(92vw,560px)] -translate-x-1/2 space-y-2">
+      <div className="pointer-events-none fixed bottom-4 left-1/2 z-50 w-max max-w-[min(92vw,560px)] -translate-x-1/2 space-y-2">
         {notice ? (
           <p
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            className={`pointer-events-auto m-0 rounded-[6px] px-3 py-2 text-xs shadow-[var(--shadow-soft)] ${noticeClass(notice.level)}`}
+            className={`pointer-events-auto m-0 rounded-[10px] px-4 py-2.5 text-xs shadow-[0_12px_28px_rgba(0,0,0,0.24)] backdrop-blur-[2px] ${optionsToastClass(notice.level)}`}
           >
             {notice.text}
           </p>
@@ -1072,7 +1072,7 @@ export default function App(): ReactElement {
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            className="pointer-events-auto flex items-center gap-2 rounded-[6px] border border-(--border) bg-bg-surface px-3 py-2 text-xs text-text-secondary shadow-[var(--shadow-soft)]"
+            className="pointer-events-auto flex items-center gap-2 rounded-[10px] border border-white/15 bg-black/62 px-4 py-2.5 text-xs text-white shadow-[0_12px_28px_rgba(0,0,0,0.24)] backdrop-blur-[2px]"
           >
             <span>
               {undoItems.length > 1
@@ -1081,7 +1081,7 @@ export default function App(): ReactElement {
             </span>
             <button
               type="button"
-              className="text-xs text-text-link underline underline-offset-2"
+              className="text-xs text-white/90 underline underline-offset-2 hover:text-white"
               onClick={() => void handleUndoDelete()}
             >
               {t('options.undo')}
@@ -1093,9 +1093,9 @@ export default function App(): ReactElement {
       <div className="flex min-h-screen w-full">
         <aside className="sticky top-0 h-screen w-56 shrink-0 self-start bg-bg-elevated px-3 py-4">
           <div className="flex items-center gap-2 px-2">
-            <FolioMark variant={iconVariantInput} size={24} className="h-6 w-6" />
+            <FolioMark variant={iconVariantInput} size={30} className="h-[30px] w-[30px]" />
             <div>
-              <h1 className="m-0 font-display text-xl italic">Folio</h1>
+              <h1 className="m-0 font-display text-[28px] leading-[28px] italic">Folio</h1>
               <p className="m-0 mt-0.5 font-mono text-[11px] tracking-wide text-text-muted">
                 {t('options.readingList')}
               </p>
@@ -1210,14 +1210,16 @@ export default function App(): ReactElement {
           </div>
         </aside>
 
-        <section className="flex-1 p-6">
-          <div className="mx-auto w-full max-w-[1080px]">
+        <section className="flex h-screen min-h-0 flex-1 flex-col p-6">
+          <div className="mx-auto flex h-full min-h-0 w-full max-w-[1080px] flex-col">
           <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="m-0 font-display text-3xl">{t('options.title')}</h2>
-              <p className="m-0 font-mono text-sm text-text-muted">
-                {t('options.totalCount', { count: counts.all })}
-              </p>
+              <h2 className="m-0 font-display text-3xl">{getViewTitle()}</h2>
+              {view !== 'settings' ? (
+                <p className="m-0 font-mono text-sm text-text-muted">
+                  {t('options.totalCount', { count: displayItems.length })}
+                </p>
+              ) : null}
             </div>
 
             {view !== 'settings' ? (
@@ -1316,24 +1318,163 @@ export default function App(): ReactElement {
           </header>
 
           {view === 'settings' ? (
-            <section className="space-y-4">
-              <div className="grid gap-4 xl:grid-cols-[1fr_1.2fr]">
-                <article className="order-2 rounded-[12px] border border-(--border) bg-bg-surface p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="m-0 flex items-center gap-2 text-base font-medium">
-                        <FolderOpen className="h-4 w-4 text-accent" strokeWidth={1.9} />
-                        {t('settings.dataAndBackupTitle')}
-                      </h3>
-                      <p className="m-0 mt-1 text-xs text-text-secondary">
-                        {t('settings.dataAndBackupHint')}
-                      </p>
+            <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+              <section className="space-y-4">
+              <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+                <div className="space-y-4">
+                  <article className="rounded-[12px] border border-(--border) bg-bg-surface p-5">
+                    <h3 className="m-0 flex items-center gap-2 text-base font-medium">
+                      <SlidersHorizontal className="h-4 w-4 text-accent" strokeWidth={1.9} />
+                      {t('settings.preferencesTitle')}
+                    </h3>
+                    <p className="m-0 mt-1.5 text-xs leading-5 text-text-secondary">
+                      {t('settings.preferencesHint')}
+                    </p>
+
+                    <div className="mt-4 space-y-4">
+                      <div className="space-y-1.5">
+                        <label htmlFor="settings-language" className="text-xs text-text-secondary">
+                          {t('settings.language')}
+                        </label>
+                        <SelectField
+                          id="settings-language"
+                          leftIcon={<Globe2 className="h-4 w-4" strokeWidth={1.9} />}
+                          value={locale}
+                          onChange={(event) => void handleLocaleChange(event.target.value)}
+                        >
+                          <option value="en">{t('settings.english')}</option>
+                          <option value="zh-CN">{t('settings.zhCN')}</option>
+                        </SelectField>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label htmlFor="settings-icon-theme" className="text-xs text-text-secondary">
+                          {t('settings.iconTheme')}
+                        </label>
+                        <div className="flex items-center gap-2.5">
+                          <span className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-bg-elevated">
+                            <FolioMark variant={iconVariantInput} size={20} />
+                          </span>
+                          <SelectField
+                            id="settings-icon-theme"
+                            wrapperClassName="flex-1"
+                            className="text-sm"
+                            value={iconVariantInput}
+                            onChange={(event) => void handleIconVariantChange(event.target.value)}
+                          >
+                            <option value="classic">{t('settings.iconThemeClassic')}</option>
+                            <option value="dark">{t('settings.iconThemeDark')}</option>
+                            <option value="cream">{t('settings.iconThemeCream')}</option>
+                          </SelectField>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label htmlFor="settings-default-status" className="text-xs text-text-secondary">
+                          {t('options.defaultStatusHint')}
+                        </label>
+                        <SelectField
+                          id="settings-default-status"
+                          className="text-sm"
+                          value={defaultStatusInput}
+                          onChange={(event) =>
+                            setDefaultStatusInput(event.target.value as 'unread' | 'reading')
+                          }
+                        >
+                          <option value="unread">{t('common.unread')}</option>
+                          <option value="reading">{t('common.reading')}</option>
+                        </SelectField>
+                      </div>
+
+                      <div className="flex justify-end pt-1">
+                        <button
+                          type="button"
+                          className="h-9 rounded-md bg-accent px-3.5 text-sm text-on-accent hover:bg-accent-hover"
+                          onClick={() => void handleSavePreferences()}
+                        >
+                          {t('common.save')}
+                        </button>
+                      </div>
                     </div>
+                  </article>
+
+                  <article className="rounded-[12px] border border-(--border) bg-bg-surface p-5">
+                    <h3 className="m-0 flex items-center gap-2 text-base font-medium">
+                      <Tag className="h-4 w-4 text-accent" strokeWidth={1.9} />
+                      {t('options.tagManagerTitle')}
+                    </h3>
+                    <p className="m-0 mt-1.5 text-xs leading-5 text-text-secondary">
+                      {t('options.tagManagerHint')}
+                    </p>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
+                      <label htmlFor="tag-action-target" className="sr-only">
+                        {t('options.tagManagerTitle')}
+                      </label>
+                      <SelectField
+                        id="tag-action-target"
+                        aria-label={t('options.tagManagerTitle')}
+                        value={tagActionTarget}
+                        onChange={(event) => {
+                          setTagActionTarget(event.target.value);
+                          if (pendingDangerAction === 'deleteTag') {
+                            clearDangerAction();
+                          }
+                        }}
+                      >
+                        <option value="">-</option>
+                        {(store?.tags ?? []).map((tag) => (
+                          <option key={tag} value={tag}>
+                            {tag}
+                          </option>
+                        ))}
+                      </SelectField>
+                      <label htmlFor="tag-rename-value" className="sr-only">
+                        {t('options.tagNewName')}
+                      </label>
+                      <input
+                        id="tag-rename-value"
+                        aria-label={t('options.tagNewName')}
+                        className="folio-input"
+                        value={tagRenameValue}
+                        onChange={(event) => setTagRenameValue(event.target.value)}
+                        placeholder={t('options.tagNewName')}
+                      />
+                      <button
+                        type="button"
+                        className="h-9 rounded-md bg-bg-elevated px-3 text-xs text-text-secondary hover:bg-bg-sunken"
+                        onClick={() => void handleRenameTag()}
+                        disabled={!tagActionTarget || !tagRenameValue.trim()}
+                      >
+                        {t('options.renameTag')}
+                      </button>
+                      <button
+                        type="button"
+                        className="h-9 rounded-md bg-bg-elevated px-3 text-xs text-danger hover:bg-bg-sunken"
+                        onClick={() => void handleDangerDeleteTag()}
+                        disabled={!tagActionTarget}
+                      >
+                        {pendingDangerAction === 'deleteTag'
+                          ? t('options.deleteTagConfirm')
+                          : t('options.deleteTag')}
+                      </button>
+                    </div>
+                  </article>
+                </div>
+
+                <article className="rounded-[12px] border border-(--border) bg-bg-surface p-5">
+                  <div>
+                    <h3 className="m-0 flex items-center gap-2 text-base font-medium">
+                      <FolderOpen className="h-4 w-4 text-accent" strokeWidth={1.9} />
+                      {t('settings.dataAndBackupTitle')}
+                    </h3>
+                    <p className="m-0 mt-1.5 text-xs leading-5 text-text-secondary">
+                      {t('settings.dataAndBackupHint')}
+                    </p>
                   </div>
 
                   <button
                     type="button"
-                    className="mt-3 flex h-[160px] w-full flex-col items-center justify-center gap-2 rounded-[12px] border border-(--accent-border) bg-accent-subtle px-4 text-center hover:bg-bg-elevated"
+                    className="mt-4 flex h-[170px] w-full flex-col items-center justify-center gap-2.5 rounded-[12px] border border-(--accent-border) bg-accent-subtle px-4 text-center hover:bg-bg-elevated"
                     onClick={() => void handleChooseSyncDirectory()}
                   >
                     <FolderOpen className="h-8 w-8 text-accent" strokeWidth={1.9} />
@@ -1347,18 +1488,18 @@ export default function App(): ReactElement {
                     </span>
                   </button>
 
-                  <div className="mt-3 space-y-1">
-                    <p className="m-0 flex items-start gap-1.5 text-xs text-text-muted">
+                  <div className="mt-4 space-y-1.5">
+                    <p className="m-0 flex items-start gap-1.5 text-xs leading-5 text-text-muted">
                       <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.9} />
                       <span>{t('settings.syncDirectoryHelpPrimary')}</span>
                     </p>
-                    <p className="m-0 flex items-start gap-1.5 text-xs text-text-muted">
+                    <p className="m-0 flex items-start gap-1.5 text-xs leading-5 text-text-muted">
                       <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.9} />
                       <span>{t('settings.syncDirectoryHelpSecondary')}</span>
                     </p>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       type="button"
                       className="h-9 rounded-md bg-bg-elevated px-3 text-xs text-text-secondary hover:bg-bg-sunken"
@@ -1379,7 +1520,7 @@ export default function App(): ReactElement {
                     </button>
                   </div>
 
-                  <div className="mt-3 grid gap-1">
+                  <div className="mt-4 grid gap-1.5">
                     <p className="m-0 text-xs text-text-muted">
                       {t('settings.lastSyncedAt')}:&nbsp;
                       {store?.settings.lastSyncedAt
@@ -1394,11 +1535,11 @@ export default function App(): ReactElement {
                     </p>
                   </div>
 
-                  <div className="my-3 h-px bg-(--border)" />
+                  <div className="my-4 h-px bg-(--border)" />
 
                   <div className="space-y-2">
                     <p className="m-0 text-sm text-text-secondary">{t('settings.importTitle')}</p>
-                    <p className="m-0 text-xs text-text-muted">{t('settings.importHint')}</p>
+                    <p className="m-0 text-xs leading-5 text-text-muted">{t('settings.importHint')}</p>
                     <input
                       ref={importInputRef}
                       type="file"
@@ -1415,205 +1556,13 @@ export default function App(): ReactElement {
                     </button>
                   </div>
                 </article>
-
-                <article className="order-1 rounded-[12px] border border-(--border) bg-bg-surface p-4 xl:row-span-2">
-                  <h3 className="m-0 flex items-center gap-2 text-base font-medium">
-                    <SlidersHorizontal className="h-4 w-4 text-accent" strokeWidth={1.9} />
-                    {t('settings.preferencesTitle')}
-                  </h3>
-                  <p className="m-0 mt-1 text-xs text-text-secondary">{t('settings.preferencesHint')}</p>
-
-                  <div className="mt-3 space-y-3">
-                    <div className="space-y-1.5">
-                      <label htmlFor="settings-language" className="text-xs text-text-secondary">
-                        {t('settings.language')}
-                      </label>
-                      <SelectField
-                        id="settings-language"
-                        leftIcon={<Globe2 className="h-4 w-4" strokeWidth={1.9} />}
-                        value={locale}
-                        onChange={(event) => void handleLocaleChange(event.target.value)}
-                      >
-                        <option value="en">{t('settings.english')}</option>
-                        <option value="zh-CN">{t('settings.zhCN')}</option>
-                      </SelectField>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label htmlFor="settings-icon-theme" className="text-xs text-text-secondary">
-                        {t('settings.iconTheme')}
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-bg-elevated">
-                          <FolioMark variant={iconVariantInput} size={20} />
-                        </span>
-                        <SelectField
-                          id="settings-icon-theme"
-                          wrapperClassName="flex-1"
-                          className="text-sm"
-                          value={iconVariantInput}
-                          onChange={(event) => void handleIconVariantChange(event.target.value)}
-                        >
-                          <option value="classic">{t('settings.iconThemeClassic')}</option>
-                          <option value="dark">{t('settings.iconThemeDark')}</option>
-                          <option value="cream">{t('settings.iconThemeCream')}</option>
-                        </SelectField>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-(--border) pt-3">
-                      <p className="m-0 text-sm text-text-secondary">{t('options.thresholdsTitle')}</p>
-                      <p className="m-0 mt-1 text-xs text-text-muted">{t('options.thresholdsHint')}</p>
-
-                      <div className="mt-3 space-y-2.5">
-                        <div className="flex items-center justify-between gap-2 px-1 py-1.5">
-                          <div className="min-w-0">
-                            <p className="m-0 text-xs text-text-secondary">{t('options.backlogEnabled')}</p>
-                            <p className="m-0 mt-0.5 text-[11px] text-text-muted">{t('options.backlogHint')}</p>
-                          </div>
-                          <ToggleSwitch
-                            checked={backlogEnabledInput}
-                            onChange={setBacklogEnabledInput}
-                            ariaLabel={t('options.backlogEnabled')}
-                          />
-                        </div>
-                        <div className="grid gap-1">
-                          <label htmlFor="settings-backlog-threshold" className="text-[11px] text-text-muted">
-                            {t('options.backlogThreshold')}
-                          </label>
-                          <input
-                            id="settings-backlog-threshold"
-                            className="folio-input"
-                            type="number"
-                            min={1}
-                            value={backlogThresholdInput}
-                            onChange={(event) => setBacklogThresholdInput(event.target.value)}
-                            disabled={!backlogEnabledInput}
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between gap-2 px-1 py-1.5">
-                          <div className="min-w-0">
-                            <p className="m-0 text-xs text-text-secondary">{t('options.staleEnabled')}</p>
-                            <p className="m-0 mt-0.5 text-[11px] text-text-muted">{t('options.staleHint')}</p>
-                          </div>
-                          <ToggleSwitch
-                            checked={staleEnabledInput}
-                            onChange={setStaleEnabledInput}
-                            ariaLabel={t('options.staleEnabled')}
-                          />
-                        </div>
-                        <div className="grid gap-1">
-                          <label htmlFor="settings-stale-threshold" className="text-[11px] text-text-muted">
-                            {t('options.staleThreshold')}
-                          </label>
-                          <input
-                            id="settings-stale-threshold"
-                            className="folio-input"
-                            type="number"
-                            min={1}
-                            value={staleThresholdInput}
-                            onChange={(event) => setStaleThresholdInput(event.target.value)}
-                            disabled={!staleEnabledInput}
-                          />
-                        </div>
-
-                        <div className="grid gap-1">
-                          <label htmlFor="settings-default-status" className="text-[11px] text-text-muted">
-                            {t('options.defaultStatusHint')}
-                          </label>
-                          <SelectField
-                            id="settings-default-status"
-                            className="text-sm"
-                            value={defaultStatusInput}
-                            onChange={(event) =>
-                              setDefaultStatusInput(event.target.value as 'unread' | 'reading')
-                            }
-                          >
-                            <option value="unread">{t('common.unread')}</option>
-                            <option value="reading">{t('common.reading')}</option>
-                          </SelectField>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        className="h-9 rounded-md bg-accent px-3 text-sm text-on-accent hover:bg-accent-hover"
-                        onClick={() => void handleSaveThresholdSettings()}
-                      >
-                        {t('common.save')}
-                      </button>
-                    </div>
-                  </div>
-                </article>
-
-                <article className="order-3 rounded-[12px] border border-(--border) bg-bg-surface p-4">
-                <h3 className="m-0 flex items-center gap-2 text-base font-medium">
-                  <Tag className="h-4 w-4 text-accent" strokeWidth={1.9} />
-                  {t('options.tagManagerTitle')}
-                </h3>
-                <p className="m-0 mt-1 text-xs text-text-secondary">{t('options.tagManagerHint')}</p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
-                  <label htmlFor="tag-action-target" className="sr-only">
-                    {t('options.tagManagerTitle')}
-                  </label>
-                  <SelectField
-                    id="tag-action-target"
-                    aria-label={t('options.tagManagerTitle')}
-                    value={tagActionTarget}
-                    onChange={(event) => {
-                      setTagActionTarget(event.target.value);
-                      if (pendingDangerAction === 'deleteTag') {
-                        clearDangerAction();
-                      }
-                    }}
-                  >
-                    <option value="">-</option>
-                    {(store?.tags ?? []).map((tag) => (
-                      <option key={tag} value={tag}>
-                        {tag}
-                      </option>
-                    ))}
-                  </SelectField>
-                  <label htmlFor="tag-rename-value" className="sr-only">
-                    {t('options.tagNewName')}
-                  </label>
-                  <input
-                    id="tag-rename-value"
-                    aria-label={t('options.tagNewName')}
-                    className="folio-input"
-                    value={tagRenameValue}
-                    onChange={(event) => setTagRenameValue(event.target.value)}
-                    placeholder={t('options.tagNewName')}
-                  />
-                  <button
-                    type="button"
-                    className="h-9 rounded-md bg-bg-elevated px-3 text-xs text-text-secondary hover:bg-bg-sunken"
-                    onClick={() => void handleRenameTag()}
-                    disabled={!tagActionTarget || !tagRenameValue.trim()}
-                  >
-                    {t('options.renameTag')}
-                  </button>
-                  <button
-                    type="button"
-                    className="h-9 rounded-md bg-bg-elevated px-3 text-xs text-danger hover:bg-bg-sunken"
-                    onClick={() => void handleDangerDeleteTag()}
-                    disabled={!tagActionTarget}
-                  >
-                    {pendingDangerAction === 'deleteTag'
-                      ? t('options.deleteTagConfirm')
-                      : t('options.deleteTag')}
-                  </button>
-                </div>
-                </article>
               </div>
-            </section>
+              </section>
+            </div>
           ) : (
-		            <section>
+            <section className="min-h-0 flex-1 overflow-y-auto pr-1">
               {displayItems.map((item) => {
-                const savedAtLabel = formatSavedAtLabel(item.savedAt, locale);
+                const createdAtLabel = formatCreatedAtLabel(item.createdAt, locale);
                 const isEditingRow = editingId === item.id && editDraft !== null;
                 return (
                   <div key={item.id}>
@@ -1636,7 +1585,7 @@ export default function App(): ReactElement {
                             href={item.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="line-clamp-2 text-sm font-medium text-text-primary no-underline hover:text-text-link"
+                            className="line-clamp-2 min-w-0 text-sm font-medium text-text-primary no-underline hover:text-text-link"
                           >
                             {renderHighlightedText(item.title, search)}
                           </a>
@@ -1718,8 +1667,8 @@ export default function App(): ReactElement {
 	                              {statusIcon(item.status)}
 	                            </button>
 	                          </div>
-	                          <span className="font-mono text-[10px] text-text-muted" title={savedAtLabel.full}>
-	                            {savedAtLabel.short}
+	                          <span className="font-mono text-[10px] text-text-muted" title={createdAtLabel.full}>
+	                            {createdAtLabel.short}
 	                          </span>
 	                        </div>
                       </div>

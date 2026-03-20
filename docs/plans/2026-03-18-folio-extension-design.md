@@ -36,7 +36,6 @@ Single repository, multi-entry extension app:
 - If already saved: status switch (`Unread`, `Reading`, `Done`) and deep link to options editor.
 - Show recent 5 items.
 - Search field routes to options page search view.
-- Backlog hint when unread count is over threshold.
 
 ### 3.2 Options Page
 
@@ -49,7 +48,7 @@ Single repository, multi-entry extension app:
 - Batch operations: status change, tag assignment, delete.
 - Export formats: JSON, CSV, Markdown for current view or full dataset.
 - Stats surface: weekly done count, total count, unread count, top 3 domains.
-- Settings: thresholds, language selector (`English` / `简体中文`), sync directory setup/status, destructive setting confirmations.
+- Settings: language selector (`English` / `简体中文`), sync directory setup/status, destructive setting confirmations.
 
 ### 3.3 Background Behaviors
 

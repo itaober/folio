@@ -1,6 +1,24 @@
 import type { FolioStore } from '../types';
 import { getBackupDirectoryHandle } from './handleStore';
-import { BACKUP_FILE_NAME, type BackupWriteResult } from './types';
+import {
+  BACKUP_FILE_NAME,
+  BACKUP_JSON_SCHEMA,
+  BACKUP_SCHEMA_FILE_NAME,
+  type BackupWriteResult
+} from './types';
+
+async function writeJsonFile(
+  directoryHandle: FileSystemDirectoryHandle,
+  fileName: string,
+  payload: unknown
+): Promise<void> {
+  const fileHandle = await directoryHandle.getFileHandle(fileName, {
+    create: true
+  });
+  const writable = await fileHandle.createWritable();
+  await writable.write(JSON.stringify(payload, null, 2));
+  await writable.close();
+}
 
 async function ensureReadWritePermission(
   handle: FileSystemDirectoryHandle
@@ -51,12 +69,12 @@ export async function writeBackupToDirectory(
       };
     }
 
-    const fileHandle = await directoryHandle.getFileHandle(BACKUP_FILE_NAME, {
-      create: true
-    });
-    const writable = await fileHandle.createWritable();
-    await writable.write(JSON.stringify(store, null, 2));
-    await writable.close();
+    await writeJsonFile(directoryHandle, BACKUP_FILE_NAME, store);
+    await writeJsonFile(
+      directoryHandle,
+      BACKUP_SCHEMA_FILE_NAME,
+      BACKUP_JSON_SCHEMA
+    );
 
     return {
       ok: true,

@@ -4,7 +4,7 @@
 
 A read-it-later list extension for Chrome.
 
-Folio is designed around unread backlog management: quickly save pages, keep unread items visible and actionable, then move them through `Reading` and `Done`.
+Folio helps you collect pages quickly and move them through `Unread`, `Reading`, and `Done`.
 
 ## Links
 
@@ -14,7 +14,7 @@ Folio is designed around unread backlog management: quickly save pages, keep unr
 
 ## Features
 
-- Unread-first workflow with clear backlog visibility
+- Unread-first workflow
 - Save current page from popup or context menu
 - Status workflow: `Unread` -> `Reading` -> `Done`
 - Tag filtering and tag management

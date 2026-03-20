@@ -10,7 +10,7 @@ export function toJson(store: FolioStore): string {
 }
 
 export function toCsv(items: FolioItem[]): string {
-  const header = ['title', 'url', 'domain', 'status', 'tags', 'note', 'savedAt', 'updatedAt', 'lastOpenedAt'];
+  const header = ['title', 'url', 'domain', 'status', 'tags', 'note', 'createdAt', 'updatedAt', 'lastOpenedAt'];
 
   const rows = items.map((item) => {
     return [
@@ -20,7 +20,7 @@ export function toCsv(items: FolioItem[]): string {
       escapeCsvField(item.status),
       escapeCsvField(item.tags.join(';')),
       escapeCsvField(item.note),
-      String(item.savedAt),
+      String(item.createdAt),
       String(item.updatedAt),
       item.lastOpenedAt === null ? '' : String(item.lastOpenedAt)
     ].join(',');

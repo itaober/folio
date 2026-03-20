@@ -16,7 +16,7 @@ export interface StatusCounts {
 }
 
 export function selectAllItems(store: FolioStore): FolioItem[] {
-  return Object.values(store.items).sort((a, b) => b.savedAt - a.savedAt);
+  return Object.values(store.items).sort((a, b) => b.createdAt - a.createdAt);
 }
 
 export function selectRecentItems(store: FolioStore, limit = 5): FolioItem[] {
@@ -93,7 +93,7 @@ export function sortItems(items: FolioItem[], mode: SortMode): FolioItem[] {
 
   switch (mode) {
     case 'saved_asc':
-      return cloned.sort((a, b) => a.savedAt - b.savedAt);
+      return cloned.sort((a, b) => a.createdAt - b.createdAt);
     case 'domain_asc':
       return cloned.sort((a, b) => a.domain.localeCompare(b.domain));
     case 'title_asc':
@@ -102,6 +102,6 @@ export function sortItems(items: FolioItem[], mode: SortMode): FolioItem[] {
       return cloned.sort((a, b) => a.status.localeCompare(b.status));
     case 'saved_desc':
     default:
-      return cloned.sort((a, b) => b.savedAt - a.savedAt);
+      return cloned.sort((a, b) => b.createdAt - a.createdAt);
   }
 }

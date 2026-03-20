@@ -12,7 +12,7 @@ export interface FolioItem {
   status: FolioStatus;
   tags: string[];
   note: string;
-  savedAt: number;
+  createdAt: number;
   updatedAt: number;
   lastOpenedAt: number | null;
 }
@@ -21,10 +21,6 @@ export interface FolioSettings {
   locale: SupportedLocale;
   iconVariant: FolioIconVariant;
   defaultStatus: 'unread' | 'reading';
-  backlogEnabled: boolean;
-  backlogThreshold: number;
-  staleEnabled: boolean;
-  staleThreshold: number;
   syncDirectory: string | null;
   lastSyncedAt: number | null;
   lastSyncError: string | null;
@@ -95,10 +91,6 @@ export type FolioMutation =
       type: 'updateSettings';
       payload: {
         iconVariant?: FolioIconVariant;
-        backlogEnabled?: boolean;
-        backlogThreshold?: number;
-        staleEnabled?: boolean;
-        staleThreshold?: number;
         defaultStatus?: 'unread' | 'reading';
       };
     }

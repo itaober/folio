@@ -149,7 +149,7 @@ Define `FolioItem`, `FolioStore`, status unions, repository mutation input/outpu
 
 **Step 2: Add default store initializer**
 
-Expose `createDefaultStore()` with defaults for thresholds and metadata.
+Expose `createDefaultStore()` with settings defaults and metadata.
 
 **Step 3: Implement repository commit API**
 
@@ -175,7 +175,7 @@ git add src/core/types.ts src/core/defaults.ts src/core/repository.ts src/core/e
 git commit -m "feat: add core store model and commit repository"
 ```
 
-### Task 4: Implement selectors, search, sort, stats, and stale/backlog logic
+### Task 4: Implement selectors, search, sort, and stats logic
 
 **Files:**
 - Create: `src/core/selectors.ts`
@@ -193,7 +193,7 @@ Return match index ranges for UI highlighting in list rows.
 
 **Step 3: Implement derived metrics**
 
-Compute unread backlog warning, stale unread marking, weekly done count, and top-3 domains.
+Compute weekly done count, unread count, and top-3 domains.
 
 **Step 4: Verify**
 
@@ -336,7 +336,6 @@ git commit -m "feat: implement popup current-page save and state switch"
 - Create: `src/popup/components/QuickEditInline.tsx`
 - Create: `src/popup/components/RecentList.tsx`
 - Create: `src/popup/components/PopupSearch.tsx`
-- Create: `src/popup/components/BacklogHint.tsx`
 
 **Step 1: Implement quick edit panel**
 
@@ -350,19 +349,15 @@ Render latest 5 items; row click opens item URL in new tab and updates `lastOpen
 
 Focus/click routes to options page with query params for search term.
 
-**Step 4: Add backlog warning rule**
-
-Read derived unread count and show hint if threshold exceeded.
-
-**Step 5: Verify**
+**Step 4: Verify**
 
 Manual popup flow for quick edit collapse behavior and recent-list navigation.
 
-**Step 6: Commit**
+**Step 5: Commit**
 
 ```bash
 git add src/popup
-git commit -m "feat: add popup quick edit recent items search and backlog hint"
+git commit -m "feat: add popup quick edit recent items and search"
 ```
 
 ### Task 10: Build options shell (sidebar, header, toolbar)
@@ -468,9 +463,9 @@ git commit -m "feat: add batch operations and global tag management"
 - Modify: `src/core/sync/syncState.ts`
 - Modify: `src/core/defaults.ts`
 
-**Step 1: Implement threshold settings UI**
+**Step 1: Implement settings controls UI**
 
-Support backlog and stale thresholds with validation and commit-save behavior, plus language selector (`English` / `简体中文`).
+Support language selector (`English` / `简体中文`) and save behavior for preferences.
 
 **Step 2: Implement directory authorization controls**
 
@@ -488,7 +483,7 @@ Manual: choose directory, perform data mutation, confirm backup file write.
 
 ```bash
 git add src/options/settings src/core/sync/syncState.ts src/core/defaults.ts
-git commit -m "feat: add settings page thresholds and sync controls"
+git commit -m "feat: add settings page preferences and sync controls"
 ```
 
 ### Task 14: Implement export UI wiring and statistics surface

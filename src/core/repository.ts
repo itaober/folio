@@ -37,17 +37,46 @@ async function writeStore(store: FolioStore): Promise<void> {
 }
 
 function normalizeStore(store: FolioStore): FolioStore {
-  const normalizedSettings = {
-    ...store.settings,
+  const defaultStore = createDefaultStore();
+  const normalizedItems: Record<string, FolioItem> = {};
+  for (const [id, item] of Object.entries(store.items)) {
+    const legacySavedAt = (item as FolioItem & { savedAt?: unknown }).savedAt;
+    const createdAt = toNumber(item.createdAt, toNumber(legacySavedAt, item.updatedAt));
+    normalizedItems[id] = {
+      ...item,
+      createdAt,
+      updatedAt: toNumber(item.updatedAt, createdAt)
+    };
+  }
+
+  const normalizedSettings: FolioStore['settings'] = {
+    ...defaultStore.settings,
+    locale: isSupportedLocale(store.settings.locale)
+      ? store.settings.locale
+      : defaultStore.settings.locale,
     iconVariant: isFolioIconVariant(store.settings.iconVariant)
       ? store.settings.iconVariant
       : DEFAULT_ICON_VARIANT,
-    backlogEnabled: store.settings.backlogEnabled ?? true,
-    staleEnabled: store.settings.staleEnabled ?? true
+    defaultStatus:
+      store.settings.defaultStatus === 'reading' ? 'reading' : 'unread',
+    syncDirectory:
+      typeof store.settings.syncDirectory === 'string'
+        ? store.settings.syncDirectory
+        : null,
+    lastSyncedAt:
+      typeof store.settings.lastSyncedAt === 'number' &&
+      Number.isFinite(store.settings.lastSyncedAt)
+        ? store.settings.lastSyncedAt
+        : null,
+    lastSyncError:
+      typeof store.settings.lastSyncError === 'string'
+        ? store.settings.lastSyncError
+        : null
   };
 
   return {
     ...store,
+    items: normalizedItems,
     settings: normalizedSettings
   };
 }
@@ -92,7 +121,10 @@ function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | 
       continue;
     }
 
-    const savedAt = toNumber(value.savedAt, now);
+    const createdAt = toNumber(
+      value.createdAt,
+      toNumber(value.savedAt, now)
+    );
     const nextItem: FolioItem = {
       id:
         typeof value.id === 'string' && value.id.trim()
@@ -110,8 +142,8 @@ function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | 
         ? [...new Set(value.tags.filter((tag): tag is string => typeof tag === 'string').map((tag) => tag.trim()).filter(Boolean))]
         : [],
       note: typeof value.note === 'string' ? value.note : '',
-      savedAt,
-      updatedAt: toNumber(value.updatedAt, savedAt),
+      createdAt,
+      updatedAt: toNumber(value.updatedAt, createdAt),
       lastOpenedAt:
         typeof value.lastOpenedAt === 'number' && Number.isFinite(value.lastOpenedAt)
           ? value.lastOpenedAt
@@ -144,22 +176,6 @@ function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | 
   const iconVariant = isFolioIconVariant(rawSettings.iconVariant)
     ? rawSettings.iconVariant
     : current.settings.iconVariant;
-  const backlogEnabled =
-    typeof rawSettings.backlogEnabled === 'boolean'
-      ? rawSettings.backlogEnabled
-      : current.settings.backlogEnabled;
-  const staleEnabled =
-    typeof rawSettings.staleEnabled === 'boolean'
-      ? rawSettings.staleEnabled
-      : current.settings.staleEnabled;
-  const backlogThreshold = Math.max(
-    1,
-    Math.floor(toNumber(rawSettings.backlogThreshold, current.settings.backlogThreshold))
-  );
-  const staleThreshold = Math.max(
-    1,
-    Math.floor(toNumber(rawSettings.staleThreshold, current.settings.staleThreshold))
-  );
 
   const rawMeta = isRecord(raw.meta) ? raw.meta : {};
 
@@ -167,15 +183,22 @@ function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | 
     items,
     tags: collectTagsFromItems(items),
     settings: {
-      ...defaultStore.settings,
-      ...current.settings,
       locale,
       iconVariant,
       defaultStatus,
-      backlogEnabled,
-      backlogThreshold,
-      staleEnabled,
-      staleThreshold
+      syncDirectory:
+        typeof current.settings.syncDirectory === 'string'
+          ? current.settings.syncDirectory
+          : null,
+      lastSyncedAt:
+        typeof current.settings.lastSyncedAt === 'number' &&
+        Number.isFinite(current.settings.lastSyncedAt)
+          ? current.settings.lastSyncedAt
+          : null,
+      lastSyncError:
+        typeof current.settings.lastSyncError === 'string'
+          ? current.settings.lastSyncError
+          : null
     },
     meta: {
       version:
@@ -213,11 +236,34 @@ export async function getStore(): Promise<FolioStore> {
   const store = data[FOLIO_STORE_KEY] as FolioStore | undefined;
 
   if (store) {
+    const knownSettingKeys = new Set([
+      'locale',
+      'iconVariant',
+      'defaultStatus',
+      'syncDirectory',
+      'lastSyncedAt',
+      'lastSyncError'
+    ]);
+    const hasUnexpectedSettingKeys = Object.keys(
+      store.settings as unknown as Record<string, unknown>
+    ).some((key) => !knownSettingKeys.has(key));
+
+    const needsTimestampNormalization = Object.values(store.items).some((item) => {
+      const legacySavedAt = (item as FolioItem & { savedAt?: unknown }).savedAt;
+      return (
+        typeof item.createdAt !== 'number' ||
+        !Number.isFinite(item.createdAt) ||
+        typeof item.updatedAt !== 'number' ||
+        !Number.isFinite(item.updatedAt) ||
+        legacySavedAt !== undefined
+      );
+    });
+
     const normalized = normalizeStore(store);
     if (
       normalized.settings.iconVariant !== store.settings.iconVariant ||
-      normalized.settings.backlogEnabled !== store.settings.backlogEnabled ||
-      normalized.settings.staleEnabled !== store.settings.staleEnabled
+      needsTimestampNormalization ||
+      hasUnexpectedSettingKeys
     ) {
       await writeStore(normalized);
     }
@@ -263,7 +309,7 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
           status: next.settings.defaultStatus,
           tags: [] as string[],
           note: '',
-          savedAt: now,
+          createdAt: now,
           updatedAt: now,
           lastOpenedAt: null
         };
@@ -381,28 +427,6 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
       case 'updateSettings': {
         if (mutation.payload.iconVariant !== undefined) {
           next.settings.iconVariant = mutation.payload.iconVariant;
-        }
-
-        if (mutation.payload.backlogEnabled !== undefined) {
-          next.settings.backlogEnabled = mutation.payload.backlogEnabled;
-        }
-
-        if (mutation.payload.backlogThreshold !== undefined) {
-          next.settings.backlogThreshold = Math.max(
-            1,
-            Math.floor(mutation.payload.backlogThreshold)
-          );
-        }
-
-        if (mutation.payload.staleEnabled !== undefined) {
-          next.settings.staleEnabled = mutation.payload.staleEnabled;
-        }
-
-        if (mutation.payload.staleThreshold !== undefined) {
-          next.settings.staleThreshold = Math.max(
-            1,
-            Math.floor(mutation.payload.staleThreshold)
-          );
         }
 
         if (mutation.payload.defaultStatus !== undefined) {
