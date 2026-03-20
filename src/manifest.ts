@@ -7,7 +7,7 @@ export default defineManifest({
   manifest_version: 3,
   name: '__MSG_appName__',
   description: '__MSG_appDescription__',
-  version: '1.0.4',
+  version: '1.0.5',
   key: STABLE_EXTENSION_KEY,
   default_locale: 'en',
   action: {
