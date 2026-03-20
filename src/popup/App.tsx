@@ -247,7 +247,7 @@ export default function App(): ReactElement {
         </div>
 
         <p className="mb-0 font-mono text-[9px] uppercase text-text-muted">{t('popup.recent')}</p>
-        <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto pr-1">
+        <div className="folio-scrollbar min-h-0 flex-1 space-y-0.5 overflow-y-auto pr-2">
           {filteredRecentItems.map((item) => {
             return (
               <div

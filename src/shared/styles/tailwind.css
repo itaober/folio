@@ -145,4 +145,32 @@
     padding-right: 2rem;
   }
 
+  .folio-scrollbar {
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+
+  .folio-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .folio-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    margin-block: 10px;
+  }
+
+  .folio-scrollbar::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: var(--border-strong);
+    background-clip: content-box;
+  }
+
+  .folio-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: var(--text-muted);
+    background-clip: content-box;
+  }
+
 }
