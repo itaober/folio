@@ -12,10 +12,35 @@
 
 ## 截图
 
-> 预览占位区，后续可替换为真实截图。
+> 中线分割对比：左侧为暖色主题，右侧为黑白灰主题。
 
-![Popup 预览](./docs/screenshots/popup.svg)
-![Options 预览](./docs/screenshots/options.svg)
+<details open>
+  <summary><strong>Popup</strong></summary>
+  <p align="center">
+    <img src="./docs/screenshots/popup-diagonal.png" alt="Popup（左暖色，右黑白灰）" width="420" />
+  </p>
+</details>
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <details open>
+        <summary><strong>Options · 列表页</strong></summary>
+        <p align="center">
+          <img src="./docs/screenshots/options-list-diagonal.png" alt="Options 列表页（左暖色，右黑白灰）" width="100%" />
+        </p>
+      </details>
+    </td>
+    <td width="50%" valign="top">
+      <details open>
+        <summary><strong>Options · 设置页</strong></summary>
+        <p align="center">
+          <img src="./docs/screenshots/options-settings-diagonal.png" alt="Options 设置页（左暖色，右黑白灰）" width="100%" />
+        </p>
+      </details>
+    </td>
+  </tr>
+</table>
 
 ## 主要功能
 

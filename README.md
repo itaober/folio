@@ -12,13 +12,35 @@ A read-it-later Chrome extension for saving pages and managing reading status.
 
 ## Screenshots
 
-> Diagonal split comparison: left = Warm, right = Monochrome.
+> Center split comparison: left = Warm, right = Monochrome.
 
-<p align="center">
-  <img src="./docs/screenshots/popup-diagonal.png" alt="Popup (Warm vs Monochrome)" width="32%" />
-  <img src="./docs/screenshots/options-list-diagonal.png" alt="Options List (Warm vs Monochrome)" width="32%" />
-  <img src="./docs/screenshots/options-settings-diagonal.png" alt="Options Settings (Warm vs Monochrome)" width="32%" />
-</p>
+<details open>
+  <summary><strong>Popup</strong></summary>
+  <p align="center">
+    <img src="./docs/screenshots/popup-diagonal.png" alt="Popup (Warm left, Monochrome right)" width="420" />
+  </p>
+</details>
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <details open>
+        <summary><strong>Options · List</strong></summary>
+        <p align="center">
+          <img src="./docs/screenshots/options-list-diagonal.png" alt="Options List (Warm left, Monochrome right)" width="100%" />
+        </p>
+      </details>
+    </td>
+    <td width="50%" valign="top">
+      <details open>
+        <summary><strong>Options · Settings</strong></summary>
+        <p align="center">
+          <img src="./docs/screenshots/options-settings-diagonal.png" alt="Options Settings (Warm left, Monochrome right)" width="100%" />
+        </p>
+      </details>
+    </td>
+  </tr>
+</table>
 
 ## Features
 
