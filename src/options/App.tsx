@@ -63,7 +63,13 @@ import {
   clearBackupDirectoryHandle,
   saveBackupDirectoryHandle
 } from '../core/sync/handleStore';
-import type { FolioItem, FolioMutation, FolioStatus, FolioStore } from '../core/types';
+import {
+  isSortMode,
+  type FolioItem,
+  type FolioMutation,
+  type FolioStatus,
+  type FolioStore
+} from '../core/types';
 
 type ViewKey = 'all' | FolioStatus | 'settings';
 
@@ -309,7 +315,31 @@ export default function App(): ReactElement {
     setLocale(nextLocale);
     setThemeInput(nextTheme);
     setDefaultStatusInput(nextStore.settings.defaultStatus);
+    setSortMode(nextStore.settings.sortMode);
     applyDocumentTheme(nextTheme);
+  }
+
+  async function handleSortModeChange(value: string): Promise<void> {
+    if (!isSortMode(value)) {
+      return;
+    }
+
+    if (value === sortMode) {
+      return;
+    }
+
+    setSortMode(value);
+    const settingsResult = await commit({
+      type: 'updateSettings',
+      payload: {
+        sortMode: value
+      }
+    });
+
+    if (!settingsResult.ok) {
+      setNotice({ level: 'error', text: t('options.updateFailed') });
+      await refresh();
+    }
   }
 
   const displayItems = useMemo(() => {
@@ -1282,7 +1312,7 @@ export default function App(): ReactElement {
                   wrapperClassName="w-[min(22vw,180px)] min-w-[140px]"
                   leftIcon={<ArrowUpDown className="h-4 w-4" strokeWidth={1.9} />}
                   value={sortMode}
-                  onChange={(event) => setSortMode(event.target.value as SortMode)}
+                  onChange={(event) => void handleSortModeChange(event.target.value)}
                 >
                     <option value="saved_desc">{t('options.sortNewest')}</option>
                     <option value="saved_asc">{t('options.sortOldest')}</option>

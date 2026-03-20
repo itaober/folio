@@ -7,6 +7,7 @@ import type {
   FolioStatus,
   FolioStore
 } from './types';
+import { resolveSortMode } from './types';
 import { extractDomain, normalizeUrl } from './url';
 import { isSupportedLocale, writeStoredLocale } from '../shared/i18n/localeStore';
 import { getThemeIconVariant, resolveFolioTheme } from '../shared/theme';
@@ -59,6 +60,7 @@ function normalizeStore(store: FolioStore): FolioStore {
     theme,
     defaultStatus:
       store.settings.defaultStatus === 'reading' ? 'reading' : 'unread',
+    sortMode: resolveSortMode(store.settings.sortMode),
     syncDirectory:
       typeof store.settings.syncDirectory === 'string'
         ? store.settings.syncDirectory
@@ -173,6 +175,7 @@ function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | 
     rawSettings.defaultStatus === 'unread' || rawSettings.defaultStatus === 'reading'
       ? rawSettings.defaultStatus
       : current.settings.defaultStatus;
+  const sortMode = resolveSortMode(rawSettings.sortMode ?? current.settings.sortMode);
   const theme = resolveFolioTheme(rawSettings.theme ?? current.settings.theme);
   const iconVariant = getThemeIconVariant(theme);
 
@@ -186,6 +189,7 @@ function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | 
       iconVariant,
       theme,
       defaultStatus,
+      sortMode,
       syncDirectory:
         typeof current.settings.syncDirectory === 'string'
           ? current.settings.syncDirectory
@@ -241,6 +245,7 @@ export async function getStore(): Promise<FolioStore> {
       'iconVariant',
       'theme',
       'defaultStatus',
+      'sortMode',
       'syncDirectory',
       'lastSyncedAt',
       'lastSyncError'
@@ -438,6 +443,9 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
 
         if (mutation.payload.defaultStatus !== undefined) {
           next.settings.defaultStatus = mutation.payload.defaultStatus;
+        }
+        if (mutation.payload.sortMode !== undefined) {
+          next.settings.sortMode = mutation.payload.sortMode;
         }
 
         break;

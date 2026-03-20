@@ -3,6 +3,28 @@ import type { FolioIconVariant } from '../shared/icons';
 import type { FolioTheme } from '../shared/theme';
 
 export type FolioStatus = 'unread' | 'reading' | 'done';
+export type SortMode =
+  | 'saved_desc'
+  | 'saved_asc'
+  | 'domain_asc'
+  | 'title_asc'
+  | 'status';
+
+export const DEFAULT_SORT_MODE: SortMode = 'saved_desc';
+
+export function isSortMode(value: unknown): value is SortMode {
+  return (
+    value === 'saved_desc' ||
+    value === 'saved_asc' ||
+    value === 'domain_asc' ||
+    value === 'title_asc' ||
+    value === 'status'
+  );
+}
+
+export function resolveSortMode(value: unknown): SortMode {
+  return isSortMode(value) ? value : DEFAULT_SORT_MODE;
+}
 
 export interface FolioItem {
   id: string;
@@ -23,6 +45,7 @@ export interface FolioSettings {
   iconVariant: FolioIconVariant;
   theme: FolioTheme;
   defaultStatus: 'unread' | 'reading';
+  sortMode: SortMode;
   syncDirectory: string | null;
   lastSyncedAt: number | null;
   lastSyncError: string | null;
@@ -95,6 +118,7 @@ export type FolioMutation =
         iconVariant?: FolioIconVariant;
         theme?: FolioTheme;
         defaultStatus?: 'unread' | 'reading';
+        sortMode?: SortMode;
       };
     }
   | {

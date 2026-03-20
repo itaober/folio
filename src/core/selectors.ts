@@ -1,12 +1,7 @@
-import type { FolioItem, FolioStatus, FolioStore } from './types';
+import type { FolioItem, FolioStatus, FolioStore, SortMode } from './types';
 import { normalizeUrl } from './url';
 
-export type SortMode =
-  | 'saved_desc'
-  | 'saved_asc'
-  | 'domain_asc'
-  | 'title_asc'
-  | 'status';
+export type { SortMode } from './types';
 
 export interface StatusCounts {
   total: number;

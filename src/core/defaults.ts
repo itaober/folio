@@ -1,4 +1,4 @@
-import type { FolioStore } from './types';
+import { DEFAULT_SORT_MODE, type FolioStore } from './types';
 import { DEFAULT_THEME } from '../shared/theme';
 
 export const FOLIO_STORE_KEY = 'folio-store';
@@ -14,6 +14,7 @@ export function createDefaultStore(): FolioStore {
       iconVariant: 'classic',
       theme: DEFAULT_THEME,
       defaultStatus: 'unread',
+      sortMode: DEFAULT_SORT_MODE,
       syncDirectory: null,
       lastSyncedAt: null,
       lastSyncError: null

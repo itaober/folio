@@ -73,6 +73,7 @@ export const BACKUP_JSON_SCHEMA: Record<string, unknown> = {
         'iconVariant',
         'theme',
         'defaultStatus',
+        'sortMode',
         'syncDirectory',
         'lastSyncedAt',
         'lastSyncError'
@@ -82,6 +83,9 @@ export const BACKUP_JSON_SCHEMA: Record<string, unknown> = {
         iconVariant: { enum: ['classic', 'mono'] },
         theme: { enum: FOLIO_THEMES },
         defaultStatus: { enum: ['unread', 'reading'] },
+        sortMode: {
+          enum: ['saved_desc', 'saved_asc', 'domain_asc', 'title_asc', 'status']
+        },
         syncDirectory: { type: ['string', 'null'] },
         lastSyncedAt: { type: ['number', 'null'] },
         lastSyncError: { type: ['string', 'null'] }
