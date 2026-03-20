@@ -2,9 +2,7 @@
 
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
-A read-it-later list extension for Chrome.
-
-Folio helps you collect pages quickly and move them through `Unread`, `Reading`, and `Done`.
+A read-it-later Chrome extension for saving pages and managing reading status.
 
 ## Links
 
@@ -12,46 +10,50 @@ Folio helps you collect pages quickly and move them through `Unread`, `Reading`,
 - Releases: https://github.com/itaober/folio/releases
 - Latest Release: https://github.com/itaober/folio/releases/latest
 
+## Screenshots
+
+> Diagonal split comparison: left = Warm, right = Monochrome.
+
+<p align="center">
+  <img src="./docs/screenshots/popup-diagonal.png" alt="Popup (Warm vs Monochrome)" width="32%" />
+  <img src="./docs/screenshots/options-list-diagonal.png" alt="Options List (Warm vs Monochrome)" width="32%" />
+  <img src="./docs/screenshots/options-settings-diagonal.png" alt="Options Settings (Warm vs Monochrome)" width="32%" />
+</p>
+
 ## Features
 
 - Unread-first workflow
-- Save current page from popup or context menu
-- Status workflow: `Unread` -> `Reading` -> `Done`
-- Tag filtering and tag management
-- Inline editing (title, note, tags)
+- Save pages from popup or context menu
+- Status flow: `Unread` -> `Reading` -> `Done`
+- Tag filtering and management
+- Inline editing (`title`, `note`, `tags`)
 - Search and sorting in options page
-- Local backup directory sync (browser -> local)
+- Local backup sync (browser -> local directory)
 - English and Simplified Chinese UI
-- Switchable style themes: Warm and Monochrome
 
 ## Installation
 
-### Option A: Install from GitHub Release (recommended for self-hosting)
+### Option A: Install from GitHub Release (recommended)
 
-1. Open [Releases](https://github.com/itaober/folio/releases) and download the latest `folio-extension-vX.Y.Z.zip`.
-2. Unzip it locally.
+1. Download the latest `folio-extension-vX.Y.Z.zip` from [Releases](https://github.com/itaober/folio/releases).
+2. Unzip it.
 3. Open `chrome://extensions`.
-4. Turn on **Developer mode**.
-5. Click **Load unpacked**.
-6. Select the unzipped folder (must contain `manifest.json`).
+4. Enable **Developer mode**.
+5. Click **Load unpacked** and select the folder containing `manifest.json`.
 
-### Option B: Local development build
+### Option B: Build locally
 
 ```bash
 pnpm install
 pnpm build
 ```
 
-Then load the `dist` directory via **Load unpacked**.
+Then load `dist` via **Load unpacked**.
 
 ## Development
 
-### Requirements
-
 - Node.js 20+
 - pnpm 10+
-
-### Scripts
 
 ```bash
 pnpm install
@@ -60,34 +62,18 @@ pnpm typecheck
 pnpm build
 ```
 
-## Manual Release Workflow (GitHub Actions)
+## Manual Release (GitHub Actions)
 
-This repo includes a manual workflow at:
+Workflow: `.github/workflows/manual-release.yml`
 
-- `.github/workflows/manual-release.yml`
+Run it from GitHub Actions (**Run workflow**). It validates the version, updates manifests, builds and packages the extension, generates checksum, pushes tag, and creates a GitHub Release.
 
-It is triggered from GitHub Actions UI (**Run workflow**) and always uses the latest `main` branch.
+Inputs:
 
-### What it does
-
-1. Validate release version input
-2. Ensure release tag does not already exist
-3. Update version in:
-   - `package.json`
-   - `src/manifest.ts`
-4. Build extension
-5. Package `dist` into zip
-6. Generate SHA-256 checksum file
-7. Commit version bump to `main`
-8. Create and push git tag
-9. Create GitHub Release and upload assets
-
-### Workflow inputs
-
-- `version`: required, numeric extension version like `0.2.0`
+- `version` (required): numeric version such as `0.2.0`
 - `draft`: create draft release
-- `prerelease`: mark as prerelease
-- `release_notes`: optional manual release notes body; leave empty to auto-generate notes from GitHub
+- `prerelease`: mark prerelease
+- `release_notes`: optional; empty means auto-generated notes
 
 ## Project Structure
 
@@ -111,8 +97,6 @@ public/
 
 ## Notes
 
-- This distribution mode (GitHub Release + Load unpacked) requires Chrome Developer mode for installation.
-- The extension uses a fixed manifest key so the extension ID stays stable across version updates.
-  Keep the same installed extension entry and use **Reload** to preserve `chrome.storage.local` data.
-- For broad public distribution, publish to Chrome Web Store.
-- You can always find the newest package at [Latest Release](https://github.com/itaober/folio/releases/latest).
+- Installing from GitHub Release with **Load unpacked** requires Chrome Developer mode.
+- The extension uses a fixed manifest key to keep extension ID stable across updates.
+- Keep the same extension entry and use **Reload** to preserve `chrome.storage.local` data.

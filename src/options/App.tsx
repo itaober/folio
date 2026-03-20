@@ -109,7 +109,6 @@ export default function App(): ReactElement {
   const [view, setView] = useState<ViewKey>('unread');
   const [search, setSearch] = useState('');
   const [locale, setLocale] = useState<SupportedLocale>('en');
-  const [localeInput, setLocaleInput] = useState<SupportedLocale>('en');
   const [themeInput, setThemeInput] = useState<FolioTheme>(DEFAULT_THEME);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [batchTag, setBatchTag] = useState('');
@@ -308,7 +307,6 @@ export default function App(): ReactElement {
 
     setStore(nextStore);
     setLocale(nextLocale);
-    setLocaleInput(nextLocale);
     setThemeInput(nextTheme);
     setDefaultStatusInput(nextStore.settings.defaultStatus);
     applyDocumentTheme(nextTheme);
@@ -469,7 +467,24 @@ export default function App(): ReactElement {
       return;
     }
 
-    setLocaleInput(value);
+    if (value === locale) {
+      return;
+    }
+
+    const localeResult = await commit({
+      type: 'setLocale',
+      payload: { locale: value }
+    });
+
+    if (!localeResult.ok) {
+      setNotice({ level: 'error', text: t('options.updateFailed') });
+      await refresh();
+      return;
+    }
+
+    await changeLanguage(value);
+    setLocale(value);
+    await refresh();
   }
 
   async function handleThemeChange(value: string): Promise<void> {
@@ -477,7 +492,54 @@ export default function App(): ReactElement {
       return;
     }
 
+    if (value === themeInput) {
+      return;
+    }
+
     setThemeInput(value);
+    applyDocumentTheme(value);
+
+    const settingsResult = await commit({
+      type: 'updateSettings',
+      payload: {
+        theme: value
+      }
+    });
+
+    if (!settingsResult.ok) {
+      setNotice({ level: 'error', text: t('options.updateFailed') });
+      await refresh();
+      return;
+    }
+
+    await refresh();
+  }
+
+  async function handleDefaultStatusChange(value: string): Promise<void> {
+    if (value !== 'unread' && value !== 'reading') {
+      return;
+    }
+
+    if (value === defaultStatusInput) {
+      return;
+    }
+
+    setDefaultStatusInput(value);
+
+    const settingsResult = await commit({
+      type: 'updateSettings',
+      payload: {
+        defaultStatus: value
+      }
+    });
+
+    if (!settingsResult.ok) {
+      setNotice({ level: 'error', text: t('options.updateFailed') });
+      await refresh();
+      return;
+    }
+
+    await refresh();
   }
 
   async function handleChooseSyncDirectory(): Promise<void> {
@@ -720,41 +782,6 @@ export default function App(): ReactElement {
 
     clearDangerAction();
     await handleDeleteTag();
-  }
-
-  async function handleSavePreferences(): Promise<void> {
-    const settingsResult = await commit({
-      type: 'updateSettings',
-      payload: {
-        theme: themeInput,
-        defaultStatus: defaultStatusInput
-      }
-    });
-
-    if (!settingsResult.ok) {
-      setNotice({ level: 'error', text: t('options.updateFailed') });
-      await refresh();
-      return;
-    }
-
-    if (localeInput !== locale) {
-      const localeResult = await commit({
-        type: 'setLocale',
-        payload: { locale: localeInput }
-      });
-
-      if (!localeResult.ok) {
-        setNotice({ level: 'error', text: t('options.updateFailed') });
-        await refresh();
-        return;
-      }
-
-      await changeLanguage(localeInput);
-      setLocale(localeInput);
-    }
-
-    setNotice({ level: 'success', text: t('options.updateSuccess') });
-    await refresh();
   }
 
   function handleToggleSelect(id: string): void {
@@ -1106,11 +1133,11 @@ export default function App(): ReactElement {
       </div>
 
       <div className="flex min-h-screen w-full">
-        <aside className="sticky top-0 h-screen w-56 shrink-0 self-start bg-bg-elevated px-3 py-4">
+        <aside className="sticky top-0 h-screen w-60 shrink-0 self-start bg-bg-elevated px-3 py-4">
           <div className="flex items-center gap-2 px-2">
             <FolioMark variant={iconVariantInput} size={30} className="h-[30px] w-[30px]" />
             <div>
-              <h1 className="m-0 font-ui text-[28px] leading-[28px] font-medium">Folio</h1>
+              <h1 className="m-0 font-display text-[28px] leading-[28px] font-semibold tracking-[-0.01em]">Folio</h1>
               <p className="m-0 mt-0.5 font-mono text-[11px] tracking-wide text-text-muted">
                 {t('options.readingList')}
               </p>
@@ -1125,7 +1152,7 @@ export default function App(): ReactElement {
                     <circle cx="12" cy="12" r="8.5" />
                     <path d="M12 7.5v5l3.3 1.9" />
                   </svg>
-                  <span className={`truncate text-[13px] leading-none ${view === 'unread' ? 'font-medium' : ''}`}>{t('common.unread')}</span>
+                  <span className={`whitespace-nowrap text-[13px] leading-none ${view === 'unread' ? 'font-medium' : ''}`}>{t('common.unread')}</span>
                 </span>
                 <span className={navCountClass(view === 'unread')}>{counts.unread}</span>
               </button>
@@ -1136,7 +1163,7 @@ export default function App(): ReactElement {
                     <path d="M4 6.5c2.6 0 4.2.6 6 1.9 1.8-1.3 3.4-1.9 6-1.9h3v12h-3c-2.6 0-4.2.6-6 1.9-1.8-1.3-3.4-1.9-6-1.9H1v-12Z" />
                     <path d="M10 8.4v12" />
                   </svg>
-                  <span className={`truncate text-[13px] leading-none ${view === 'reading' ? 'font-medium' : ''}`}>{t('common.reading')}</span>
+                  <span className={`whitespace-nowrap text-[13px] leading-none ${view === 'reading' ? 'font-medium' : ''}`}>{t('common.reading')}</span>
                 </span>
                 <span className={navCountClass(view === 'reading')}>{counts.reading}</span>
               </button>
@@ -1146,7 +1173,7 @@ export default function App(): ReactElement {
                   <svg viewBox="0 0 24 24" className={`h-[15px] w-[15px] shrink-0 ${navIconClass(view === 'done')}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d="m5.5 12.3 4.1 4.1 8.9-8.9" />
                   </svg>
-                  <span className={`truncate text-[13px] leading-none ${view === 'done' ? 'font-medium' : ''}`}>{t('common.done')}</span>
+                  <span className={`whitespace-nowrap text-[13px] leading-none ${view === 'done' ? 'font-medium' : ''}`}>{t('common.done')}</span>
                 </span>
                 <span className={navCountClass(view === 'done')}>{counts.done}</span>
               </button>
@@ -1157,7 +1184,7 @@ export default function App(): ReactElement {
                     <path d="M3 10.5 12 3l9 7.5" />
                     <path d="M6 9.5V20h12V9.5" />
                   </svg>
-                  <span className={`truncate text-[13px] leading-none ${view === 'all' ? 'font-medium' : ''}`}>{t('common.all')}</span>
+                  <span className={`whitespace-nowrap text-[13px] leading-none ${view === 'all' ? 'font-medium' : ''}`}>{t('common.all')}</span>
                 </span>
                 <span className={navCountClass(view === 'all')}>{counts.all}</span>
               </button>
@@ -1218,7 +1245,7 @@ export default function App(): ReactElement {
                   <path d="M10 2h4l.7 2.2c.5.1 1 .3 1.5.6l2.1-1 2.8 2.8-1 2.1c.3.5.5 1 .6 1.5L23 10v4l-2.2.7c-.1.5-.3 1-.6 1.5l1 2.1-2.8 2.8-2.1-1c-.5.3-1 .5-1.5.6L14 23h-4l-.7-2.2c-.5-.1-1-.3-1.5-.6l-2.1 1-2.8-2.8 1-2.1c-.3-.5-.5-1-.6-1.5L1 14v-4l2.2-.7c.1-.5.3-1 .6-1.5l-1-2.1L5.6 3l2.1 1c.5-.3 1-.5 1.5-.6L10 2Z" />
                   <circle cx="12" cy="12" r="3" />
                 </svg>
-                <span className={`truncate text-[13px] leading-none ${view === 'settings' ? 'font-medium' : ''}`}>{t('common.settings')}</span>
+                <span className={`whitespace-nowrap text-[13px] leading-none ${view === 'settings' ? 'font-medium' : ''}`}>{t('common.settings')}</span>
               </span>
               <span className="min-w-6" />
             </button>
@@ -1229,7 +1256,7 @@ export default function App(): ReactElement {
           <div className="mx-auto flex h-full min-h-0 w-full max-w-[1080px] flex-col">
           <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="m-0 font-display text-3xl">{getViewTitle()}</h2>
+              <h2 className="m-0 font-display text-3xl font-semibold tracking-[-0.01em]">{getViewTitle()}</h2>
               {view !== 'settings' ? (
                 <p className="m-0 font-mono text-sm text-text-muted">
                   {t('options.totalCount', { count: displayItems.length })}
@@ -1242,7 +1269,7 @@ export default function App(): ReactElement {
                 <TextField
                   id="options-search"
                   aria-label={t('options.searchPlaceholder')}
-                  className="h-9 w-[min(40vw,392px)] min-w-[220px]"
+                  className="h-10 w-[min(40vw,392px)] min-w-[220px]"
                   leftIcon={<Search className="h-4 w-4" strokeWidth={1.9} />}
                   placeholder={t('options.searchPlaceholder')}
                   value={search}
@@ -1251,7 +1278,7 @@ export default function App(): ReactElement {
                 <SelectField
                   id="options-sort"
                   aria-label={t('options.sortLabel')}
-                  className="h-9 text-xs"
+                  className="h-10 text-xs"
                   wrapperClassName="w-[min(22vw,180px)] min-w-[140px]"
                   leftIcon={<ArrowUpDown className="h-4 w-4" strokeWidth={1.9} />}
                   value={sortMode}
@@ -1267,7 +1294,7 @@ export default function App(): ReactElement {
                 <div className="relative">
                   <button
                     type="button"
-                    className="inline-flex h-8 items-center gap-1.5 rounded-md border border-(--border) bg-bg-surface px-3 text-xs text-text-secondary hover:bg-bg-elevated"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-md border border-(--border) bg-bg-surface px-3 text-xs text-text-secondary hover:bg-bg-elevated"
                     onClick={() => setIsExportMenuOpen((prev) => !prev)}
                     onKeyDown={handleExportMenuKeyDown}
                     aria-haspopup="menu"
@@ -1354,7 +1381,7 @@ export default function App(): ReactElement {
                         <SelectField
                           id="settings-language"
                           leftIcon={<Globe2 className="h-4 w-4" strokeWidth={1.9} />}
-                          value={localeInput}
+                          value={locale}
                           onChange={(event) => void handleLocaleChange(event.target.value)}
                         >
                           <option value="en">{t('settings.english')}</option>
@@ -1394,23 +1421,11 @@ export default function App(): ReactElement {
                           id="settings-default-status"
                           className="text-sm"
                           value={defaultStatusInput}
-                          onChange={(event) =>
-                            setDefaultStatusInput(event.target.value as 'unread' | 'reading')
-                          }
+                          onChange={(event) => void handleDefaultStatusChange(event.target.value)}
                         >
                           <option value="unread">{t('common.unread')}</option>
                           <option value="reading">{t('common.reading')}</option>
                         </SelectField>
-                      </div>
-
-                      <div className="flex justify-end pt-1">
-                        <button
-                          type="button"
-                          className="h-9 rounded-md bg-accent px-3.5 text-sm text-on-accent hover:bg-accent-hover"
-                          onClick={() => void handleSavePreferences()}
-                        >
-                          {t('common.save')}
-                        </button>
                       </div>
                     </div>
                   </article>
@@ -1775,7 +1790,7 @@ export default function App(): ReactElement {
 
               {displayItems.length === 0 ? (
                 <div className="rounded-lg bg-bg-surface p-6">
-                  <p className="m-0 font-display text-xl">{t('options.emptyTitle')}</p>
+                  <p className="m-0 font-display text-xl font-semibold tracking-[-0.01em]">{t('options.emptyTitle')}</p>
                   <p className="mb-0 mt-2 text-sm text-text-secondary">{t('options.emptyText')}</p>
                 </div>
               ) : null}

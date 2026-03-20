@@ -1,8 +1,9 @@
 :root {
   color-scheme: light dark;
 
-  --theme-font-display: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', 'URW Palladio L', serif;
-  --theme-font-ui: 'Avenir Next', 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  /* Warm theme: closer to Claude Code style (clean modern system sans) */
+  --theme-font-display: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Avenir Next', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  --theme-font-ui: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Avenir Next', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
   --theme-font-mono: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
   --theme-bg-base: #faf8f5;
@@ -83,8 +84,9 @@
 }
 
 :root[data-folio-theme='mono'] {
-  --theme-font-display: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
-  --theme-font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  /* Mono theme: closer to Notion style (Inter-first + neutral sans stack) */
+  --theme-font-display: 'Inter', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --theme-font-ui: 'Inter', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   --theme-font-mono: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
   --theme-bg-base: #f5f4f1;

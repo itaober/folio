@@ -173,7 +173,7 @@ export default function App(): ReactElement {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <FolioMark variant={iconVariant} size={17} />
-            <span className="font-ui text-[14px] font-medium">{t('popup.title')}</span>
+            <span className="font-display text-[14px] font-semibold tracking-[-0.01em]">{t('popup.title')}</span>
           </div>
 
           <div className="flex items-center gap-1">

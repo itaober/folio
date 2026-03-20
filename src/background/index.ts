@@ -4,15 +4,65 @@ import { getActionIconPathSet } from '../shared/icons';
 import { getThemeIconVariant, resolveFolioTheme } from '../shared/theme';
 
 const SAVE_MENU_ID = 'folio-save-to-list';
-type IconSize = 16 | 32 | 48 | 128;
-
-const ICON_SIZES: IconSize[] = [16, 32, 48, 128];
-const checkedIconCache = new Map<string, Promise<Record<IconSize, ImageData>>>();
 
 function isMissingTabError(error: unknown): boolean {
   const message =
     error instanceof Error ? error.message : typeof error === 'string' ? error : '';
   return message.includes('No tab with id');
+}
+
+function getSavedBadgeStyle(iconVariant: unknown): {
+  background: string;
+  textColor: string;
+  text: string;
+} {
+  const normalized = iconVariant === 'mono' ? 'mono' : 'classic';
+
+  if (normalized === 'mono') {
+    return {
+      background: '#2f2f2f',
+      textColor: '#ffffff',
+      text: '✓'
+    };
+  }
+
+  return {
+    background: '#a14f2c',
+    textColor: '#fff9f3',
+    text: '✓'
+  };
+}
+
+async function clearBadge(tabId: number): Promise<void> {
+  await chrome.action.setBadgeText({ tabId, text: '' });
+}
+
+async function setSavedBadge(tabId: number, iconVariant: unknown): Promise<void> {
+  const style = getSavedBadgeStyle(iconVariant);
+
+  await chrome.action.setBadgeBackgroundColor({
+    tabId,
+    color: style.background
+  });
+
+  const actionApi = chrome.action as typeof chrome.action & {
+    setBadgeTextColor?: (details: {
+      tabId?: number;
+      color: string | [number, number, number, number];
+    }) => Promise<void>;
+  };
+
+  if (typeof actionApi.setBadgeTextColor === 'function') {
+    await actionApi.setBadgeTextColor({
+      tabId,
+      color: style.textColor
+    });
+  }
+
+  await chrome.action.setBadgeText({
+    tabId,
+    text: style.text
+  });
 }
 
 async function updateBadge(tabId: number, url?: string): Promise<void> {
@@ -21,24 +71,21 @@ async function updateBadge(tabId: number, url?: string): Promise<void> {
     const theme = resolveFolioTheme(store.settings.theme);
     const iconVariant = getThemeIconVariant(theme);
     const iconPaths = getActionIconPathSet(iconVariant);
+    await chrome.action.setIcon({ tabId, path: iconPaths });
 
     if (!url) {
-      await chrome.action.setBadgeText({ tabId, text: '' });
-      await chrome.action.setIcon({ tabId, path: iconPaths });
+      await clearBadge(tabId);
       return;
     }
 
     const item = selectItemByUrl(store, url);
 
     if (!item) {
-      await chrome.action.setBadgeText({ tabId, text: '' });
-      await chrome.action.setIcon({ tabId, path: iconPaths });
+      await clearBadge(tabId);
       return;
     }
 
-    const imageData = await getCheckedActionIconImageData(iconVariant);
-    await chrome.action.setBadgeText({ tabId, text: '' });
-    await chrome.action.setIcon({ tabId, imageData });
+    await setSavedBadge(tabId, iconVariant);
   } catch (error) {
     if (isMissingTabError(error)) {
       // Tab may close while async icon/badge work is in flight.
@@ -56,76 +103,6 @@ async function applyConfiguredActionIcon(): Promise<void> {
   await chrome.action.setIcon({
     path: getActionIconPathSet(iconVariant)
   });
-}
-
-async function getCheckedActionIconImageData(
-  variant: unknown
-): Promise<Record<IconSize, ImageData>> {
-  const key = String(variant);
-  const cached = checkedIconCache.get(key);
-  if (cached) {
-    return cached;
-  }
-
-  const task = buildCheckedActionIconImageData(variant);
-  checkedIconCache.set(key, task);
-  return task;
-}
-
-async function buildCheckedActionIconImageData(
-  variant: unknown
-): Promise<Record<IconSize, ImageData>> {
-  const iconPaths = getActionIconPathSet(variant);
-  const entries = await Promise.all(
-    ICON_SIZES.map(async (size) => {
-      const bitmap = await loadIconBitmap(iconPaths[size]);
-      const canvas = new OffscreenCanvas(size, size);
-      const context = canvas.getContext('2d');
-      if (!context) {
-        throw new Error('Failed to create icon drawing context');
-      }
-
-      context.clearRect(0, 0, size, size);
-      context.drawImage(bitmap, 0, 0, size, size);
-      drawSavedCheckmark(context, size);
-
-      return [size, context.getImageData(0, 0, size, size)] as const;
-    })
-  );
-
-  return Object.fromEntries(entries) as Record<IconSize, ImageData>;
-}
-
-async function loadIconBitmap(path: string): Promise<ImageBitmap> {
-  const response = await fetch(chrome.runtime.getURL(path));
-  const blob = await response.blob();
-  return createImageBitmap(blob);
-}
-
-function drawSavedCheckmark(context: OffscreenCanvasRenderingContext2D, size: number): void {
-  const outerRadius = Math.max(4, Math.round(size * 0.3));
-  const centerX = size - outerRadius + 0.25;
-  const centerY = size - outerRadius + 0.25;
-
-  context.beginPath();
-  context.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
-  context.fillStyle = '#f8f4ed';
-  context.fill();
-
-  context.beginPath();
-  context.arc(centerX, centerY, outerRadius - 1.4, 0, Math.PI * 2);
-  context.fillStyle = '#3a6b3a';
-  context.fill();
-
-  context.beginPath();
-  context.moveTo(centerX - outerRadius * 0.54, centerY + outerRadius * 0.02);
-  context.lineTo(centerX - outerRadius * 0.2, centerY + outerRadius * 0.34);
-  context.lineTo(centerX + outerRadius * 0.56, centerY - outerRadius * 0.34);
-  context.strokeStyle = '#f8f4ed';
-  context.lineWidth = Math.max(1.5, size / 8.5);
-  context.lineCap = 'round';
-  context.lineJoin = 'round';
-  context.stroke();
 }
 
 async function updateBadgeForActiveTab(): Promise<void> {
