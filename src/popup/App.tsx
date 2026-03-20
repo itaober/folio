@@ -12,9 +12,12 @@ import {
   X
 } from 'lucide-react';
 import {
-  DEFAULT_ICON_VARIANT,
-  type FolioIconVariant
-} from '../shared/icons';
+  DEFAULT_THEME,
+  applyDocumentTheme,
+  getThemeIconVariant,
+  resolveFolioTheme,
+  type FolioTheme
+} from '../shared/theme';
 import { FolioMark } from '../shared/ui/FolioMark';
 import {
   nextStatus,
@@ -46,9 +49,7 @@ export default function App(): ReactElement {
   const [activePage, setActivePage] = useState<ActivePage | null>(null);
   const [currentItem, setCurrentItem] = useState<FolioItem | null>(null);
   const [recentItems, setRecentItems] = useState<FolioItem[]>([]);
-  const [iconVariant, setIconVariant] = useState<FolioIconVariant>(
-    DEFAULT_ICON_VARIANT
-  );
+  const [theme, setTheme] = useState<FolioTheme>(DEFAULT_THEME);
   const [popupFilter, setPopupFilter] = useState<PopupFilter>('unread');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -57,6 +58,10 @@ export default function App(): ReactElement {
   useEffect(() => {
     void load();
   }, []);
+
+  useEffect(() => {
+    applyDocumentTheme(theme);
+  }, [theme]);
 
   async function load(): Promise<FolioItem | null> {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -80,7 +85,7 @@ export default function App(): ReactElement {
 
     setActivePage(page);
     setCurrentItem(item);
-    setIconVariant(store.settings.iconVariant);
+    setTheme(resolveFolioTheme(store.settings.theme));
     setRecentItems(selectRecentItems(store, 60));
     return item;
   }
@@ -160,64 +165,66 @@ export default function App(): ReactElement {
 
     return items;
   }, [popupFilter, recentItems, searchTerm]);
+  const iconVariant = getThemeIconVariant(theme);
 
   return (
-    <main className="relative h-[520px] w-[360px] overflow-y-auto bg-bg-base text-text-primary">
-      <section className="space-y-3 p-4">
+    <main className="relative flex h-[450px] w-[320px] flex-col bg-bg-base text-text-primary">
+      <section className="space-y-2 p-2.5">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <FolioMark variant={iconVariant} size={20} />
-            <span className="font-display text-base italic">{t('popup.title')}</span>
+            <FolioMark variant={iconVariant} size={17} />
+            <span className="font-ui text-[14px] font-medium">{t('popup.title')}</span>
           </div>
 
-		          <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  className="inline-flex h-9 items-center gap-1 rounded-md bg-accent px-2.5 text-xs font-medium text-on-accent hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
-                  disabled={!canSave}
-                  onClick={() =>
-                    void (currentItem
-                      ? handleRemoveCurrentPage()
-                      : handleSaveCurrentPage())
-                  }
-                >
-                  {currentItem ? (
-                    <X className="h-3.5 w-3.5" strokeWidth={2.2} />
-                  ) : (
-                    <Plus className="h-3.5 w-3.5" strokeWidth={2.2} />
-                  )}
-                  <span>
-                    {currentItem ? t('popup.removeCurrent') : t('popup.saveShort')}
-                  </span>
-                </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              className="inline-flex h-7 items-center gap-1 rounded-md bg-accent px-2 text-[11px] font-medium text-on-accent hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
+              disabled={!canSave}
+              onClick={() =>
+                void (currentItem
+                  ? handleRemoveCurrentPage()
+                  : handleSaveCurrentPage())
+              }
+            >
+              {currentItem ? (
+                <X className="h-3 w-3" strokeWidth={2.2} />
+              ) : (
+                <Plus className="h-3 w-3" strokeWidth={2.2} />
+              )}
+              <span>
+                {currentItem ? t('popup.removeCurrent') : t('popup.saveShort')}
+              </span>
+            </button>
 
-		            <button
-		              type="button"
-		              className="inline-flex h-9 items-center gap-1 rounded-md bg-bg-surface px-2.5 text-xs text-text-secondary hover:bg-bg-elevated"
-		              onClick={() => void handleOpenOptions()}
-		            >
-		              <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} />
-		              {t('popup.openDashboard')}
-		            </button>
-		          </div>
-	        </div>
+            <button
+              type="button"
+              className="inline-flex h-7 items-center gap-1 rounded-md border border-(--border) bg-bg-elevated px-2 text-[11px] text-text-secondary hover:bg-bg-sunken"
+              onClick={() => void handleOpenOptions()}
+            >
+              <ExternalLink className="h-3 w-3" strokeWidth={2} />
+              {t('popup.openDashboard')}
+            </button>
+          </div>
+        </div>
 
-		        <TextField
-              id="popup-search"
-              aria-label={t('popup.searchAction')}
-		          leftIcon={<Search className="h-3.5 w-3.5" strokeWidth={2} />}
-		          placeholder={t('popup.searchPlaceholder')}
-		          value={searchTerm}
-		          onChange={(event) => setSearchTerm(event.target.value)}
-		        />
+        <TextField
+          id="popup-search"
+          aria-label={t('popup.searchAction')}
+          leftIcon={<Search className="h-[11px] w-[11px]" strokeWidth={2} />}
+          className="h-8 px-2.5 pl-8 text-[11px]"
+          placeholder={t('popup.searchPlaceholder')}
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+        />
 
       </section>
 
-	      <div className="mx-4 h-px bg-(--border)" />
+      <div className="mx-2.5 h-px bg-(--border)" />
 
-	      <section className="space-y-3 p-4">
-	        <div className="rounded-full bg-bg-surface p-1">
-	          <div className="grid grid-cols-4 gap-1">
+      <section className="flex min-h-0 flex-1 flex-col space-y-2 p-2.5">
+        <div className="rounded-full bg-bg-surface p-0.5">
+          <div className="grid grid-cols-4 gap-0.5">
             {(['unread', 'reading', 'done', 'all'] as PopupFilter[]).map((status) => {
               const active = popupFilter === status;
               return (
@@ -227,8 +234,8 @@ export default function App(): ReactElement {
                   aria-pressed={active}
                   className={
                     active
-                      ? 'rounded-full border border-(--accent-border) bg-accent-subtle px-2 py-1 text-xs font-semibold text-accent'
-                      : 'rounded-full border border-transparent px-2 py-1 text-xs text-text-muted hover:border-(--border) hover:bg-bg-base hover:text-text-secondary'
+                      ? 'rounded-full border border-(--accent-border) bg-accent-subtle px-1.5 py-1 text-[11px] font-semibold text-accent'
+                      : 'rounded-full border border-transparent px-1.5 py-1 text-[11px] text-text-muted hover:border-(--border) hover:bg-bg-base hover:text-text-secondary'
                   }
                   onClick={() => setPopupFilter(status)}
                 >
@@ -239,59 +246,59 @@ export default function App(): ReactElement {
           </div>
         </div>
 
-        <p className="mb-0 font-mono text-[10px] uppercase text-text-muted">{t('popup.recent')}</p>
-        <div className="max-h-[268px] space-y-1.5 overflow-y-auto pr-1">
+        <p className="mb-0 font-mono text-[9px] uppercase text-text-muted">{t('popup.recent')}</p>
+        <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto pr-1">
           {filteredRecentItems.map((item) => {
             return (
               <div
                 key={item.id}
-                className="flex items-center gap-2 rounded-md border border-transparent px-2 py-2 transition-colors hover:border-(--border) hover:bg-bg-surface"
+                className="flex items-center gap-1.5 rounded-md px-1.5 py-1.5 transition-colors hover:bg-bg-surface"
               >
-              <button
-                type="button"
-                className="flex min-w-0 flex-1 items-center gap-2 bg-transparent p-0 text-left"
-                onClick={() => void handleOpenRecentItem(item)}
-              >
-                {item.favicon ? (
-                  <img
-                    src={item.favicon}
-                    alt=""
-                    className="h-4 w-4 rounded-[3px] bg-bg-surface object-cover"
-                  />
-                ) : (
-                  <span className="flex h-4 w-4 items-center justify-center rounded-[3px] bg-bg-surface">
-                    <FolioMark variant={iconVariant} size={14} />
-                  </span>
-                )}
-                <span className="min-w-0 flex-1">
-                  <span className="flex min-w-0 items-center gap-1">
-                    <span className="block min-w-0 flex-1 truncate text-sm text-text-primary">
-                      {renderHighlightedText(item.title, searchTerm)}
+                <button
+                  type="button"
+                  className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 bg-transparent p-0 text-left"
+                  onClick={() => void handleOpenRecentItem(item)}
+                >
+                  {item.favicon ? (
+                    <img
+                      src={item.favicon}
+                      alt=""
+                      className="h-[18px] w-[18px] rounded-[4px] bg-bg-surface object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[4px] bg-bg-surface">
+                      <FolioMark variant={iconVariant} size={15} />
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="flex min-w-0 items-center gap-1">
+                      <span className="block min-w-0 flex-1 truncate text-[13px] text-text-primary">
+                        {renderHighlightedText(item.title, searchTerm)}
+                      </span>
+                    </span>
+                    <span className="flex items-center gap-1 min-w-0">
+                      <span className="block truncate font-mono text-[10px] text-text-muted">
+                        {renderHighlightedText(item.domain, searchTerm)}
+                      </span>
                     </span>
                   </span>
-                  <span className="flex items-center gap-1 min-w-0">
-                    <span className="block truncate font-mono text-[11px] text-text-muted">
-                      {renderHighlightedText(item.domain, searchTerm)}
-                    </span>
-                  </span>
-                </span>
-              </button>
+                </button>
 
-              <button
-                type="button"
-                className={`inline-flex h-8 w-8 items-center justify-center rounded-md border border-(--border) ${statusBadgeClass(item.status)} hover:border-(--accent-border)`}
-                onClick={() => void handleStatusChange(item, nextStatus(item.status))}
-                title={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}
-                aria-label={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}
-              >
-                {statusIcon(item.status)}
-              </button>
+                <button
+                  type="button"
+                  className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-(--border) ${statusBadgeClass(item.status)} hover:border-(--accent-border)`}
+                  onClick={() => void handleStatusChange(item, nextStatus(item.status))}
+                  title={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}
+                  aria-label={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}
+                >
+                  {statusIcon(item.status)}
+                </button>
               </div>
             );
           })}
 
           {filteredRecentItems.length === 0 ? (
-            <p className="m-0 rounded-md bg-bg-surface px-3 py-4 text-xs text-text-muted">
+            <p className="m-0 rounded-md bg-bg-surface px-2.5 py-3 text-[11px] text-text-muted">
               {t('options.emptyText')}
             </p>
           ) : null}

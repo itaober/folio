@@ -22,7 +22,7 @@ Folio helps you collect pages quickly and move them through `Unread`, `Reading`,
 - Search and sorting in options page
 - Local backup directory sync (browser -> local)
 - English and Simplified Chinese UI
-- Switchable icon variants
+- Switchable style themes: Warm and Monochrome
 
 ## Installation
 

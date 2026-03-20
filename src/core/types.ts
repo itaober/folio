@@ -1,5 +1,6 @@
 import type { SupportedLocale } from '../shared/i18n/localeStore';
 import type { FolioIconVariant } from '../shared/icons';
+import type { FolioTheme } from '../shared/theme';
 
 export type FolioStatus = 'unread' | 'reading' | 'done';
 
@@ -20,6 +21,7 @@ export interface FolioItem {
 export interface FolioSettings {
   locale: SupportedLocale;
   iconVariant: FolioIconVariant;
+  theme: FolioTheme;
   defaultStatus: 'unread' | 'reading';
   syncDirectory: string | null;
   lastSyncedAt: number | null;
@@ -91,6 +93,7 @@ export type FolioMutation =
       type: 'updateSettings';
       payload: {
         iconVariant?: FolioIconVariant;
+        theme?: FolioTheme;
         defaultStatus?: 'unread' | 'reading';
       };
     }

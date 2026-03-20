@@ -1,6 +1,7 @@
 import { commit, getStore } from '../core/repository';
 import { selectItemByUrl } from '../core/selectors';
 import { getActionIconPathSet } from '../shared/icons';
+import { getThemeIconVariant, resolveFolioTheme } from '../shared/theme';
 
 const SAVE_MENU_ID = 'folio-save-to-list';
 type IconSize = 16 | 32 | 48 | 128;
@@ -17,7 +18,9 @@ function isMissingTabError(error: unknown): boolean {
 async function updateBadge(tabId: number, url?: string): Promise<void> {
   try {
     const store = await getStore();
-    const iconPaths = getActionIconPathSet(store.settings.iconVariant);
+    const theme = resolveFolioTheme(store.settings.theme);
+    const iconVariant = getThemeIconVariant(theme);
+    const iconPaths = getActionIconPathSet(iconVariant);
 
     if (!url) {
       await chrome.action.setBadgeText({ tabId, text: '' });
@@ -33,7 +36,7 @@ async function updateBadge(tabId: number, url?: string): Promise<void> {
       return;
     }
 
-    const imageData = await getCheckedActionIconImageData(store.settings.iconVariant);
+    const imageData = await getCheckedActionIconImageData(iconVariant);
     await chrome.action.setBadgeText({ tabId, text: '' });
     await chrome.action.setIcon({ tabId, imageData });
   } catch (error) {
@@ -48,8 +51,10 @@ async function updateBadge(tabId: number, url?: string): Promise<void> {
 
 async function applyConfiguredActionIcon(): Promise<void> {
   const store = await getStore();
+  const theme = resolveFolioTheme(store.settings.theme);
+  const iconVariant = getThemeIconVariant(theme);
   await chrome.action.setIcon({
-    path: getActionIconPathSet(store.settings.iconVariant)
+    path: getActionIconPathSet(iconVariant)
   });
 }
 
@@ -98,9 +103,9 @@ async function loadIconBitmap(path: string): Promise<ImageBitmap> {
 }
 
 function drawSavedCheckmark(context: OffscreenCanvasRenderingContext2D, size: number): void {
-  const outerRadius = Math.max(3, Math.round(size * 0.23));
-  const centerX = size - outerRadius + 0.5;
-  const centerY = size - outerRadius + 0.5;
+  const outerRadius = Math.max(4, Math.round(size * 0.3));
+  const centerX = size - outerRadius + 0.25;
+  const centerY = size - outerRadius + 0.25;
 
   context.beginPath();
   context.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
@@ -108,16 +113,16 @@ function drawSavedCheckmark(context: OffscreenCanvasRenderingContext2D, size: nu
   context.fill();
 
   context.beginPath();
-  context.arc(centerX, centerY, outerRadius - 1.2, 0, Math.PI * 2);
+  context.arc(centerX, centerY, outerRadius - 1.4, 0, Math.PI * 2);
   context.fillStyle = '#3a6b3a';
   context.fill();
 
   context.beginPath();
-  context.moveTo(centerX - outerRadius * 0.5, centerY + outerRadius * 0.05);
-  context.lineTo(centerX - outerRadius * 0.18, centerY + outerRadius * 0.36);
-  context.lineTo(centerX + outerRadius * 0.52, centerY - outerRadius * 0.34);
+  context.moveTo(centerX - outerRadius * 0.54, centerY + outerRadius * 0.02);
+  context.lineTo(centerX - outerRadius * 0.2, centerY + outerRadius * 0.34);
+  context.lineTo(centerX + outerRadius * 0.56, centerY - outerRadius * 0.34);
   context.strokeStyle = '#f8f4ed';
-  context.lineWidth = Math.max(1.25, size / 10);
+  context.lineWidth = Math.max(1.5, size / 8.5);
   context.lineCap = 'round';
   context.lineJoin = 'round';
   context.stroke();

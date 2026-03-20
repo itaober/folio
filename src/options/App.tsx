@@ -24,12 +24,17 @@ import {
   Trash2
 } from 'lucide-react';
 import { changeLanguage } from '../shared/i18n';
-import { isSupportedLocale, readStoredLocale, type SupportedLocale } from '../shared/i18n/localeStore';
+import { isSupportedLocale, type SupportedLocale } from '../shared/i18n/localeStore';
 import {
-  DEFAULT_ICON_VARIANT,
-  isFolioIconVariant,
-  type FolioIconVariant
-} from '../shared/icons';
+  applyDocumentTheme,
+  DEFAULT_THEME,
+  FOLIO_THEME_OPTIONS,
+  FOLIO_THEME_META,
+  getThemeIconVariant,
+  isFolioTheme,
+  resolveFolioTheme,
+  type FolioTheme
+} from '../shared/theme';
 import { FolioMark } from '../shared/ui/FolioMark';
 import {
   nextStatus,
@@ -104,9 +109,8 @@ export default function App(): ReactElement {
   const [view, setView] = useState<ViewKey>('unread');
   const [search, setSearch] = useState('');
   const [locale, setLocale] = useState<SupportedLocale>('en');
-  const [iconVariantInput, setIconVariantInput] = useState<FolioIconVariant>(
-    DEFAULT_ICON_VARIANT
-  );
+  const [localeInput, setLocaleInput] = useState<SupportedLocale>('en');
+  const [themeInput, setThemeInput] = useState<FolioTheme>(DEFAULT_THEME);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [batchTag, setBatchTag] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -140,7 +144,6 @@ export default function App(): ReactElement {
 
   useEffect(() => {
     void refresh();
-    void readStoredLocale().then((saved) => setLocale(saved));
     const initialSearch = new URLSearchParams(window.location.search).get(
       'search'
     );
@@ -298,9 +301,17 @@ export default function App(): ReactElement {
 
   async function refresh(): Promise<void> {
     const nextStore = await getStore();
+    const nextTheme = resolveFolioTheme(nextStore.settings.theme);
+    const nextLocale = isSupportedLocale(nextStore.settings.locale)
+      ? nextStore.settings.locale
+      : 'en';
+
     setStore(nextStore);
-    setIconVariantInput(nextStore.settings.iconVariant);
+    setLocale(nextLocale);
+    setLocaleInput(nextLocale);
+    setThemeInput(nextTheme);
     setDefaultStatusInput(nextStore.settings.defaultStatus);
+    applyDocumentTheme(nextTheme);
   }
 
   const displayItems = useMemo(() => {
@@ -458,31 +469,15 @@ export default function App(): ReactElement {
       return;
     }
 
-    await commit({ type: 'setLocale', payload: { locale: value } });
-    await changeLanguage(value);
-    setLocale(value);
+    setLocaleInput(value);
   }
 
-  async function handleIconVariantChange(value: string): Promise<void> {
-    if (!isFolioIconVariant(value)) {
+  async function handleThemeChange(value: string): Promise<void> {
+    if (!isFolioTheme(value)) {
       return;
     }
 
-    setIconVariantInput(value);
-    const result = await commit({
-      type: 'updateSettings',
-      payload: {
-        iconVariant: value
-      }
-    });
-
-    if (!result.ok) {
-      setNotice({ level: 'error', text: t('options.updateFailed') });
-      return;
-    }
-
-    setNotice({ level: 'success', text: t('settings.iconChanged') });
-    await refresh();
+    setThemeInput(value);
   }
 
   async function handleChooseSyncDirectory(): Promise<void> {
@@ -728,16 +723,34 @@ export default function App(): ReactElement {
   }
 
   async function handleSavePreferences(): Promise<void> {
-    const result = await commit({
+    const settingsResult = await commit({
       type: 'updateSettings',
       payload: {
+        theme: themeInput,
         defaultStatus: defaultStatusInput
       }
     });
 
-    if (!result.ok) {
+    if (!settingsResult.ok) {
       setNotice({ level: 'error', text: t('options.updateFailed') });
+      await refresh();
       return;
+    }
+
+    if (localeInput !== locale) {
+      const localeResult = await commit({
+        type: 'setLocale',
+        payload: { locale: localeInput }
+      });
+
+      if (!localeResult.ok) {
+        setNotice({ level: 'error', text: t('options.updateFailed') });
+        await refresh();
+        return;
+      }
+
+      await changeLanguage(localeInput);
+      setLocale(localeInput);
     }
 
     setNotice({ level: 'success', text: t('options.updateSuccess') });
@@ -1054,6 +1067,8 @@ export default function App(): ReactElement {
     return 'border border-white/15 bg-black/62 text-white';
   }
 
+  const iconVariantInput = getThemeIconVariant(themeInput);
+
   return (
     <main className="min-h-screen bg-bg-base text-text-primary">
       <div className="pointer-events-none fixed bottom-4 left-1/2 z-50 w-max max-w-[min(92vw,560px)] -translate-x-1/2 space-y-2">
@@ -1095,7 +1110,7 @@ export default function App(): ReactElement {
           <div className="flex items-center gap-2 px-2">
             <FolioMark variant={iconVariantInput} size={30} className="h-[30px] w-[30px]" />
             <div>
-              <h1 className="m-0 font-display text-[28px] leading-[28px] italic">Folio</h1>
+              <h1 className="m-0 font-ui text-[28px] leading-[28px] font-medium">Folio</h1>
               <p className="m-0 mt-0.5 font-mono text-[11px] tracking-wide text-text-muted">
                 {t('options.readingList')}
               </p>
@@ -1332,14 +1347,14 @@ export default function App(): ReactElement {
                     </p>
 
                     <div className="mt-4 space-y-4">
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         <label htmlFor="settings-language" className="text-xs text-text-secondary">
                           {t('settings.language')}
                         </label>
                         <SelectField
                           id="settings-language"
                           leftIcon={<Globe2 className="h-4 w-4" strokeWidth={1.9} />}
-                          value={locale}
+                          value={localeInput}
                           onChange={(event) => void handleLocaleChange(event.target.value)}
                         >
                           <option value="en">{t('settings.english')}</option>
@@ -1347,29 +1362,31 @@ export default function App(): ReactElement {
                         </SelectField>
                       </div>
 
-                      <div className="space-y-1.5">
-                        <label htmlFor="settings-icon-theme" className="text-xs text-text-secondary">
-                          {t('settings.iconTheme')}
+                      <div className="space-y-2">
+                        <label htmlFor="settings-theme" className="text-xs text-text-secondary">
+                          {t('settings.theme')}
                         </label>
                         <div className="flex items-center gap-2.5">
-                          <span className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-bg-elevated">
-                            <FolioMark variant={iconVariantInput} size={20} />
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] border border-(--border) bg-bg-elevated">
+                            <FolioMark variant={iconVariantInput} size={18} />
                           </span>
                           <SelectField
-                            id="settings-icon-theme"
+                            id="settings-theme"
                             wrapperClassName="flex-1"
                             className="text-sm"
-                            value={iconVariantInput}
-                            onChange={(event) => void handleIconVariantChange(event.target.value)}
+                            value={themeInput}
+                            onChange={(event) => void handleThemeChange(event.target.value)}
                           >
-                            <option value="classic">{t('settings.iconThemeClassic')}</option>
-                            <option value="dark">{t('settings.iconThemeDark')}</option>
-                            <option value="cream">{t('settings.iconThemeCream')}</option>
+                            {FOLIO_THEME_OPTIONS.map((themeId) => (
+                              <option key={themeId} value={themeId}>
+                                {t(FOLIO_THEME_META[themeId].labelKey)}
+                              </option>
+                            ))}
                           </SelectField>
                         </div>
                       </div>
 
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         <label htmlFor="settings-default-status" className="text-xs text-text-secondary">
                           {t('options.defaultStatusHint')}
                         </label>

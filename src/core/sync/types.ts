@@ -1,3 +1,5 @@
+import { FOLIO_THEMES } from '../../shared/theme';
+
 export const BACKUP_FILE_NAME = 'folio-data.json';
 export const BACKUP_SCHEMA_FILE_NAME = 'folio-data.schema.json';
 
@@ -69,6 +71,7 @@ export const BACKUP_JSON_SCHEMA: Record<string, unknown> = {
       required: [
         'locale',
         'iconVariant',
+        'theme',
         'defaultStatus',
         'syncDirectory',
         'lastSyncedAt',
@@ -76,7 +79,8 @@ export const BACKUP_JSON_SCHEMA: Record<string, unknown> = {
       ],
       properties: {
         locale: { enum: ['en', 'zh-CN'] },
-        iconVariant: { enum: ['classic', 'dark', 'cream'] },
+        iconVariant: { enum: ['classic', 'mono'] },
+        theme: { enum: FOLIO_THEMES },
         defaultStatus: { enum: ['unread', 'reading'] },
         syncDirectory: { type: ['string', 'null'] },
         lastSyncedAt: { type: ['number', 'null'] },

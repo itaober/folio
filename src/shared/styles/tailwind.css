@@ -20,9 +20,9 @@
   --color-danger-subtle-hover: var(--danger-subtle-hover);
   --color-on-accent: var(--text-on-accent);
 
-  --font-display: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', 'URW Palladio L', serif;
-  --font-ui: 'Avenir Next', 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  --font-mono: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-display: var(--theme-font-display);
+  --font-ui: var(--theme-font-ui);
+  --font-mono: var(--theme-font-mono);
 }
 
 @layer base {

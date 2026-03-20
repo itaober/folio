@@ -15,7 +15,7 @@ const zhCN = {
     title: 'Folio',
     subtitle: '暖色阅读清单',
     saveCurrentPage: '收藏当前页面',
-    saveShort: '保持',
+    saveShort: '加入',
     savedShort: '已保存',
     removeCurrent: '移除',
     currentPage: '当前页面',
@@ -106,11 +106,10 @@ const zhCN = {
     language: '语言',
     english: 'English',
     zhCN: '简体中文',
-    iconTheme: '工具栏图标',
-    iconThemeClassic: '经典',
-    iconThemeDark: '深色',
-    iconThemeCream: '奶油',
-    iconChanged: '图标已更新',
+    theme: '主题',
+    themeWarm: '暖色',
+    themeMono: '黑白灰',
+    themeChanged: '主题已更新',
     dataAndBackupTitle: '目录与数据',
     dataAndBackupHint: '设置本地备份目录，并在需要时恢复数据。',
     syncDirectory: '备份目录',
@@ -133,7 +132,7 @@ const zhCN = {
     importSuccess: '已导入 {{count}} 项',
     importFailed: '导入失败：{{error}}',
     preferencesTitle: '首选项',
-    preferencesHint: '语言、图标和提醒默认值。'
+    preferencesHint: '语言和主题默认值。'
   }
 };
 

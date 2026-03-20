@@ -9,7 +9,7 @@ import type {
 } from './types';
 import { extractDomain, normalizeUrl } from './url';
 import { isSupportedLocale, writeStoredLocale } from '../shared/i18n/localeStore';
-import { DEFAULT_ICON_VARIANT, isFolioIconVariant } from '../shared/icons';
+import { getThemeIconVariant, resolveFolioTheme } from '../shared/theme';
 import { writeBackupToDirectory } from './sync/backupWriter';
 
 function createId(): string {
@@ -38,6 +38,7 @@ async function writeStore(store: FolioStore): Promise<void> {
 
 function normalizeStore(store: FolioStore): FolioStore {
   const defaultStore = createDefaultStore();
+  const theme = resolveFolioTheme(store.settings.theme);
   const normalizedItems: Record<string, FolioItem> = {};
   for (const [id, item] of Object.entries(store.items)) {
     const legacySavedAt = (item as FolioItem & { savedAt?: unknown }).savedAt;
@@ -54,9 +55,8 @@ function normalizeStore(store: FolioStore): FolioStore {
     locale: isSupportedLocale(store.settings.locale)
       ? store.settings.locale
       : defaultStore.settings.locale,
-    iconVariant: isFolioIconVariant(store.settings.iconVariant)
-      ? store.settings.iconVariant
-      : DEFAULT_ICON_VARIANT,
+    iconVariant: getThemeIconVariant(theme),
+    theme,
     defaultStatus:
       store.settings.defaultStatus === 'reading' ? 'reading' : 'unread',
     syncDirectory:
@@ -173,9 +173,8 @@ function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | 
     rawSettings.defaultStatus === 'unread' || rawSettings.defaultStatus === 'reading'
       ? rawSettings.defaultStatus
       : current.settings.defaultStatus;
-  const iconVariant = isFolioIconVariant(rawSettings.iconVariant)
-    ? rawSettings.iconVariant
-    : current.settings.iconVariant;
+  const theme = resolveFolioTheme(rawSettings.theme ?? current.settings.theme);
+  const iconVariant = getThemeIconVariant(theme);
 
   const rawMeta = isRecord(raw.meta) ? raw.meta : {};
 
@@ -185,6 +184,7 @@ function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | 
     settings: {
       locale,
       iconVariant,
+      theme,
       defaultStatus,
       syncDirectory:
         typeof current.settings.syncDirectory === 'string'
@@ -239,6 +239,7 @@ export async function getStore(): Promise<FolioStore> {
     const knownSettingKeys = new Set([
       'locale',
       'iconVariant',
+      'theme',
       'defaultStatus',
       'syncDirectory',
       'lastSyncedAt',
@@ -262,6 +263,7 @@ export async function getStore(): Promise<FolioStore> {
     const normalized = normalizeStore(store);
     if (
       normalized.settings.iconVariant !== store.settings.iconVariant ||
+      normalized.settings.theme !== store.settings.theme ||
       needsTimestampNormalization ||
       hasUnexpectedSettingKeys
     ) {
@@ -427,6 +429,11 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
       case 'updateSettings': {
         if (mutation.payload.iconVariant !== undefined) {
           next.settings.iconVariant = mutation.payload.iconVariant;
+        }
+
+        if (mutation.payload.theme !== undefined) {
+          next.settings.theme = mutation.payload.theme;
+          next.settings.iconVariant = getThemeIconVariant(mutation.payload.theme);
         }
 
         if (mutation.payload.defaultStatus !== undefined) {

@@ -1,15 +1,20 @@
-export type FolioIconVariant = 'classic' | 'dark' | 'cream';
+export type FolioIconVariant = 'classic' | 'mono';
 
 export const DEFAULT_ICON_VARIANT: FolioIconVariant = 'classic';
 
 export function isFolioIconVariant(value: unknown): value is FolioIconVariant {
-  return value === 'classic' || value === 'dark' || value === 'cream';
+  return value === 'classic' || value === 'mono';
 }
 
 function normalizeVariant(value: unknown): FolioIconVariant {
   if (isFolioIconVariant(value)) {
     return value;
   }
+
+  if (value === 'dark' || value === 'cream') {
+    return 'classic';
+  }
+
   return DEFAULT_ICON_VARIANT;
 }
 

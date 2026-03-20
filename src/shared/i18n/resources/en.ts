@@ -15,7 +15,7 @@ const en = {
     title: 'Folio',
     subtitle: 'Warm reading list',
     saveCurrentPage: 'Save Current Page',
-    saveShort: 'Keep',
+    saveShort: 'Add',
     savedShort: 'Saved',
     removeCurrent: 'Remove',
     currentPage: 'Current Page',
@@ -106,11 +106,10 @@ const en = {
     language: 'Language',
     english: 'English',
     zhCN: '简体中文',
-    iconTheme: 'Toolbar Icon',
-    iconThemeClassic: 'Classic',
-    iconThemeDark: 'Dark',
-    iconThemeCream: 'Cream',
-    iconChanged: 'Icon updated',
+    theme: 'Theme',
+    themeWarm: 'Warm',
+    themeMono: 'Monochrome',
+    themeChanged: 'Theme updated',
     dataAndBackupTitle: 'Directory & Data',
     dataAndBackupHint: 'Set where Folio writes local backups and restore data when needed.',
     syncDirectory: 'Backup Directory',
@@ -133,7 +132,7 @@ const en = {
     importSuccess: 'Imported {{count}} items',
     importFailed: 'Import failed: {{error}}',
     preferencesTitle: 'Preferences',
-    preferencesHint: 'Language, icon, and reminder defaults.'
+    preferencesHint: 'Language and theme defaults.'
   }
 };
 
