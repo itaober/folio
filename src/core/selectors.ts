@@ -51,6 +51,38 @@ export function selectItemByUrl(store: FolioStore, rawUrl: string): FolioItem | 
   );
 }
 
+function getReadingFallbackScore(item: FolioItem): number {
+  return (
+    item.resumeSnapshot?.updatedAt ??
+    item.lastOpenedAt ??
+    item.updatedAt ??
+    item.createdAt
+  );
+}
+
+export function selectReadingItemByUrlFallback(
+  store: FolioStore,
+  rawUrl: string
+): FolioItem | undefined {
+  const exact = selectItemByUrl(store, rawUrl);
+  if (exact?.status === 'reading') {
+    return exact;
+  }
+
+  const domain = extractDomain(rawUrl);
+  if (domain === 'unknown') {
+    return undefined;
+  }
+
+  return Object.values(store.items)
+    .filter(
+      (item) =>
+        item.status === 'reading' &&
+        (item.domain === domain || getItemPreferredDomain(item) === domain)
+    )
+    .sort((a, b) => getReadingFallbackScore(b) - getReadingFallbackScore(a))[0];
+}
+
 export function selectFilteredItems(store: FolioStore, keyword: string): FolioItem[] {
   if (!keyword.trim()) {
     return selectAllItems(store);

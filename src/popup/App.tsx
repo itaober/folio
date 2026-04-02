@@ -40,6 +40,7 @@ import {
   getItemPreferredDomain,
   getItemPreferredTitle,
   matchesItemKeyword,
+  selectReadingItemByUrlFallback,
   selectItemByUrl,
   selectRecentItems
 } from '../core/selectors';
@@ -66,6 +67,7 @@ export default function App(): ReactElement {
 
   const [activePage, setActivePage] = useState<ActivePage | null>(null);
   const [currentItem, setCurrentItem] = useState<FolioItem | null>(null);
+  const [readingTargetItem, setReadingTargetItem] = useState<FolioItem | null>(null);
   const [recentItems, setRecentItems] = useState<FolioItem[]>([]);
   const [theme, setTheme] = useState<FolioTheme>(DEFAULT_THEME);
   const [popupFilter, setPopupFilter] = useState<PopupFilter>('unread');
@@ -128,6 +130,7 @@ export default function App(): ReactElement {
     if (!url) {
       setActivePage(null);
       setCurrentItem(null);
+      setReadingTargetItem(null);
       setRecentItems([]);
       closePopupEditor(null);
       return null;
@@ -141,9 +144,11 @@ export default function App(): ReactElement {
 
     const store = await getStore();
     const item = selectItemByUrl(store, url) ?? null;
+    const readingItem = selectReadingItemByUrlFallback(store, url) ?? null;
 
     setActivePage(page);
     setCurrentItem(item);
+    setReadingTargetItem(readingItem);
     setTheme(resolveFolioTheme(store.settings.theme));
     setRecentItems(selectRecentItems(store, 60));
     if (!initialFilterResolvedRef.current) {
@@ -262,7 +267,7 @@ export default function App(): ReactElement {
   }
 
   async function handleSaveProgress(item: FolioItem): Promise<void> {
-    if (item.id !== currentItem?.id || item.status !== 'reading') {
+    if (item.id !== readingTargetItem?.id || item.status !== 'reading') {
       return;
     }
 
@@ -539,7 +544,7 @@ export default function App(): ReactElement {
           {filteredRecentItems.map((item) => {
             const isExpanded = expandedItemId === item.id;
             const canSaveProgress =
-              item.id === currentItem?.id && item.status === 'reading';
+              item.id === readingTargetItem?.id && item.status === 'reading';
 
             return (
               <div
