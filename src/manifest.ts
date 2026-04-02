@@ -13,7 +13,7 @@ export default defineManifest({
   manifest_version: 3,
   name: `__MSG_${APP_NAME_KEY}__`,
   description: '__MSG_appDescription__',
-  version: '1.0.8',
+  version: '1.0.9',
   key: BUILD_CHANNEL === 'dev' ? DEV_EXTENSION_KEY : STABLE_EXTENSION_KEY,
   default_locale: 'en',
   action: {
