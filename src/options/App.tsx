@@ -50,6 +50,9 @@ import { TextField } from '../shared/ui/TextField';
 import { useAutoDismissNotice } from '../shared/ui/useAutoDismissNotice';
 import { commit, getStore, importStoreFromJson, syncBackupNow } from '../core/repository';
 import {
+  getItemPreferredDomain,
+  getItemPreferredTitle,
+  getItemPreferredUrl,
   selectAllItems,
   selectFilteredItems,
   selectItemsByStatus,
@@ -64,11 +67,15 @@ import {
   saveBackupDirectoryHandle
 } from '../core/sync/handleStore';
 import {
+  isDefaultViewMode,
+  isSavedView,
   isSortMode,
+  type DefaultViewMode,
   type FolioItem,
   type FolioMutation,
   type FolioStatus,
-  type FolioStore
+  type FolioStore,
+  type SavedView
 } from '../core/types';
 
 type ViewKey = 'all' | FolioStatus | 'settings';
@@ -132,6 +139,14 @@ export default function App(): ReactElement {
   const [defaultStatusInput, setDefaultStatusInput] = useState<'unread' | 'reading'>(
     'unread'
   );
+  const [optionsDefaultViewModeInput, setOptionsDefaultViewModeInput] =
+    useState<DefaultViewMode>('last');
+  const [optionsFixedViewInput, setOptionsFixedViewInput] =
+    useState<SavedView>('unread');
+  const [popupDefaultViewModeInput, setPopupDefaultViewModeInput] =
+    useState<DefaultViewMode>('last');
+  const [popupFixedViewInput, setPopupFixedViewInput] =
+    useState<SavedView>('unread');
   const [undoItems, setUndoItems] = useState<FolioItem[]>([]);
   const [isEditPanelExpanded, setIsEditPanelExpanded] = useState(false);
   const [pendingDangerAction, setPendingDangerAction] = useState<DangerAction | null>(null);
@@ -144,6 +159,7 @@ export default function App(): ReactElement {
   const deleteHoldTargetRef = useRef<FolioItem | null>(null);
   const editPanelTimerRef = useRef<number | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
+  const initialViewResolvedRef = useRef(false);
 
   useAutoDismissNotice(notice, setNotice, 3000);
 
@@ -246,6 +262,15 @@ export default function App(): ReactElement {
   function handleChangeView(nextView: ViewKey): void {
     setView(nextView);
     setActiveTagFilter(null);
+    if (nextView === 'settings' || store?.settings.optionsLastView === nextView) {
+      return;
+    }
+    void commit({
+      type: 'updateSettings',
+      payload: {
+        optionsLastView: nextView
+      }
+    });
   }
 
   function showExportNotice(): void {
@@ -316,6 +341,18 @@ export default function App(): ReactElement {
     setThemeInput(nextTheme);
     setDefaultStatusInput(nextStore.settings.defaultStatus);
     setSortMode(nextStore.settings.sortMode);
+    setOptionsDefaultViewModeInput(nextStore.settings.optionsDefaultViewMode);
+    setOptionsFixedViewInput(nextStore.settings.optionsFixedView);
+    setPopupDefaultViewModeInput(nextStore.settings.popupDefaultViewMode);
+    setPopupFixedViewInput(nextStore.settings.popupFixedView);
+    if (!initialViewResolvedRef.current) {
+      setView(
+        nextStore.settings.optionsDefaultViewMode === 'fixed'
+          ? nextStore.settings.optionsFixedView
+          : nextStore.settings.optionsLastView
+      );
+      initialViewResolvedRef.current = true;
+    }
     applyDocumentTheme(nextTheme);
   }
 
@@ -570,6 +607,82 @@ export default function App(): ReactElement {
     }
 
     await refresh();
+  }
+
+  async function handleOptionsDefaultViewModeChange(value: string): Promise<void> {
+    if (!isDefaultViewMode(value) || value === optionsDefaultViewModeInput) {
+      return;
+    }
+
+    setOptionsDefaultViewModeInput(value);
+    const result = await commit({
+      type: 'updateSettings',
+      payload: {
+        optionsDefaultViewMode: value
+      }
+    });
+
+    if (!result.ok) {
+      setNotice({ level: 'error', text: t('options.updateFailed') });
+      await refresh();
+    }
+  }
+
+  async function handleOptionsFixedViewChange(value: string): Promise<void> {
+    if (!isSavedView(value) || value === optionsFixedViewInput) {
+      return;
+    }
+
+    setOptionsFixedViewInput(value);
+    const result = await commit({
+      type: 'updateSettings',
+      payload: {
+        optionsFixedView: value
+      }
+    });
+
+    if (!result.ok) {
+      setNotice({ level: 'error', text: t('options.updateFailed') });
+      await refresh();
+    }
+  }
+
+  async function handlePopupDefaultViewModeChange(value: string): Promise<void> {
+    if (!isDefaultViewMode(value) || value === popupDefaultViewModeInput) {
+      return;
+    }
+
+    setPopupDefaultViewModeInput(value);
+    const result = await commit({
+      type: 'updateSettings',
+      payload: {
+        popupDefaultViewMode: value
+      }
+    });
+
+    if (!result.ok) {
+      setNotice({ level: 'error', text: t('options.updateFailed') });
+      await refresh();
+    }
+  }
+
+  async function handlePopupFixedViewChange(value: string): Promise<void> {
+    if (!isSavedView(value) || value === popupFixedViewInput) {
+      return;
+    }
+
+    setPopupFixedViewInput(value);
+    const result = await commit({
+      type: 'updateSettings',
+      payload: {
+        popupFixedView: value
+      }
+    });
+
+    if (!result.ok) {
+      setNotice({ level: 'error', text: t('options.updateFailed') });
+      await refresh();
+    }
   }
 
   async function handleChooseSyncDirectory(): Promise<void> {
@@ -1457,6 +1570,76 @@ export default function App(): ReactElement {
                           <option value="reading">{t('common.reading')}</option>
                         </SelectField>
                       </div>
+
+                      <div className="space-y-2">
+                        <p className="m-0 text-xs text-text-secondary">
+                          {t('settings.optionsDefaultView')}
+                        </p>
+                        <p className="m-0 text-[11px] leading-5 text-text-muted">
+                          {t('settings.optionsDefaultViewHint')}
+                        </p>
+                        <SelectField
+                          id="settings-options-default-view-mode"
+                          className="text-sm"
+                          value={optionsDefaultViewModeInput}
+                          onChange={(event) =>
+                            void handleOptionsDefaultViewModeChange(event.target.value)
+                          }
+                        >
+                          <option value="last">{t('settings.rememberLastView')}</option>
+                          <option value="fixed">{t('settings.fixedViewMode')}</option>
+                        </SelectField>
+                        {optionsDefaultViewModeInput === 'fixed' ? (
+                          <SelectField
+                            id="settings-options-fixed-view"
+                            className="text-sm"
+                            value={optionsFixedViewInput}
+                            onChange={(event) =>
+                              void handleOptionsFixedViewChange(event.target.value)
+                            }
+                          >
+                            <option value="unread">{t('common.unread')}</option>
+                            <option value="reading">{t('common.reading')}</option>
+                            <option value="done">{t('common.done')}</option>
+                            <option value="all">{t('common.all')}</option>
+                          </SelectField>
+                        ) : null}
+                      </div>
+
+                      <div className="space-y-2">
+                        <p className="m-0 text-xs text-text-secondary">
+                          {t('settings.popupDefaultView')}
+                        </p>
+                        <p className="m-0 text-[11px] leading-5 text-text-muted">
+                          {t('settings.popupDefaultViewHint')}
+                        </p>
+                        <SelectField
+                          id="settings-popup-default-view-mode"
+                          className="text-sm"
+                          value={popupDefaultViewModeInput}
+                          onChange={(event) =>
+                            void handlePopupDefaultViewModeChange(event.target.value)
+                          }
+                        >
+                          <option value="last">{t('settings.rememberLastView')}</option>
+                          <option value="fixed">{t('settings.fixedViewMode')}</option>
+                        </SelectField>
+                        {popupDefaultViewModeInput === 'fixed' ? (
+                          <SelectField
+                            id="settings-popup-fixed-view"
+                            className="text-sm"
+                            value={popupFixedViewInput}
+                            onChange={(event) =>
+                              void handlePopupFixedViewChange(event.target.value)
+                            }
+                          >
+                            <option value="unread">{t('common.unread')}</option>
+                            <option value="reading">{t('common.reading')}</option>
+                            <option value="done">{t('common.done')}</option>
+                            <option value="all">{t('common.all')}</option>
+                          </SelectField>
+                        ) : null}
+                      </div>
                     </div>
                   </article>
 
@@ -1644,16 +1827,16 @@ export default function App(): ReactElement {
 
                         <div className="min-w-0 flex-1">
                           <a
-                            href={item.url}
+                            href={getItemPreferredUrl(item)}
                             target="_blank"
                             rel="noreferrer"
                             className="line-clamp-2 min-w-0 text-sm font-medium text-text-primary no-underline hover:text-text-link"
                           >
-                            {renderHighlightedText(item.title, search)}
+                            {renderHighlightedText(getItemPreferredTitle(item), search)}
                           </a>
                           <div className="mt-1 flex items-center gap-1.5 overflow-hidden">
                             <p className="m-0 shrink-0 truncate font-mono text-[11px] text-text-muted">
-                              {item.domain}
+                              {getItemPreferredDomain(item)}
                             </p>
                             {item.tags.length > 0 ? (
                               <div className="min-w-0 flex items-center gap-1 overflow-hidden">

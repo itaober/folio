@@ -30,6 +30,6 @@ export default defineManifest({
     service_worker: 'src/background/index.ts',
     type: 'module'
   },
-  permissions: ['storage', 'tabs', 'contextMenus'],
+  permissions: ['storage', 'tabs', 'contextMenus', 'scripting'],
   host_permissions: ['<all_urls>']
 });

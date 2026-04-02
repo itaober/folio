@@ -34,6 +34,7 @@ const en = {
     noActiveTab: 'No active page available',
     recent: 'Recent',
     openDashboard: 'Library',
+    saveProgress: 'Save spot',
     editInFolio: 'Edit in Folio',
     searchPlaceholder: 'Search reading list',
     searchAction: 'Search',
@@ -132,7 +133,13 @@ const en = {
     importSuccess: 'Imported {{count}} items',
     importFailed: 'Import failed: {{error}}',
     preferencesTitle: 'Preferences',
-    preferencesHint: 'Set default language and theme.'
+    preferencesHint: 'Set language, theme, and default views.',
+    optionsDefaultView: 'Options default view',
+    optionsDefaultViewHint: 'Choose how the dashboard decides which status list to open.',
+    popupDefaultView: 'Popup default view',
+    popupDefaultViewHint: 'Choose how Popup decides which status tab to open.',
+    rememberLastView: 'Last selected',
+    fixedViewMode: 'Fixed status'
   }
 };
 

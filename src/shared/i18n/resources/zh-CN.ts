@@ -34,6 +34,7 @@ const zhCN = {
     noActiveTab: '当前没有可用页面',
     recent: '最近添加',
     openDashboard: '管理页',
+    saveProgress: '记录位置',
     editInFolio: '在 Folio 中编辑',
     searchPlaceholder: '搜索阅读清单',
     searchAction: '搜索',
@@ -132,7 +133,13 @@ const zhCN = {
     importSuccess: '已导入 {{count}} 项',
     importFailed: '导入失败：{{error}}',
     preferencesTitle: '首选项',
-    preferencesHint: '设置默认语言和主题。'
+    preferencesHint: '设置语言、主题和默认视图。',
+    optionsDefaultView: '后台默认视图',
+    optionsDefaultViewHint: '设置后台页面默认打开的状态列表。',
+    popupDefaultView: 'Popup 默认视图',
+    popupDefaultViewHint: '设置 Popup 默认打开的状态标签。',
+    rememberLastView: '上次选择',
+    fixedViewMode: '固定状态'
   }
 };
 

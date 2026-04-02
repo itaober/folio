@@ -7,7 +7,12 @@ import type {
   FolioStatus,
   FolioStore
 } from './types';
-import { resolveSortMode } from './types';
+import {
+  resolveDefaultViewMode,
+  resolveSavedView,
+  resolveSortMode,
+  type ResumeSnapshot
+} from './types';
 import { extractDomain, normalizeUrl } from './url';
 import { isSupportedLocale, writeStoredLocale } from '../shared/i18n/localeStore';
 import { getThemeIconVariant, resolveFolioTheme } from '../shared/theme';
@@ -33,6 +38,38 @@ function collectTagsFromItems(items: FolioStore['items']): string[] {
   return [...tagSet].sort();
 }
 
+function itemHasTrackedUrl(item: FolioItem, normalizedUrl: string): boolean {
+  return (
+    item.url === normalizedUrl ||
+    normalizeUrl(item.resumeSnapshot?.url ?? '') === normalizedUrl
+  );
+}
+
+function normalizeResumeSnapshot(
+  snapshot: ResumeSnapshot | null | undefined,
+  fallbackTitle: string,
+  fallbackUpdatedAt: number
+): ResumeSnapshot | null {
+  if (!snapshot) {
+    return null;
+  }
+
+  const normalizedUrl = normalizeUrl(snapshot.url);
+  if (!normalizedUrl) {
+    return null;
+  }
+
+  return {
+    url: snapshot.url.trim(),
+    title: snapshot.title.trim() || fallbackTitle,
+    scrollY:
+      typeof snapshot.scrollY === 'number' && Number.isFinite(snapshot.scrollY)
+        ? Math.max(0, snapshot.scrollY)
+        : 0,
+    updatedAt: toNumber(snapshot.updatedAt, fallbackUpdatedAt)
+  };
+}
+
 async function writeStore(store: FolioStore): Promise<void> {
   await chrome.storage.local.set({ [FOLIO_STORE_KEY]: store });
 }
@@ -44,10 +81,16 @@ function normalizeStore(store: FolioStore): FolioStore {
   for (const [id, item] of Object.entries(store.items)) {
     const legacySavedAt = (item as FolioItem & { savedAt?: unknown }).savedAt;
     const createdAt = toNumber(item.createdAt, toNumber(legacySavedAt, item.updatedAt));
+    const updatedAt = toNumber(item.updatedAt, createdAt);
     normalizedItems[id] = {
       ...item,
       createdAt,
-      updatedAt: toNumber(item.updatedAt, createdAt)
+      updatedAt,
+      resumeSnapshot: normalizeResumeSnapshot(
+        item.resumeSnapshot,
+        item.title,
+        updatedAt
+      )
     };
   }
 
@@ -61,6 +104,12 @@ function normalizeStore(store: FolioStore): FolioStore {
     defaultStatus:
       store.settings.defaultStatus === 'reading' ? 'reading' : 'unread',
     sortMode: resolveSortMode(store.settings.sortMode),
+    optionsDefaultViewMode: resolveDefaultViewMode(store.settings.optionsDefaultViewMode),
+    optionsFixedView: resolveSavedView(store.settings.optionsFixedView),
+    optionsLastView: resolveSavedView(store.settings.optionsLastView),
+    popupDefaultViewMode: resolveDefaultViewMode(store.settings.popupDefaultViewMode),
+    popupFixedView: resolveSavedView(store.settings.popupFixedView),
+    popupLastView: resolveSavedView(store.settings.popupLastView),
     syncDirectory:
       typeof store.settings.syncDirectory === 'string'
         ? store.settings.syncDirectory
@@ -127,6 +176,7 @@ function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | 
       value.createdAt,
       toNumber(value.savedAt, now)
     );
+    const updatedAt = toNumber(value.updatedAt, createdAt);
     const nextItem: FolioItem = {
       id:
         typeof value.id === 'string' && value.id.trim()
@@ -145,11 +195,34 @@ function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | 
         : [],
       note: typeof value.note === 'string' ? value.note : '',
       createdAt,
-      updatedAt: toNumber(value.updatedAt, createdAt),
+      updatedAt,
       lastOpenedAt:
         typeof value.lastOpenedAt === 'number' && Number.isFinite(value.lastOpenedAt)
           ? value.lastOpenedAt
-          : null
+          : null,
+      resumeSnapshot: normalizeResumeSnapshot(
+        isRecord(value.resumeSnapshot)
+          ? {
+              url: typeof value.resumeSnapshot.url === 'string' ? value.resumeSnapshot.url : '',
+              title:
+                typeof value.resumeSnapshot.title === 'string'
+                  ? value.resumeSnapshot.title
+                  : '',
+              scrollY:
+                typeof value.resumeSnapshot.scrollY === 'number'
+                  ? value.resumeSnapshot.scrollY
+                  : 0,
+              updatedAt:
+                typeof value.resumeSnapshot.updatedAt === 'number'
+                  ? value.resumeSnapshot.updatedAt
+                  : updatedAt
+            }
+          : null,
+        typeof value.title === 'string' && value.title.trim()
+          ? value.title
+          : normalizedUrl,
+        updatedAt
+      )
     };
 
     const existing = byUrl.get(nextItem.url);
@@ -176,6 +249,24 @@ function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | 
       ? rawSettings.defaultStatus
       : current.settings.defaultStatus;
   const sortMode = resolveSortMode(rawSettings.sortMode ?? current.settings.sortMode);
+  const optionsDefaultViewMode = resolveDefaultViewMode(
+    rawSettings.optionsDefaultViewMode ?? current.settings.optionsDefaultViewMode
+  );
+  const optionsFixedView = resolveSavedView(
+    rawSettings.optionsFixedView ?? current.settings.optionsFixedView
+  );
+  const optionsLastView = resolveSavedView(
+    rawSettings.optionsLastView ?? current.settings.optionsLastView
+  );
+  const popupDefaultViewMode = resolveDefaultViewMode(
+    rawSettings.popupDefaultViewMode ?? current.settings.popupDefaultViewMode
+  );
+  const popupFixedView = resolveSavedView(
+    rawSettings.popupFixedView ?? current.settings.popupFixedView
+  );
+  const popupLastView = resolveSavedView(
+    rawSettings.popupLastView ?? current.settings.popupLastView
+  );
   const theme = resolveFolioTheme(rawSettings.theme ?? current.settings.theme);
   const iconVariant = getThemeIconVariant(theme);
 
@@ -190,6 +281,12 @@ function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | 
       theme,
       defaultStatus,
       sortMode,
+      optionsDefaultViewMode,
+      optionsFixedView,
+      optionsLastView,
+      popupDefaultViewMode,
+      popupFixedView,
+      popupLastView,
       syncDirectory:
         typeof current.settings.syncDirectory === 'string'
           ? current.settings.syncDirectory
@@ -246,6 +343,12 @@ export async function getStore(): Promise<FolioStore> {
       'theme',
       'defaultStatus',
       'sortMode',
+      'optionsDefaultViewMode',
+      'optionsFixedView',
+      'optionsLastView',
+      'popupDefaultViewMode',
+      'popupFixedView',
+      'popupLastView',
       'syncDirectory',
       'lastSyncedAt',
       'lastSyncError'
@@ -301,7 +404,9 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
           return { ok: false, code: 'invalid_url', store: current };
         }
 
-        const existingItem = Object.values(next.items).find((item) => item.url === normalizedUrl);
+        const existingItem = Object.values(next.items).find((item) =>
+          itemHasTrackedUrl(item, normalizedUrl)
+        );
         if (existingItem) {
           return { ok: false, code: 'already_exists', item: existingItem, store: current };
         }
@@ -318,7 +423,8 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
           note: '',
           createdAt: now,
           updatedAt: now,
-          lastOpenedAt: null
+          lastOpenedAt: null,
+          resumeSnapshot: null
         };
 
         next.items[id] = item;
@@ -371,7 +477,7 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
           }
 
           const duplicate = Object.values(next.items).find(
-            (existing) => existing.url === normalizedUrl && existing.id !== item.id
+            (existing) => itemHasTrackedUrl(existing, normalizedUrl) && existing.id !== item.id
           );
 
           if (duplicate) {
@@ -383,6 +489,38 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
         }
 
         next.items[item.id] = updated;
+        break;
+      }
+
+      case 'setResumeSnapshot': {
+        const item = next.items[mutation.payload.id];
+        if (!item) {
+          return { ok: false, code: 'item_not_found', store: current };
+        }
+
+        const normalizedUrl = normalizeUrl(mutation.payload.url);
+        if (!normalizedUrl) {
+          return { ok: false, code: 'invalid_url', store: current };
+        }
+
+        const duplicate = Object.values(next.items).find(
+          (existing) => itemHasTrackedUrl(existing, normalizedUrl) && existing.id !== item.id
+        );
+
+        if (duplicate) {
+          return { ok: false, code: 'already_exists', item: duplicate, store: current };
+        }
+
+        next.items[item.id] = {
+          ...item,
+          updatedAt: now,
+          resumeSnapshot: {
+            url: mutation.payload.url.trim(),
+            title: mutation.payload.title.trim() || item.title,
+            scrollY: Math.max(0, mutation.payload.scrollY),
+            updatedAt: now
+          }
+        };
         break;
       }
 
@@ -399,7 +537,12 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
       case 'restoreItem': {
         const item = mutation.payload.item;
         const duplicate = Object.values(next.items).find(
-          (existing) => existing.url === item.url && existing.id !== item.id
+          (existing) =>
+            (itemHasTrackedUrl(existing, item.url) ||
+              (item.resumeSnapshot?.url
+                ? itemHasTrackedUrl(existing, item.resumeSnapshot.url)
+                : false)) &&
+            existing.id !== item.id
         );
         if (duplicate) {
           return { ok: false, code: 'already_exists', item: duplicate, store: current };
@@ -446,6 +589,24 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
         }
         if (mutation.payload.sortMode !== undefined) {
           next.settings.sortMode = mutation.payload.sortMode;
+        }
+        if (mutation.payload.optionsDefaultViewMode !== undefined) {
+          next.settings.optionsDefaultViewMode = mutation.payload.optionsDefaultViewMode;
+        }
+        if (mutation.payload.optionsFixedView !== undefined) {
+          next.settings.optionsFixedView = mutation.payload.optionsFixedView;
+        }
+        if (mutation.payload.optionsLastView !== undefined) {
+          next.settings.optionsLastView = mutation.payload.optionsLastView;
+        }
+        if (mutation.payload.popupDefaultViewMode !== undefined) {
+          next.settings.popupDefaultViewMode = mutation.payload.popupDefaultViewMode;
+        }
+        if (mutation.payload.popupFixedView !== undefined) {
+          next.settings.popupFixedView = mutation.payload.popupFixedView;
+        }
+        if (mutation.payload.popupLastView !== undefined) {
+          next.settings.popupLastView = mutation.payload.popupLastView;
         }
 
         break;

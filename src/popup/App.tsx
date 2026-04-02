@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useMemo,
   useState,
   type ReactElement
@@ -7,6 +8,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import {
   ExternalLink,
+  Goal,
   Plus,
   Search,
   X
@@ -29,11 +31,20 @@ import { renderHighlightedText } from '../shared/ui/renderHighlightedText';
 import { TextField } from '../shared/ui/TextField';
 import { commit, getStore } from '../core/repository';
 import {
+  getItemPreferredDomain,
+  getItemPreferredTitle,
   matchesItemKeyword,
   selectItemByUrl,
   selectRecentItems
 } from '../core/selectors';
-import type { FolioItem, FolioStatus } from '../core/types';
+import type {
+  FolioItem,
+  FolioStatus,
+  SavedView
+} from '../core/types';
+import type {
+  RuntimeMessageResponse
+} from '../shared/runtimeMessages';
 
 interface ActivePage {
   url: string;
@@ -52,6 +63,8 @@ export default function App(): ReactElement {
   const [theme, setTheme] = useState<FolioTheme>(DEFAULT_THEME);
   const [popupFilter, setPopupFilter] = useState<PopupFilter>('unread');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSavingProgress, setIsSavingProgress] = useState(false);
+  const initialFilterResolvedRef = useRef(false);
 
   const canSave = Boolean(activePage?.url);
 
@@ -87,6 +100,14 @@ export default function App(): ReactElement {
     setCurrentItem(item);
     setTheme(resolveFolioTheme(store.settings.theme));
     setRecentItems(selectRecentItems(store, 60));
+    if (!initialFilterResolvedRef.current) {
+      setPopupFilter(
+        store.settings.popupDefaultViewMode === 'fixed'
+          ? store.settings.popupFixedView
+          : store.settings.popupLastView
+      );
+      initialFilterResolvedRef.current = true;
+    }
     return item;
   }
 
@@ -148,8 +169,45 @@ export default function App(): ReactElement {
   }
 
   async function handleOpenRecentItem(item: FolioItem): Promise<void> {
-    await chrome.tabs.create({ url: item.url });
-    await commit({ type: 'touchOpenedAt', payload: { id: item.id } });
+    const result = (await chrome.runtime.sendMessage({
+      type: 'openPopupItem',
+      itemId: item.id
+    })) as RuntimeMessageResponse;
+
+    if (!result?.ok) {
+      await chrome.tabs.create({ url: item.resumeSnapshot?.url ?? item.url });
+      await commit({ type: 'touchOpenedAt', payload: { id: item.id } });
+    }
+  }
+
+  async function handleSaveProgress(): Promise<void> {
+    if (!currentItem || currentItem.status !== 'reading') {
+      return;
+    }
+
+    setIsSavingProgress(true);
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'captureResumeSnapshot',
+        itemId: currentItem.id
+      });
+      await load();
+    } finally {
+      setIsSavingProgress(false);
+    }
+  }
+
+  function handlePopupFilterChange(nextFilter: PopupFilter): void {
+    setPopupFilter(nextFilter);
+    if (nextFilter === popupFilter) {
+      return;
+    }
+    void commit({
+      type: 'updateSettings',
+      payload: {
+        popupLastView: nextFilter
+      }
+    });
   }
 
   const filteredRecentItems = useMemo(() => {
@@ -237,7 +295,7 @@ export default function App(): ReactElement {
                       ? 'rounded-full border border-(--accent-border) bg-accent-subtle px-1.5 py-1 text-[11px] font-semibold text-accent'
                       : 'rounded-full border border-transparent px-1.5 py-1 text-[11px] text-text-muted hover:border-(--border) hover:bg-bg-base hover:text-text-secondary'
                   }
-                  onClick={() => setPopupFilter(status)}
+                  onClick={() => handlePopupFilterChange(status)}
                 >
                   {status === 'all' ? t('common.all') : statusToLabel(status, t)}
                 </button>
@@ -249,6 +307,8 @@ export default function App(): ReactElement {
         <p className="mb-0 font-mono text-[9px] uppercase text-text-muted">{t('popup.recent')}</p>
         <div className="folio-scrollbar min-h-0 flex-1 space-y-0.5 overflow-y-auto pr-2">
           {filteredRecentItems.map((item) => {
+            const canSaveProgress =
+              item.status === 'reading' && item.id === currentItem?.id;
             return (
               <div
                 key={item.id}
@@ -273,16 +333,29 @@ export default function App(): ReactElement {
                   <span className="min-w-0 flex-1">
                     <span className="flex min-w-0 items-center gap-1">
                       <span className="block min-w-0 flex-1 truncate text-[13px] text-text-primary">
-                        {renderHighlightedText(item.title, searchTerm)}
+                        {renderHighlightedText(getItemPreferredTitle(item), searchTerm)}
                       </span>
                     </span>
                     <span className="flex items-center gap-1 min-w-0">
                       <span className="block truncate font-mono text-[10px] text-text-muted">
-                        {renderHighlightedText(item.domain, searchTerm)}
+                        {renderHighlightedText(getItemPreferredDomain(item), searchTerm)}
                       </span>
                     </span>
                   </span>
                 </button>
+
+                {canSaveProgress ? (
+                  <button
+                    type="button"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-bg-surface text-text-secondary hover:bg-bg-elevated disabled:cursor-not-allowed disabled:opacity-55"
+                    onClick={() => void handleSaveProgress()}
+                    disabled={isSavingProgress}
+                    title={t('popup.saveProgress')}
+                    aria-label={t('popup.saveProgress')}
+                  >
+                    <Goal className="h-3.5 w-3.5" strokeWidth={2} />
+                  </button>
+                ) : null}
 
                 <button
                   type="button"

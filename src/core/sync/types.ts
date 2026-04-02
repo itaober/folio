@@ -46,7 +46,8 @@ export const BACKUP_JSON_SCHEMA: Record<string, unknown> = {
         'note',
         'createdAt',
         'updatedAt',
-        'lastOpenedAt'
+        'lastOpenedAt',
+        'resumeSnapshot'
       ],
       properties: {
         id: { type: 'string' },
@@ -62,7 +63,18 @@ export const BACKUP_JSON_SCHEMA: Record<string, unknown> = {
         note: { type: 'string' },
         createdAt: { type: 'number' },
         updatedAt: { type: 'number' },
-        lastOpenedAt: { type: ['number', 'null'] }
+        lastOpenedAt: { type: ['number', 'null'] },
+        resumeSnapshot: {
+          type: ['object', 'null'],
+          required: ['url', 'title', 'scrollY', 'updatedAt'],
+          properties: {
+            url: { type: 'string' },
+            title: { type: 'string' },
+            scrollY: { type: 'number' },
+            updatedAt: { type: 'number' }
+          },
+          additionalProperties: true
+        }
       },
       additionalProperties: true
     },
@@ -74,6 +86,12 @@ export const BACKUP_JSON_SCHEMA: Record<string, unknown> = {
         'theme',
         'defaultStatus',
         'sortMode',
+        'optionsDefaultViewMode',
+        'optionsFixedView',
+        'optionsLastView',
+        'popupDefaultViewMode',
+        'popupFixedView',
+        'popupLastView',
         'syncDirectory',
         'lastSyncedAt',
         'lastSyncError'
@@ -86,6 +104,12 @@ export const BACKUP_JSON_SCHEMA: Record<string, unknown> = {
         sortMode: {
           enum: ['saved_desc', 'saved_asc', 'domain_asc', 'title_asc', 'status']
         },
+        optionsDefaultViewMode: { enum: ['last', 'fixed'] },
+        optionsFixedView: { enum: ['all', 'unread', 'reading', 'done'] },
+        optionsLastView: { enum: ['all', 'unread', 'reading', 'done'] },
+        popupDefaultViewMode: { enum: ['last', 'fixed'] },
+        popupFixedView: { enum: ['all', 'unread', 'reading', 'done'] },
+        popupLastView: { enum: ['all', 'unread', 'reading', 'done'] },
         syncDirectory: { type: ['string', 'null'] },
         lastSyncedAt: { type: ['number', 'null'] },
         lastSyncError: { type: ['string', 'null'] }

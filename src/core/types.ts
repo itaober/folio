@@ -3,14 +3,18 @@ import type { FolioIconVariant } from '../shared/icons';
 import type { FolioTheme } from '../shared/theme';
 
 export type FolioStatus = 'unread' | 'reading' | 'done';
+export type SavedView = 'all' | FolioStatus;
 export type SortMode =
   | 'saved_desc'
   | 'saved_asc'
   | 'domain_asc'
   | 'title_asc'
   | 'status';
+export type DefaultViewMode = 'last' | 'fixed';
 
 export const DEFAULT_SORT_MODE: SortMode = 'saved_desc';
+export const DEFAULT_SAVED_VIEW: SavedView = 'unread';
+export const DEFAULT_DEFAULT_VIEW_MODE: DefaultViewMode = 'last';
 
 export function isSortMode(value: unknown): value is SortMode {
   return (
@@ -26,6 +30,34 @@ export function resolveSortMode(value: unknown): SortMode {
   return isSortMode(value) ? value : DEFAULT_SORT_MODE;
 }
 
+export function isSavedView(value: unknown): value is SavedView {
+  return (
+    value === 'all' ||
+    value === 'unread' ||
+    value === 'reading' ||
+    value === 'done'
+  );
+}
+
+export function resolveSavedView(value: unknown): SavedView {
+  return isSavedView(value) ? value : DEFAULT_SAVED_VIEW;
+}
+
+export function isDefaultViewMode(value: unknown): value is DefaultViewMode {
+  return value === 'last' || value === 'fixed';
+}
+
+export function resolveDefaultViewMode(value: unknown): DefaultViewMode {
+  return isDefaultViewMode(value) ? value : DEFAULT_DEFAULT_VIEW_MODE;
+}
+
+export interface ResumeSnapshot {
+  url: string;
+  title: string;
+  scrollY: number;
+  updatedAt: number;
+}
+
 export interface FolioItem {
   id: string;
   url: string;
@@ -38,6 +70,7 @@ export interface FolioItem {
   createdAt: number;
   updatedAt: number;
   lastOpenedAt: number | null;
+  resumeSnapshot: ResumeSnapshot | null;
 }
 
 export interface FolioSettings {
@@ -46,6 +79,12 @@ export interface FolioSettings {
   theme: FolioTheme;
   defaultStatus: 'unread' | 'reading';
   sortMode: SortMode;
+  optionsDefaultViewMode: DefaultViewMode;
+  optionsFixedView: SavedView;
+  optionsLastView: SavedView;
+  popupDefaultViewMode: DefaultViewMode;
+  popupFixedView: SavedView;
+  popupLastView: SavedView;
   syncDirectory: string | null;
   lastSyncedAt: number | null;
   lastSyncError: string | null;
@@ -89,6 +128,15 @@ export type FolioMutation =
       };
     }
   | {
+      type: 'setResumeSnapshot';
+      payload: {
+        id: string;
+        url: string;
+        title: string;
+        scrollY: number;
+      };
+    }
+  | {
       type: 'deleteItem';
       payload: {
         id: string;
@@ -119,6 +167,12 @@ export type FolioMutation =
         theme?: FolioTheme;
         defaultStatus?: 'unread' | 'reading';
         sortMode?: SortMode;
+        optionsDefaultViewMode?: DefaultViewMode;
+        optionsFixedView?: SavedView;
+        optionsLastView?: SavedView;
+        popupDefaultViewMode?: DefaultViewMode;
+        popupFixedView?: SavedView;
+        popupLastView?: SavedView;
       };
     }
   | {

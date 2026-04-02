@@ -1,7 +1,19 @@
 import type { FolioItem, FolioStatus, FolioStore, SortMode } from './types';
-import { normalizeUrl } from './url';
+import { extractDomain, normalizeUrl } from './url';
 
 export type { SortMode } from './types';
+
+export function getItemPreferredUrl(item: FolioItem): string {
+  return item.resumeSnapshot?.url ?? item.url;
+}
+
+export function getItemPreferredTitle(item: FolioItem): string {
+  return item.resumeSnapshot?.title || item.title;
+}
+
+export function getItemPreferredDomain(item: FolioItem): string {
+  return extractDomain(getItemPreferredUrl(item));
+}
 
 export interface StatusCounts {
   total: number;
@@ -32,7 +44,11 @@ export function selectItemByUrl(store: FolioStore, rawUrl: string): FolioItem | 
     return undefined;
   }
 
-  return Object.values(store.items).find((item) => item.url === normalized);
+  return Object.values(store.items).find(
+    (item) =>
+      item.url === normalized ||
+      normalizeUrl(item.resumeSnapshot?.url ?? '') === normalized
+  );
 }
 
 export function selectFilteredItems(store: FolioStore, keyword: string): FolioItem[] {
@@ -55,9 +71,13 @@ export function matchesItemKeyword(
 
   return (
     item.title.toLowerCase().includes(normalizedKeyword) ||
+    getItemPreferredTitle(item).toLowerCase().includes(normalizedKeyword) ||
     item.url.toLowerCase().includes(normalizedKeyword) ||
+    getItemPreferredUrl(item).toLowerCase().includes(normalizedKeyword) ||
     item.note.toLowerCase().includes(normalizedKeyword) ||
-    (includeDomain && item.domain.toLowerCase().includes(normalizedKeyword))
+    (includeDomain &&
+      (item.domain.toLowerCase().includes(normalizedKeyword) ||
+        getItemPreferredDomain(item).toLowerCase().includes(normalizedKeyword)))
   );
 }
 
@@ -90,9 +110,13 @@ export function sortItems(items: FolioItem[], mode: SortMode): FolioItem[] {
     case 'saved_asc':
       return cloned.sort((a, b) => a.createdAt - b.createdAt);
     case 'domain_asc':
-      return cloned.sort((a, b) => a.domain.localeCompare(b.domain));
+      return cloned.sort((a, b) =>
+        getItemPreferredDomain(a).localeCompare(getItemPreferredDomain(b))
+      );
     case 'title_asc':
-      return cloned.sort((a, b) => a.title.localeCompare(b.title));
+      return cloned.sort((a, b) =>
+        getItemPreferredTitle(a).localeCompare(getItemPreferredTitle(b))
+      );
     case 'status':
       return cloned.sort((a, b) => a.status.localeCompare(b.status));
     case 'saved_desc':
