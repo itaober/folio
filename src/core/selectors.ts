@@ -8,7 +8,7 @@ export function getItemPreferredUrl(item: FolioItem): string {
 }
 
 export function getItemPreferredTitle(item: FolioItem): string {
-  return item.resumeSnapshot?.title || item.title;
+  return item.title || item.resumeSnapshot?.title || item.url;
 }
 
 export function getItemPreferredDomain(item: FolioItem): string {

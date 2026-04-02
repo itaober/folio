@@ -9,6 +9,59 @@ import { getThemeIconVariant, resolveFolioTheme } from '../shared/theme';
 
 const SAVE_MENU_ID = 'folio-save-to-list';
 const RESUME_SCROLL_RETRY_DELAYS_MS = [120, 420, 1200];
+const ACTION_ICON_IMAGE_CACHE = new Map<string, ImageData>();
+
+async function loadActionIconImage(path: string): Promise<ImageData> {
+  const cached = ACTION_ICON_IMAGE_CACHE.get(path);
+  if (cached) {
+    return cached;
+  }
+
+  const url = chrome.runtime.getURL(path);
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch icon '${path}': ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const bitmap = await createImageBitmap(blob);
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+  const context = canvas.getContext('2d');
+
+  if (!context) {
+    throw new Error(`Failed to create 2d context for icon '${path}'`);
+  }
+
+  context.drawImage(bitmap, 0, 0);
+  const imageData = context.getImageData(0, 0, bitmap.width, bitmap.height);
+  bitmap.close();
+  ACTION_ICON_IMAGE_CACHE.set(path, imageData);
+  return imageData;
+}
+
+async function loadActionIconImageSet(
+  iconPaths: ReturnType<typeof getActionIconPathSet>
+): Promise<{
+  16: ImageData;
+  32: ImageData;
+  48: ImageData;
+  128: ImageData;
+}> {
+  const [icon16, icon32, icon48, icon128] = await Promise.all([
+    loadActionIconImage(iconPaths[16]),
+    loadActionIconImage(iconPaths[32]),
+    loadActionIconImage(iconPaths[48]),
+    loadActionIconImage(iconPaths[128])
+  ]);
+
+  return {
+    16: icon16,
+    32: icon32,
+    48: icon48,
+    128: icon128
+  };
+}
 
 function isMissingTabError(error: unknown): boolean {
   const message =
@@ -75,8 +128,8 @@ async function updateBadge(tabId: number, url?: string): Promise<void> {
     const store = await getStore();
     const theme = resolveFolioTheme(store.settings.theme);
     const iconVariant = getThemeIconVariant(theme);
-    const iconPaths = getActionIconPathSet(iconVariant);
-    await chrome.action.setIcon({ tabId, path: iconPaths });
+    const iconImageSet = await loadActionIconImageSet(getActionIconPathSet(iconVariant));
+    await chrome.action.setIcon({ tabId, imageData: iconImageSet });
 
     if (!url) {
       await clearBadge(tabId);
@@ -105,8 +158,9 @@ async function applyConfiguredActionIcon(): Promise<void> {
   const store = await getStore();
   const theme = resolveFolioTheme(store.settings.theme);
   const iconVariant = getThemeIconVariant(theme);
+  const iconImageSet = await loadActionIconImageSet(getActionIconPathSet(iconVariant));
   await chrome.action.setIcon({
-    path: getActionIconPathSet(iconVariant)
+    imageData: iconImageSet
   });
 }
 

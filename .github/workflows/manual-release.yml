@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version (for example: 0.2.0)"
-        required: true
+        description: "Optional release version (for example: 0.2.0). Leave empty to use the next patch version."
+        required: false
+        default: ""
         type: string
       draft:
         description: "Create release as draft"
@@ -52,18 +53,28 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      - name: Validate version input
+      - name: Resolve release version
+        id: resolve_version
         run: |
-          VERSION="${{ inputs.version }}"
+          INPUT_VERSION="${{ inputs.version }}"
+          if [[ -n "$INPUT_VERSION" ]]; then
+            VERSION="$INPUT_VERSION"
+          else
+            VERSION="$(node -p "const pkg=require('./package.json'); const [major, minor, patch]=pkg.version.split('.').map(Number); if ([major, minor, patch].some(Number.isNaN)) throw new Error('Invalid package.json version'); [major, minor, patch + 1].join('.')")"
+          fi
+
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Invalid version: $VERSION"
             echo "Expected numeric extension version, e.g. 0.2.0"
             exit 1
           fi
 
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved release version: $VERSION"
+
       - name: Ensure tag does not exist
         run: |
-          TAG="v${{ inputs.version }}"
+          TAG="v${{ steps.resolve_version.outputs.version }}"
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists. Please choose a new version."
             exit 1
@@ -71,7 +82,7 @@ jobs:
 
       - name: Update package and manifest versions
         run: |
-          VERSION="${{ inputs.version }}" node - <<'NODE'
+          VERSION="${{ steps.resolve_version.outputs.version }}" node - <<'NODE'
           const fs = require('node:fs');
           const version = process.env.VERSION;
           if (!version) {
@@ -105,7 +116,7 @@ jobs:
 
       - name: Package extension
         run: |
-          VERSION="${{ inputs.version }}"
+          VERSION="${{ steps.resolve_version.outputs.version }}"
           ZIP_NAME="folio-extension-v${VERSION}.zip"
           cd dist
           zip -r "../${ZIP_NAME}" .
@@ -115,7 +126,7 @@ jobs:
       - name: Commit release version changes
         id: commit_version
         run: |
-          VERSION="${{ inputs.version }}"
+          VERSION="${{ steps.resolve_version.outputs.version }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package.json src/manifest.ts
@@ -133,7 +144,7 @@ jobs:
 
       - name: Create and push tag
         run: |
-          VERSION="${{ inputs.version }}"
+          VERSION="${{ steps.resolve_version.outputs.version }}"
           TAG="v${VERSION}"
           git tag "$TAG"
           git push origin "$TAG"
@@ -142,26 +153,26 @@ jobs:
         if: inputs.release_notes != ''
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ inputs.version }}
+          tag_name: v${{ steps.resolve_version.outputs.version }}
           target_commitish: main
-          name: v${{ inputs.version }}
+          name: v${{ steps.resolve_version.outputs.version }}
           body: ${{ inputs.release_notes }}
           draft: ${{ inputs.draft }}
           prerelease: ${{ inputs.prerelease }}
           files: |
-            folio-extension-v${{ inputs.version }}.zip
-            folio-extension-v${{ inputs.version }}.sha256.txt
+            folio-extension-v${{ steps.resolve_version.outputs.version }}.zip
+            folio-extension-v${{ steps.resolve_version.outputs.version }}.sha256.txt
 
       - name: Create GitHub Release (auto notes)
         if: inputs.release_notes == ''
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ inputs.version }}
+          tag_name: v${{ steps.resolve_version.outputs.version }}
           target_commitish: main
-          name: v${{ inputs.version }}
+          name: v${{ steps.resolve_version.outputs.version }}
           generate_release_notes: true
           draft: ${{ inputs.draft }}
           prerelease: ${{ inputs.prerelease }}
           files: |
-            folio-extension-v${{ inputs.version }}.zip
-            folio-extension-v${{ inputs.version }}.sha256.txt
+            folio-extension-v${{ steps.resolve_version.outputs.version }}.zip
+            folio-extension-v${{ steps.resolve_version.outputs.version }}.sha256.txt

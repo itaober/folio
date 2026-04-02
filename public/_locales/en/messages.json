@@ -2,6 +2,9 @@
   "appName": {
     "message": "Folio"
   },
+  "appNameDev": {
+    "message": "Folio Dev"
+  },
   "appDescription": {
     "message": "A read-it-later Chrome extension for saving pages and managing reading status."
   }

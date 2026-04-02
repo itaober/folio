@@ -1,6 +1,10 @@
+import { resolveBuildChannel } from './buildChannel';
+
 export type FolioIconVariant = 'classic' | 'mono';
 
 export const DEFAULT_ICON_VARIANT: FolioIconVariant = 'classic';
+const BUILD_CHANNEL = resolveBuildChannel(import.meta.env.VITE_FOLIO_BUILD_CHANNEL);
+const IS_DEV_BUILD = BUILD_CHANNEL === 'dev';
 
 export function isFolioIconVariant(value: unknown): value is FolioIconVariant {
   return value === 'classic' || value === 'mono';
@@ -23,7 +27,7 @@ export function getIconPath(
   size: 16 | 32 | 48 | 128
 ): string {
   const normalized = normalizeVariant(variant);
-  return `icons/${normalized}-${size}.png`;
+  return `icons/${IS_DEV_BUILD ? `dev-${normalized}` : normalized}-${size}.png`;
 }
 
 export function getIconSvgPath(
@@ -31,6 +35,10 @@ export function getIconSvgPath(
   size: 16 | 32 | 48 | 128
 ): string {
   const normalized = normalizeVariant(variant);
+  if (IS_DEV_BUILD) {
+    return `icons/dev-${normalized}-128.svg`;
+  }
+
   return `icons/${normalized}-${size}.svg`;
 }
 

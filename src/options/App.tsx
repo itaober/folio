@@ -160,6 +160,7 @@ export default function App(): ReactElement {
   const editPanelTimerRef = useRef<number | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const initialViewResolvedRef = useRef(false);
+  const optionsLastViewCommitRef = useRef(Promise.resolve());
 
   useAutoDismissNotice(notice, setNotice, 3000);
 
@@ -265,12 +266,21 @@ export default function App(): ReactElement {
     if (nextView === 'settings' || store?.settings.optionsLastView === nextView) {
       return;
     }
-    void commit({
-      type: 'updateSettings',
-      payload: {
-        optionsLastView: nextView
-      }
-    });
+    optionsLastViewCommitRef.current = optionsLastViewCommitRef.current
+      .then(async () => {
+        const latestStore = await getStore();
+        if (latestStore.settings.optionsLastView === nextView) {
+          return;
+        }
+
+        await commit({
+          type: 'updateSettings',
+          payload: {
+            optionsLastView: nextView
+          }
+        });
+      })
+      .catch(() => undefined);
   }
 
   function showExportNotice(): void {

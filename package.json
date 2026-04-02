@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "dev": "export FOLIO_BUILD_CHANNEL=dev; export VITE_FOLIO_BUILD_CHANNEL=dev; vite",
+    "build": "export FOLIO_BUILD_CHANNEL=prod; export VITE_FOLIO_BUILD_CHANNEL=prod; tsc --noEmit && vite build",
+    "build:dev": "export FOLIO_BUILD_CHANNEL=dev; export VITE_FOLIO_BUILD_CHANNEL=dev; tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
