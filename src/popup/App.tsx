@@ -588,15 +588,30 @@ export default function App(): ReactElement {
                     </span>
                   </div>
 
-                  <button
-                    type="button"
-                    className={`inline-flex h-7 w-7 items-center justify-center rounded-[8px] border border-(--border) ${statusBadgeClass(item.status)} hover:border-(--accent-border)`}
-                    onClick={() => void handleStatusChange(item, nextStatus(item.status))}
-                    title={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}
-                    aria-label={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}
-                  >
-                    <span className="scale-[0.95]">{statusIcon(item.status)}</span>
-                  </button>
+                  <div className="flex items-center gap-1">
+                    {canSaveProgress ? (
+                      <button
+                        type="button"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] border border-(--border) bg-bg-elevated text-text-secondary hover:border-(--accent-border) hover:bg-bg-sunken disabled:cursor-not-allowed disabled:opacity-55"
+                        onClick={() => void handleSaveProgress(item)}
+                        title={t('popup.saveProgress')}
+                        aria-label={t('popup.saveProgress')}
+                        disabled={isSavingProgress}
+                      >
+                        <Goal className="h-3.5 w-3.5" strokeWidth={2} />
+                      </button>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      className={`inline-flex h-7 w-7 items-center justify-center rounded-[8px] border border-(--border) ${statusBadgeClass(item.status)} hover:border-(--accent-border)`}
+                      onClick={() => void handleStatusChange(item, nextStatus(item.status))}
+                      title={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}
+                      aria-label={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}
+                    >
+                      <span className="scale-[0.95]">{statusIcon(item.status)}</span>
+                    </button>
+                  </div>
                 </div>
 
                 <button
@@ -653,17 +668,6 @@ export default function App(): ReactElement {
                         onRemoveTag={handlePopupRemoveTag}
                       />
                       <div className="flex items-center justify-end gap-1.5">
-                        {canSaveProgress ? (
-                          <button
-                            type="button"
-                            className="inline-flex h-7 items-center gap-1 rounded-md bg-bg-elevated px-2 text-[11px] text-text-secondary hover:bg-bg-sunken disabled:cursor-not-allowed disabled:opacity-55"
-                            onClick={() => void handleSaveProgress(item)}
-                            disabled={isSavingProgress}
-                          >
-                            <Goal className="h-3.5 w-3.5" strokeWidth={2} />
-                            {t('popup.saveProgress')}
-                          </button>
-                        ) : null}
                         <button
                           type="button"
                           className="inline-flex h-7 items-center rounded-md bg-bg-elevated px-2 text-[11px] text-text-secondary hover:bg-bg-sunken"
