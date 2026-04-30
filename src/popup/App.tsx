@@ -540,7 +540,7 @@ export default function App(): ReactElement {
         <p className="mb-1.5 font-mono text-[9px] uppercase text-text-muted">
           {t('popup.recent')}
         </p>
-        <div className="folio-scrollbar min-h-0 flex-1 space-y-0.5 overflow-y-auto px-1 pr-3 pt-2">
+        <div className="folio-scrollbar min-h-0 flex-1 space-y-0.5 overflow-y-auto px-1 pt-3">
           {filteredRecentItems.map((item) => {
             const isExpanded = expandedItemId === item.id;
             const canSaveProgress =
@@ -623,7 +623,7 @@ export default function App(): ReactElement {
 
                 <button
                   type="button"
-                  className={`folio-pressable group/delete absolute -right-1.5 -top-1.5 z-[3] inline-flex h-4.5 w-4.5 items-center justify-center rounded-full text-danger transition-[opacity,transform] duration-150 ease-[var(--ease-out)] ${
+                  className={`folio-pressable group/delete absolute right-0 top-0 z-[3] inline-flex h-4.5 w-4.5 -translate-y-1/2 items-center justify-center rounded-full text-danger transition-[opacity,transform] duration-150 ease-[var(--ease-out)] ${
                     deleteHoldItemId === item.id
                       ? 'opacity-100 pointer-events-auto'
                       : 'opacity-0 pointer-events-none group-hover/item:pointer-events-auto group-hover/item:opacity-100 group-focus-within/item:pointer-events-auto group-focus-within/item:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100'

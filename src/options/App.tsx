@@ -1406,7 +1406,7 @@ export default function App(): ReactElement {
         </aside>
 
         <section className="flex h-screen min-h-0 flex-1 flex-col p-6">
-          <div className="flex h-full min-h-0 w-full flex-col">
+          <div className="mx-auto flex h-full min-h-0 w-full max-w-[1280px] flex-col">
           <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="m-0 font-display text-3xl font-semibold">{getViewTitle()}</h2>
@@ -1513,7 +1513,7 @@ export default function App(): ReactElement {
           </header>
 
           {view === 'settings' ? (
-            <div className="folio-scrollbar min-h-0 flex-1 overflow-y-auto pr-5">
+            <div className="folio-scrollbar min-h-0 flex-1 overflow-y-auto">
               <section className="max-w-[1280px] space-y-4">
               <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
                 <div className="space-y-4">
@@ -1815,7 +1815,7 @@ export default function App(): ReactElement {
               </section>
             </div>
           ) : (
-            <section className="folio-scrollbar min-h-0 flex-1 overflow-y-auto pr-5">
+            <section className="folio-scrollbar min-h-0 flex-1 overflow-y-auto">
               {displayItems.map((item) => {
                 const createdAtLabel = formatCreatedAtLabel(item.createdAt, locale);
                 const isEditingRow = editingId === item.id && editDraft !== null;
