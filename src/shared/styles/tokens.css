@@ -31,6 +31,8 @@
   --theme-danger-subtle: rgba(165, 69, 61, 0.14);
   --theme-danger-subtle-hover: rgba(165, 69, 61, 0.22);
   --theme-shadow-soft: rgba(38, 28, 20, 0.12);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 
   --theme-status-unread-bg: rgba(180, 110, 40, 0.1);
   --theme-status-unread-text: #8b5e1a;

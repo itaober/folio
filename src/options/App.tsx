@@ -1209,9 +1209,9 @@ export default function App(): ReactElement {
 
   function navItemClass(active: boolean): string {
     if (active) {
-      return 'group relative flex h-9 w-full items-center justify-between rounded-[10px] bg-bg-surface px-2.5 text-accent';
+      return 'folio-pressable group relative flex h-9 w-full items-center justify-between rounded-lg border border-(--border) bg-bg-surface px-2.5 text-accent shadow-[0_1px_2px_var(--shadow-soft)]';
     }
-    return 'group relative flex h-9 w-full items-center justify-between rounded-[10px] bg-transparent px-2.5 text-text-secondary hover:bg-bg-surface';
+    return 'folio-pressable group relative flex h-9 w-full items-center justify-between rounded-lg border border-transparent bg-transparent px-2.5 text-text-secondary hover:border-(--border) hover:bg-bg-surface hover:text-text-primary';
   }
 
   function navIconClass(active: boolean): string {
@@ -1257,7 +1257,7 @@ export default function App(): ReactElement {
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            className={`pointer-events-auto m-0 rounded-[10px] px-4 py-2.5 text-xs shadow-[0_12px_28px_rgba(0,0,0,0.24)] backdrop-blur-[2px] ${optionsToastClass(notice.level)}`}
+            className={`folio-panel pointer-events-auto m-0 rounded-lg px-4 py-2.5 text-xs shadow-[0_12px_28px_rgba(0,0,0,0.24)] backdrop-blur-[2px] ${optionsToastClass(notice.level)}`}
           >
             {notice.text}
           </p>
@@ -1267,7 +1267,7 @@ export default function App(): ReactElement {
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            className="pointer-events-auto flex items-center gap-2 rounded-[10px] border border-white/15 bg-black/62 px-4 py-2.5 text-xs text-white shadow-[0_12px_28px_rgba(0,0,0,0.24)] backdrop-blur-[2px]"
+            className="folio-panel pointer-events-auto flex items-center gap-2 rounded-lg border border-white/15 bg-black/62 px-4 py-2.5 text-xs text-white shadow-[0_12px_28px_rgba(0,0,0,0.24)] backdrop-blur-[2px]"
           >
             <span>
               {undoItems.length > 1
@@ -1276,7 +1276,7 @@ export default function App(): ReactElement {
             </span>
             <button
               type="button"
-              className="text-xs text-white/90 underline underline-offset-2 hover:text-white"
+              className="folio-pressable text-xs text-white/90 underline underline-offset-2 hover:text-white"
               onClick={() => void handleUndoDelete()}
             >
               {t('options.undo')}
@@ -1286,11 +1286,11 @@ export default function App(): ReactElement {
       </div>
 
       <div className="flex min-h-screen w-full">
-        <aside className="sticky top-0 h-screen w-60 shrink-0 self-start bg-bg-elevated px-3 py-4">
+        <aside className="sticky top-0 h-screen w-60 shrink-0 self-start border-r border-(--border) bg-bg-elevated px-3 py-4">
           <div className="flex items-center gap-2 px-2">
             <FolioMark variant={iconVariantInput} size={30} className="h-[30px] w-[30px]" />
             <div>
-              <h1 className="m-0 font-display text-[28px] leading-[28px] font-semibold tracking-[-0.01em]">Folio</h1>
+              <h1 className="m-0 font-display text-[28px] leading-[28px] font-semibold">Folio</h1>
               <p className="m-0 mt-0.5 font-mono text-[11px] tracking-wide text-text-muted">
                 {t('options.readingList')}
               </p>
@@ -1376,7 +1376,7 @@ export default function App(): ReactElement {
                 {activeTagFilter ? (
                   <button
                     type="button"
-                    className="h-8 w-full rounded-[10px] px-2.5 text-left text-[11px] text-text-muted hover:bg-bg-surface hover:text-text-secondary"
+                    className="folio-pressable h-8 w-full rounded-lg border border-transparent px-2.5 text-left text-[11px] text-text-muted hover:border-(--border) hover:bg-bg-surface hover:text-text-secondary"
                     onClick={() => setActiveTagFilter(null)}
                   >
                     {t('options.clearTagFilter')}
@@ -1409,7 +1409,7 @@ export default function App(): ReactElement {
           <div className="mx-auto flex h-full min-h-0 w-full max-w-[1080px] flex-col">
           <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="m-0 font-display text-3xl font-semibold tracking-[-0.01em]">{getViewTitle()}</h2>
+              <h2 className="m-0 font-display text-3xl font-semibold">{getViewTitle()}</h2>
               {view !== 'settings' ? (
                 <p className="m-0 font-mono text-sm text-text-muted">
                   {t('options.totalCount', { count: displayItems.length })}
@@ -1447,7 +1447,7 @@ export default function App(): ReactElement {
                 <div className="relative">
                   <button
                     type="button"
-                    className="inline-flex h-10 items-center gap-1.5 rounded-md border border-(--border) bg-bg-surface px-3 text-xs text-text-secondary hover:bg-bg-elevated"
+                    className="folio-pressable inline-flex h-10 items-center gap-1.5 rounded-md border border-(--border) bg-bg-surface px-3 text-xs text-text-secondary hover:border-(--accent-border) hover:bg-bg-elevated hover:text-text-primary"
                     onClick={() => setIsExportMenuOpen((prev) => !prev)}
                     onKeyDown={handleExportMenuKeyDown}
                     aria-haspopup="menu"
@@ -1462,7 +1462,7 @@ export default function App(): ReactElement {
                       id={exportMenuId}
                       role="menu"
                       onKeyDown={handleExportMenuKeyDown}
-                      className="absolute right-0 z-20 mt-2 w-44 rounded-md bg-bg-surface p-2 shadow-md"
+                      className="folio-menu absolute right-0 z-20 mt-2 w-44 rounded-lg border border-(--border) bg-bg-surface p-2 shadow-[0_12px_32px_var(--shadow-soft)]"
                     >
                       <p className="m-0 mb-1 px-2 text-[11px] text-text-muted">{t('options.exportScope')}</p>
                       <div className="mb-2 flex gap-1">
@@ -1472,8 +1472,8 @@ export default function App(): ReactElement {
                           aria-checked={exportScope === 'current'}
                           className={
                             exportScope === 'current'
-                              ? 'flex-1 rounded-md bg-bg-base px-2 py-1 text-[11px] text-text-primary'
-                              : 'flex-1 rounded-md px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-elevated'
+                              ? 'folio-pressable flex-1 rounded-md bg-bg-base px-2 py-1 text-[11px] text-text-primary shadow-[0_1px_2px_var(--shadow-soft)]'
+                              : 'folio-pressable flex-1 rounded-md px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
                           }
                           onClick={() => setExportScope('current')}
                         >
@@ -1485,23 +1485,23 @@ export default function App(): ReactElement {
                           aria-checked={exportScope === 'all'}
                           className={
                             exportScope === 'all'
-                              ? 'flex-1 rounded-md bg-bg-base px-2 py-1 text-[11px] text-text-primary'
-                              : 'flex-1 rounded-md px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-elevated'
+                              ? 'folio-pressable flex-1 rounded-md bg-bg-base px-2 py-1 text-[11px] text-text-primary shadow-[0_1px_2px_var(--shadow-soft)]'
+                              : 'folio-pressable flex-1 rounded-md px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
                           }
                           onClick={() => setExportScope('all')}
                         >
                           {t('options.exportScopeAll')}
                         </button>
                       </div>
-                      <button type="button" role="menuitem" className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs hover:bg-bg-elevated" onClick={handleExportJson}>
+                      <button type="button" role="menuitem" className="folio-pressable flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs text-text-secondary hover:bg-bg-elevated hover:text-text-primary" onClick={handleExportJson}>
                         <FileJson2 className="h-3.5 w-3.5 text-text-muted" strokeWidth={2} />
                         <span>{t('options.exportJson')}</span>
                       </button>
-                      <button type="button" role="menuitem" className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs hover:bg-bg-elevated" onClick={handleExportCsv}>
+                      <button type="button" role="menuitem" className="folio-pressable flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs text-text-secondary hover:bg-bg-elevated hover:text-text-primary" onClick={handleExportCsv}>
                         <FileSpreadsheet className="h-3.5 w-3.5 text-text-muted" strokeWidth={2} />
                         <span>{t('options.exportCsv')}</span>
                       </button>
-                      <button type="button" role="menuitem" className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs hover:bg-bg-elevated" onClick={handleExportMarkdown}>
+                      <button type="button" role="menuitem" className="folio-pressable flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs text-text-secondary hover:bg-bg-elevated hover:text-text-primary" onClick={handleExportMarkdown}>
                         <FileText className="h-3.5 w-3.5 text-text-muted" strokeWidth={2} />
                         <span>{t('options.exportMarkdown')}</span>
                       </button>
@@ -1517,7 +1517,7 @@ export default function App(): ReactElement {
               <section className="space-y-4">
               <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
                 <div className="space-y-4">
-                  <article className="rounded-[12px] border border-(--border) bg-bg-surface p-5">
+                  <article className="rounded-lg border border-(--border) bg-bg-surface p-5 shadow-[0_1px_2px_var(--shadow-soft)]">
                     <h3 className="m-0 flex items-center gap-2 text-base font-medium">
                       <SlidersHorizontal className="h-4 w-4 text-accent" strokeWidth={1.9} />
                       {t('settings.preferencesTitle')}
@@ -1653,7 +1653,7 @@ export default function App(): ReactElement {
                     </div>
                   </article>
 
-                  <article className="rounded-[12px] border border-(--border) bg-bg-surface p-5">
+                  <article className="rounded-lg border border-(--border) bg-bg-surface p-5 shadow-[0_1px_2px_var(--shadow-soft)]">
                     <h3 className="m-0 flex items-center gap-2 text-base font-medium">
                       <Tag className="h-4 w-4 text-accent" strokeWidth={1.9} />
                       {t('options.tagManagerTitle')}
@@ -1696,7 +1696,7 @@ export default function App(): ReactElement {
                       />
                       <button
                         type="button"
-                        className="h-9 rounded-md bg-bg-elevated px-3 text-xs text-text-secondary hover:bg-bg-sunken"
+                        className="folio-pressable h-9 rounded-md bg-bg-elevated px-3 text-xs text-text-secondary hover:bg-bg-sunken hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-55"
                         onClick={() => void handleRenameTag()}
                         disabled={!tagActionTarget || !tagRenameValue.trim()}
                       >
@@ -1704,7 +1704,7 @@ export default function App(): ReactElement {
                       </button>
                       <button
                         type="button"
-                        className="h-9 rounded-md bg-bg-elevated px-3 text-xs text-danger hover:bg-bg-sunken"
+                        className="folio-pressable h-9 rounded-md bg-bg-elevated px-3 text-xs text-danger hover:bg-bg-sunken disabled:cursor-not-allowed disabled:opacity-55"
                         onClick={() => void handleDangerDeleteTag()}
                         disabled={!tagActionTarget}
                       >
@@ -1716,7 +1716,7 @@ export default function App(): ReactElement {
                   </article>
                 </div>
 
-                <article className="rounded-[12px] border border-(--border) bg-bg-surface p-5">
+                <article className="rounded-lg border border-(--border) bg-bg-surface p-5 shadow-[0_1px_2px_var(--shadow-soft)]">
                   <div>
                     <h3 className="m-0 flex items-center gap-2 text-base font-medium">
                       <FolderOpen className="h-4 w-4 text-accent" strokeWidth={1.9} />
@@ -1729,7 +1729,7 @@ export default function App(): ReactElement {
 
                   <button
                     type="button"
-                    className="mt-4 flex h-[170px] w-full flex-col items-center justify-center gap-2.5 rounded-[12px] border border-(--accent-border) bg-accent-subtle px-4 text-center hover:bg-bg-elevated"
+                    className="folio-pressable mt-4 flex h-[170px] w-full flex-col items-center justify-center gap-2.5 rounded-lg border border-(--accent-border) bg-accent-subtle px-4 text-center hover:bg-bg-elevated hover:shadow-[0_4px_14px_var(--shadow-soft)]"
                     onClick={() => void handleChooseSyncDirectory()}
                   >
                     <FolderOpen className="h-8 w-8 text-accent" strokeWidth={1.9} />
@@ -1757,7 +1757,7 @@ export default function App(): ReactElement {
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       type="button"
-                      className="h-9 rounded-md bg-bg-elevated px-3 text-xs text-text-secondary hover:bg-bg-sunken"
+                      className="folio-pressable h-9 rounded-md bg-bg-elevated px-3 text-xs text-text-secondary hover:bg-bg-sunken hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-55"
                       onClick={() => void handleDangerClearSyncDirectory()}
                       disabled={!store?.settings.syncDirectory}
                     >
@@ -1767,7 +1767,7 @@ export default function App(): ReactElement {
                     </button>
                     <button
                       type="button"
-                      className="h-9 rounded-md bg-accent px-3 text-xs text-on-accent hover:bg-accent-hover"
+                      className="folio-pressable h-9 rounded-md bg-accent px-3 text-xs text-on-accent shadow-[0_1px_2px_var(--shadow-soft)] hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
                       onClick={() => void handleSyncNow()}
                       disabled={!store?.settings.syncDirectory || isSyncing}
                     >
@@ -1804,7 +1804,7 @@ export default function App(): ReactElement {
                     />
                     <button
                       type="button"
-                      className="h-9 rounded-md bg-bg-elevated px-3 text-xs text-text-secondary hover:bg-bg-sunken"
+                      className="folio-pressable h-9 rounded-md bg-bg-elevated px-3 text-xs text-text-secondary hover:bg-bg-sunken hover:text-text-primary"
                       onClick={handleImportClick}
                     >
                       {t('settings.importJson')}
@@ -1821,7 +1821,7 @@ export default function App(): ReactElement {
                 const isEditingRow = editingId === item.id && editDraft !== null;
                 return (
                   <div key={item.id}>
-	                    <article className="group border-b border-(--border) py-3">
+                    <article className="group -mx-3 rounded-lg border border-transparent px-3 py-3 transition-[background-color,border-color,box-shadow] duration-150 ease-[var(--ease-out)] hover:border-(--border) hover:bg-bg-surface hover:shadow-[0_1px_2px_var(--shadow-soft)]">
                       <div className="flex items-start gap-3">
                         {item.favicon ? (
                           <img
@@ -1840,7 +1840,7 @@ export default function App(): ReactElement {
                             href={getItemPreferredUrl(item)}
                             target="_blank"
                             rel="noreferrer"
-                            className="line-clamp-2 min-w-0 text-sm font-medium text-text-primary no-underline hover:text-text-link"
+                            className="line-clamp-2 min-w-0 text-sm font-medium text-text-primary no-underline transition-colors duration-150 ease-[var(--ease-out)] hover:text-text-link"
                           >
                             {renderHighlightedText(getItemPreferredTitle(item), search)}
                           </a>
@@ -1853,7 +1853,7 @@ export default function App(): ReactElement {
                                 {item.tags.map((tag) => (
                                   <span
                                     key={`${item.id}-${tag}`}
-                                    className="truncate rounded-[6px] bg-bg-elevated px-1.5 py-0.5 text-[10px] text-text-muted"
+                                    className="truncate rounded-md bg-bg-elevated px-1.5 py-0.5 text-[10px] text-text-muted"
                                     title={tag}
                                   >
                                     #{tag}
@@ -1873,7 +1873,7 @@ export default function App(): ReactElement {
                           <div className="flex w-[92px] items-center justify-end gap-1">
                             <button
                               type="button"
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-bg-surface text-text-secondary opacity-0 pointer-events-none transition-opacity duration-150 hover:bg-bg-elevated group-hover:pointer-events-auto group-hover:opacity-100"
+                              className="folio-pressable inline-flex h-7 w-7 items-center justify-center rounded-md bg-bg-surface text-text-secondary opacity-0 pointer-events-none hover:bg-bg-elevated hover:text-text-primary group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
                               onClick={() => handleStartEdit(item)}
                               title={t('options.edit')}
                               aria-label={t('options.edit')}
@@ -1882,10 +1882,10 @@ export default function App(): ReactElement {
                             </button>
                             <button
                               type="button"
-                              className={`relative inline-flex h-7 w-7 items-center justify-center rounded-md text-danger transition-opacity duration-150 ${
+                              className={`folio-pressable relative inline-flex h-7 w-7 items-center justify-center rounded-md text-danger transition-[opacity,transform] duration-150 ease-[var(--ease-out)] ${
                                 deleteHoldItemId === item.id
                                   ? 'opacity-100 pointer-events-auto'
-                                  : 'opacity-0 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100'
+                                  : 'opacity-0 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100'
                               }`}
                               onPointerDown={() => handleDeletePointerDown(item)}
                               onPointerUp={handleDeletePointerStop}
@@ -1908,13 +1908,13 @@ export default function App(): ReactElement {
                                   <span className="absolute inset-[1.5px] rounded-[6px] bg-bg-surface" />
                                 </>
                               ) : (
-                                <span className="absolute inset-0 rounded-md bg-bg-surface hover:bg-bg-elevated" />
+                                <span className="absolute inset-0 rounded-md bg-bg-surface transition-colors duration-150 ease-[var(--ease-out)] hover:bg-bg-elevated" />
                               )}
                               <Trash2 className="relative z-[2] h-3.5 w-3.5" strokeWidth={2} />
                             </button>
                             <button
                               type="button"
-                              className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-(--border) ${statusBadgeClass(item.status)} hover:border-(--accent-border)`}
+                              className={`folio-pressable inline-flex h-7 w-7 items-center justify-center rounded-md border border-(--border) ${statusBadgeClass(item.status)} hover:border-(--accent-border)`}
                               onClick={() => void handleSetStatus(item, nextStatus(item.status))}
                               title={`${t('options.sortStatus')}: ${statusToLabel(nextStatus(item.status), t)}`}
                               aria-label={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}
@@ -1930,21 +1930,21 @@ export default function App(): ReactElement {
 
                       {isEditingRow ? (
                         <div
-                          className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-[220ms] ${
+                          className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-[200ms] ease-[var(--ease-out)] ${
                             isEditPanelExpanded
                               ? 'mt-3 grid-rows-[1fr] opacity-100'
                               : 'mt-0 grid-rows-[0fr] opacity-0'
 	                          }`}
 	                        >
 	                          <div className="overflow-hidden">
-		                            <div className="rounded-[10px] bg-bg-elevated px-4 py-[14px]">
+                            <div className="rounded-lg border border-(--border) bg-bg-elevated px-4 py-[14px]">
 		                              <div className="grid gap-2">
                                 <label className="flex items-center gap-3">
                                   <span className="w-[54px] text-xs text-text-secondary">
                                     {t('popup.quickEditTitle')}
                                   </span>
                                   <input
-                                    className="h-[30px] flex-1 rounded-[6px] border border-(--border) bg-bg-surface px-2.5 text-xs text-text-primary"
+                                    className="folio-input h-[30px] flex-1 bg-bg-surface px-2.5 text-xs text-text-primary"
                                     value={editDraft.title}
                                     onChange={(event) =>
                                       setEditDraft((prev) =>
@@ -1957,7 +1957,7 @@ export default function App(): ReactElement {
                                 <label className="flex items-center gap-3">
                                   <span className="w-[54px] text-xs text-text-secondary">{t('options.note')}</span>
                                   <input
-                                    className="h-[30px] flex-1 rounded-[6px] border border-(--border) bg-bg-surface px-2.5 text-xs text-text-primary"
+                                    className="folio-input h-[30px] flex-1 bg-bg-surface px-2.5 text-xs text-text-primary"
                                     value={editDraft.note}
                                     onChange={(event) =>
                                       setEditDraft((prev) =>
@@ -1988,14 +1988,14 @@ export default function App(): ReactElement {
 		                                <div className="mt-1 flex justify-end gap-2">
 		                                  <button
 		                                    type="button"
-		                                    className="h-[30px] rounded-[6px] bg-bg-surface px-3 text-xs text-text-secondary hover:bg-bg-sunken"
+		                                    className="folio-pressable h-[30px] rounded-md bg-bg-surface px-3 text-xs text-text-secondary hover:bg-bg-sunken hover:text-text-primary"
 		                                    onClick={closeInlineEditor}
 		                                  >
 		                                    {t('common.cancel')}
 		                                  </button>
                                   <button
                                     type="button"
-                                    className="h-[30px] rounded-[6px] bg-accent px-3 text-xs text-on-accent hover:bg-accent-hover"
+                                    className="folio-pressable h-[30px] rounded-md bg-accent px-3 text-xs text-on-accent shadow-[0_1px_2px_var(--shadow-soft)] hover:bg-accent-hover"
                                     onClick={() => void handleSaveEdit()}
                                   >
                                     {t('common.save')}
@@ -2012,8 +2012,8 @@ export default function App(): ReactElement {
 		              })}
 
               {displayItems.length === 0 ? (
-                <div className="rounded-lg bg-bg-surface p-6">
-                  <p className="m-0 font-display text-xl font-semibold tracking-[-0.01em]">{t('options.emptyTitle')}</p>
+                <div className="rounded-lg border border-(--border) bg-bg-surface p-6 shadow-[0_1px_2px_var(--shadow-soft)]">
+                  <p className="m-0 font-display text-xl font-semibold">{t('options.emptyTitle')}</p>
                   <p className="mb-0 mt-2 text-sm text-text-secondary">{t('options.emptyText')}</p>
                 </div>
               ) : null}

@@ -45,6 +45,14 @@
     font: inherit;
   }
 
+  button {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
   :focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: 2px;
@@ -69,6 +77,49 @@
     background: var(--bg-surface);
   }
 
+  .folio-pressable {
+    transition:
+      transform 140ms var(--ease-out),
+      background-color 150ms var(--ease-out),
+      border-color 150ms var(--ease-out),
+      color 150ms var(--ease-out),
+      opacity 150ms var(--ease-out),
+      box-shadow 150ms var(--ease-out);
+  }
+
+  .folio-pressable:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  .folio-pressable:disabled {
+    transform: none;
+  }
+
+  .folio-control {
+    transition:
+      background-color 150ms var(--ease-out),
+      border-color 150ms var(--ease-out),
+      box-shadow 150ms var(--ease-out),
+      color 150ms var(--ease-out);
+  }
+
+  .folio-control:focus,
+  .folio-control:focus-within {
+    border-color: var(--accent-border);
+    background: var(--bg-base);
+    box-shadow: 0 0 0 3px var(--accent-subtle);
+  }
+
+  .folio-menu {
+    transform-origin: top right;
+    animation: folio-menu-in 150ms var(--ease-out) both;
+  }
+
+  .folio-panel {
+    transform-origin: top center;
+    animation: folio-panel-in 180ms var(--ease-out) both;
+  }
+
   .folio-btn-primary {
     display: inline-flex;
     align-items: center;
@@ -81,7 +132,10 @@
     font-size: 0.875rem;
     font-weight: 500;
     line-height: 1.25rem;
-    transition: background-color 120ms;
+    transition:
+      transform 140ms var(--ease-out),
+      background-color 150ms var(--ease-out),
+      box-shadow 150ms var(--ease-out);
     cursor: pointer;
   }
 
@@ -106,7 +160,12 @@
     font-size: 0.875rem;
     font-weight: 500;
     line-height: 1.25rem;
-    transition: border-color 120ms, color 120ms, background-color 120ms;
+    transition:
+      transform 140ms var(--ease-out),
+      border-color 150ms var(--ease-out),
+      color 150ms var(--ease-out),
+      background-color 150ms var(--ease-out),
+      box-shadow 150ms var(--ease-out);
     cursor: pointer;
   }
 
@@ -130,10 +189,20 @@
     color: var(--text-primary);
     font-size: 0.875rem;
     line-height: 1.25rem;
+    transition:
+      background-color 150ms var(--ease-out),
+      border-color 150ms var(--ease-out),
+      box-shadow 150ms var(--ease-out);
   }
 
   .folio-input::placeholder {
     color: var(--text-muted);
+  }
+
+  .folio-input:focus {
+    border-color: var(--accent-border);
+    background: var(--bg-base);
+    box-shadow: 0 0 0 3px var(--accent-subtle);
   }
 
   .folio-select {
@@ -173,4 +242,27 @@
     background-clip: content-box;
   }
 
+  @keyframes folio-menu-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.96);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes folio-panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(-3px) scale(0.98);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
 }

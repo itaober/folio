@@ -457,7 +457,7 @@ export default function App(): ReactElement {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <FolioMark variant={iconVariant} size={17} />
-            <span className="font-display text-[14px] font-semibold tracking-[-0.01em]">
+            <span className="font-display text-[14px] font-semibold">
               {t('popup.title')}
             </span>
           </div>
@@ -465,7 +465,7 @@ export default function App(): ReactElement {
           <div className="flex items-center gap-1">
             <button
               type="button"
-              className="inline-flex h-7 items-center gap-1 rounded-md bg-accent px-2 text-[11px] font-medium text-on-accent hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
+              className="folio-pressable inline-flex h-7 items-center gap-1 rounded-md bg-accent px-2 text-[11px] font-medium text-on-accent shadow-[0_1px_2px_var(--shadow-soft)] hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
               disabled={!canSave}
               onClick={() =>
                 void (currentItem
@@ -485,7 +485,7 @@ export default function App(): ReactElement {
 
             <button
               type="button"
-              className="inline-flex h-7 items-center gap-1 rounded-md border border-(--border) bg-bg-elevated px-2 text-[11px] text-text-secondary hover:bg-bg-sunken"
+              className="folio-pressable inline-flex h-7 items-center gap-1 rounded-md border border-(--border) bg-bg-elevated px-2 text-[11px] text-text-secondary hover:border-(--accent-border) hover:bg-bg-sunken hover:text-text-primary"
               onClick={() => void handleOpenOptions()}
             >
               <ExternalLink className="h-3 w-3" strokeWidth={2} />
@@ -509,12 +509,12 @@ export default function App(): ReactElement {
 
       <section className="flex min-h-0 flex-1 flex-col space-y-2 p-2.5">
         {notice ? (
-          <p className={`m-0 rounded-[10px] px-2.5 py-2 text-[11px] ${noticeClass(notice.level)}`}>
+          <p className={`folio-panel m-0 rounded-lg px-2.5 py-2 text-[11px] ${noticeClass(notice.level)}`}>
             {notice.text}
           </p>
         ) : null}
 
-        <div className="rounded-full bg-bg-surface p-0.5">
+        <div className="rounded-full border border-(--border) bg-bg-surface p-0.5">
           <div className="grid grid-cols-4 gap-0.5">
             {(['unread', 'reading', 'done', 'all'] as PopupFilter[]).map((status) => {
               const active = popupFilter === status;
@@ -525,8 +525,8 @@ export default function App(): ReactElement {
                   aria-pressed={active}
                   className={
                     active
-                      ? 'rounded-full border border-(--accent-border) bg-accent-subtle px-1.5 py-1 text-[11px] font-semibold text-accent'
-                      : 'rounded-full border border-transparent px-1.5 py-1 text-[11px] text-text-muted hover:border-(--border) hover:bg-bg-base hover:text-text-secondary'
+                      ? 'folio-pressable rounded-full border border-(--accent-border) bg-accent-subtle px-1.5 py-1 text-[11px] font-semibold text-accent shadow-[0_1px_2px_var(--shadow-soft)]'
+                      : 'folio-pressable rounded-full border border-transparent px-1.5 py-1 text-[11px] text-text-muted hover:border-(--border) hover:bg-bg-base hover:text-text-secondary'
                   }
                   onClick={() => handlePopupFilterChange(status)}
                 >
@@ -549,15 +549,17 @@ export default function App(): ReactElement {
             return (
               <div
                 key={item.id}
-                className={`group/item relative overflow-visible rounded-md transition-colors ${
-                  isExpanded ? 'bg-bg-surface' : 'hover:bg-bg-surface'
+                className={`group/item relative overflow-visible rounded-lg border transition-[background-color,border-color,box-shadow] duration-150 ease-[var(--ease-out)] ${
+                  isExpanded
+                    ? 'border-(--border) bg-bg-surface shadow-[0_1px_2px_var(--shadow-soft)]'
+                    : 'border-transparent hover:border-(--border) hover:bg-bg-surface'
                 }`}
               >
                 <div className="flex items-center gap-1 px-1.5 py-1.5">
                   <div
                     role="button"
                     tabIndex={0}
-                    className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-[10px] px-0.5 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-(--accent-border)"
+                    className="folio-pressable flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md px-0.5 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-(--accent-border)"
                     onClick={() => handleToggleExpanded(item)}
                     onKeyDown={(event) => handleRowKeyDown(event, item)}
                     aria-expanded={isExpanded}
@@ -577,7 +579,7 @@ export default function App(): ReactElement {
                       <span className="flex min-w-0 items-center gap-1">
                         <button
                           type="button"
-                          className="block min-w-0 max-w-full cursor-pointer truncate bg-transparent p-0 text-left text-[13px] text-text-primary hover:text-accent hover:underline underline-offset-2"
+                          className="block min-w-0 max-w-full truncate bg-transparent p-0 text-left text-[13px] text-text-primary transition-colors duration-150 ease-[var(--ease-out)] hover:text-accent hover:underline underline-offset-2"
                           onClick={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
@@ -597,7 +599,7 @@ export default function App(): ReactElement {
                     {canSaveProgress ? (
                       <button
                         type="button"
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] border border-(--border) bg-bg-elevated text-text-secondary hover:border-(--accent-border) hover:bg-bg-sunken disabled:cursor-not-allowed disabled:opacity-55"
+                        className="folio-pressable inline-flex h-7 w-7 items-center justify-center rounded-md border border-(--border) bg-bg-elevated text-text-secondary hover:border-(--accent-border) hover:bg-bg-sunken hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-55"
                         onClick={() => void handleSaveProgress(item)}
                         title={t('popup.saveProgress')}
                         aria-label={t('popup.saveProgress')}
@@ -609,7 +611,7 @@ export default function App(): ReactElement {
 
                     <button
                       type="button"
-                      className={`inline-flex h-7 w-7 items-center justify-center rounded-[8px] border border-(--border) ${statusBadgeClass(item.status)} hover:border-(--accent-border)`}
+                      className={`folio-pressable inline-flex h-7 w-7 items-center justify-center rounded-md border border-(--border) ${statusBadgeClass(item.status)} hover:border-(--accent-border)`}
                       onClick={() => void handleStatusChange(item, nextStatus(item.status))}
                       title={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}
                       aria-label={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}
@@ -621,10 +623,10 @@ export default function App(): ReactElement {
 
                 <button
                   type="button"
-                  className={`group/delete absolute -right-1.5 -top-1.5 z-[3] inline-flex h-4.5 w-4.5 items-center justify-center rounded-full text-danger transition-opacity duration-150 ${
+                  className={`folio-pressable group/delete absolute -right-1.5 -top-1.5 z-[3] inline-flex h-4.5 w-4.5 items-center justify-center rounded-full text-danger transition-[opacity,transform] duration-150 ease-[var(--ease-out)] ${
                     deleteHoldItemId === item.id
                       ? 'opacity-100 pointer-events-auto'
-                      : 'opacity-0 pointer-events-none group-hover/item:pointer-events-auto group-hover/item:opacity-100'
+                      : 'opacity-0 pointer-events-none group-hover/item:pointer-events-auto group-hover/item:opacity-100 group-focus-within/item:pointer-events-auto group-focus-within/item:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100'
                   }`}
                   onPointerDown={(event) => handleDeletePointerDown(event, item)}
                   onPointerUp={handleDeletePointerStop}
@@ -647,13 +649,13 @@ export default function App(): ReactElement {
                       <span className="absolute inset-[1px] rounded-full bg-bg-base" />
                     </>
                   ) : (
-                    <span className="absolute inset-0 rounded-full border border-(--border) bg-bg-base shadow-none transition-all duration-150 group-hover/delete:bg-bg-elevated group-hover/delete:shadow-[0_1px_2px_rgba(0,0,0,0.12)]" />
+                    <span className="absolute inset-0 rounded-full border border-(--border) bg-bg-base shadow-none transition-[background-color,box-shadow] duration-150 ease-[var(--ease-out)] group-hover/delete:bg-bg-elevated group-hover/delete:shadow-[0_1px_2px_rgba(0,0,0,0.12)]" />
                   )}
                   <X className="relative z-[2] h-2.25 w-2.25" strokeWidth={2.1} />
                 </button>
 
                 {isExpanded ? (
-                  <div className="mx-1.5 mb-1.5 rounded-[10px] bg-bg-surface px-2.5 py-2.5">
+                  <div className="folio-panel mx-1.5 mb-1.5 border-t border-(--border) px-1 py-2.5">
                     <div className="grid gap-2">
                       <TextField
                         aria-label={t('popup.quickEditNote')}
@@ -675,14 +677,14 @@ export default function App(): ReactElement {
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           type="button"
-                          className="inline-flex h-7 items-center rounded-md bg-bg-elevated px-2 text-[11px] text-text-secondary hover:bg-bg-sunken"
+                          className="folio-pressable inline-flex h-7 items-center rounded-md bg-bg-elevated px-2 text-[11px] text-text-secondary hover:bg-bg-sunken hover:text-text-primary"
                           onClick={handleCancelPopupEdit}
                         >
                           {t('popup.quickEditDismiss')}
                         </button>
                         <button
                           type="button"
-                          className="inline-flex h-7 items-center rounded-md bg-accent px-2 text-[11px] font-medium text-on-accent hover:bg-accent-hover"
+                          className="folio-pressable inline-flex h-7 items-center rounded-md bg-accent px-2 text-[11px] font-medium text-on-accent shadow-[0_1px_2px_var(--shadow-soft)] hover:bg-accent-hover"
                           onClick={() => void handleConfirmPopupEdit()}
                         >
                           {t('popup.quickEditApply')}
@@ -696,7 +698,7 @@ export default function App(): ReactElement {
           })}
 
           {filteredRecentItems.length === 0 ? (
-            <p className="m-0 rounded-md bg-bg-surface px-2.5 py-3 text-[11px] text-text-muted">
+            <p className="m-0 rounded-lg border border-(--border) bg-bg-surface px-2.5 py-3 text-[11px] text-text-muted">
               {t('options.emptyText')}
             </p>
           ) : null}
