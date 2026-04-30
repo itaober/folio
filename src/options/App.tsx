@@ -1406,7 +1406,7 @@ export default function App(): ReactElement {
         </aside>
 
         <section className="flex h-screen min-h-0 flex-1 flex-col p-6">
-          <div className="mx-auto flex h-full min-h-0 w-full max-w-[1080px] flex-col">
+          <div className="flex h-full min-h-0 w-full flex-col">
           <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="m-0 font-display text-3xl font-semibold">{getViewTitle()}</h2>
@@ -1514,7 +1514,7 @@ export default function App(): ReactElement {
 
           {view === 'settings' ? (
             <div className="folio-scrollbar min-h-0 flex-1 overflow-y-auto pr-5">
-              <section className="space-y-4">
+              <section className="max-w-[1280px] space-y-4">
               <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
                 <div className="space-y-4">
                   <article className="rounded-lg border border-(--border) bg-bg-surface p-5 shadow-[0_1px_2px_var(--shadow-soft)]">
@@ -1821,7 +1821,7 @@ export default function App(): ReactElement {
                 const isEditingRow = editingId === item.id && editDraft !== null;
                 return (
                   <div key={item.id}>
-                    <article className="group -mx-3 rounded-lg border border-transparent px-3 py-3 transition-[background-color,border-color,box-shadow] duration-150 ease-[var(--ease-out)] hover:border-(--border) hover:bg-bg-surface hover:shadow-[0_1px_2px_var(--shadow-soft)]">
+                    <article className="group max-w-[1280px] border-b border-(--border) py-3">
                       <div className="flex items-start gap-3">
                         {item.favicon ? (
                           <img
@@ -2012,9 +2012,16 @@ export default function App(): ReactElement {
 		              })}
 
               {displayItems.length === 0 ? (
-                <div className="rounded-lg border border-(--border) bg-bg-surface p-6 shadow-[0_1px_2px_var(--shadow-soft)]">
-                  <p className="m-0 font-display text-xl font-semibold">{t('options.emptyTitle')}</p>
-                  <p className="mb-0 mt-2 text-sm text-text-secondary">{t('options.emptyText')}</p>
+                <div className="flex w-full justify-center pt-24">
+                  <div className="max-w-[360px] px-6 text-center">
+                    <FileText className="mx-auto mb-3 h-5 w-5 text-text-muted" strokeWidth={1.8} />
+                    <p className="m-0 text-base font-medium text-text-primary">
+                      {t('options.emptyTitle')}
+                    </p>
+                    <p className="mb-0 mt-1.5 text-sm leading-6 text-text-secondary">
+                      {t('options.emptyText')}
+                    </p>
+                  </div>
                 </div>
               ) : null}
             </section>
