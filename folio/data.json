@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1780626992712,
-  "updatedAt": 1780626992712,
+  "revision": 1780627026143,
+  "updatedAt": 1780627026143,
   "items": {
     "0aea3a8b-8135-4d90-8f27-b5dd62c9678a": {
       "createdAt": 1780572781547,
@@ -46,24 +46,16 @@
       "title": "欢迎来到 Learn Harness Engineering | Learn Harness Engineering",
       "updatedAt": 1780558328273,
       "url": "https://walkinglabs.github.io/learn-harness-engineering/zh/"
-    },
-    "a2707b89-10d5-48e3-b06f-23073ec91fc8": {
-      "createdAt": 1780572018537,
-      "domain": "bpedlekbgkhdmoagkpoponepenpegaam",
-      "favicon": "",
-      "id": "a2707b89-10d5-48e3-b06f-23073ec91fc8",
-      "lastOpenedAt": null,
-      "note": "",
-      "resumeSnapshot": null,
-      "status": "unread",
-      "tags": [],
-      "title": "Folio",
-      "updatedAt": 1780572022757,
-      "url": "chrome-extension://bpedlekbgkhdmoagkpoponepenpegaam/src/options/index.html"
     }
   },
   "tags": [
     "AI"
   ],
-  "tombstones": []
+  "tombstones": [
+    {
+      "deletedAt": 1780627023053,
+      "id": "a2707b89-10d5-48e3-b06f-23073ec91fc8",
+      "url": "chrome-extension://bpedlekbgkhdmoagkpoponepenpegaam/src/options/index.html"
+    }
+  ]
 }
