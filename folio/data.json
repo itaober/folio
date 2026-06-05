@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1780626986500,
-  "updatedAt": 1780626986500,
+  "revision": 1780626992712,
+  "updatedAt": 1780626992712,
   "items": {
     "0aea3a8b-8135-4d90-8f27-b5dd62c9678a": {
       "createdAt": 1780572781547,
@@ -25,10 +25,10 @@
       "lastOpenedAt": null,
       "note": "",
       "resumeSnapshot": null,
-      "status": "unread",
+      "status": "reading",
       "tags": [],
       "title": "Folio",
-      "updatedAt": 1780626983393,
+      "updatedAt": 1780626989659,
       "url": "https://claude.ai/design/p/dbd3f99c-9b9b-4744-92c6-e2c2741f0bce?file=Folio+Redesign.html"
     },
     "99653971-5a61-4775-a215-4d9c2fd5166c": {
