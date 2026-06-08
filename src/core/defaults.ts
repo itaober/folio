@@ -4,7 +4,6 @@ import {
   DEFAULT_SORT_MODE,
   type FolioStore
 } from './types';
-import { DEFAULT_THEME } from '../shared/theme';
 
 export const FOLIO_STORE_KEY = 'folio-store';
 
@@ -16,8 +15,6 @@ export function createDefaultStore(): FolioStore {
     tags: [],
     settings: {
       locale: 'en',
-      iconVariant: 'classic',
-      theme: DEFAULT_THEME,
       defaultStatus: 'unread',
       sortMode: DEFAULT_SORT_MODE,
       optionsDefaultViewMode: DEFAULT_DEFAULT_VIEW_MODE,

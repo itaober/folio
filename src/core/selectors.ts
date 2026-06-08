@@ -149,8 +149,12 @@ export function sortItems(items: FolioItem[], mode: SortMode): FolioItem[] {
       return cloned.sort((a, b) =>
         getItemPreferredTitle(a).localeCompare(getItemPreferredTitle(b))
       );
-    case 'status':
-      return cloned.sort((a, b) => a.status.localeCompare(b.status));
+    case 'status': {
+      const rank: Record<FolioStatus, number> = { unread: 0, reading: 1, done: 2 };
+      return cloned.sort(
+        (a, b) => rank[a.status] - rank[b.status] || b.createdAt - a.createdAt
+      );
+    }
     case 'saved_desc':
     default:
       return cloned.sort((a, b) => b.createdAt - a.createdAt);

@@ -1,6 +1,4 @@
 import type { SupportedLocale } from '../shared/i18n/localeStore';
-import type { FolioIconVariant } from '../shared/icons';
-import type { FolioTheme } from '../shared/theme';
 
 export type FolioStatus = 'unread' | 'reading' | 'done';
 export type SavedView = 'all' | FolioStatus;
@@ -75,8 +73,6 @@ export interface FolioItem {
 
 export interface FolioSettings {
   locale: SupportedLocale;
-  iconVariant: FolioIconVariant;
-  theme: FolioTheme;
   defaultStatus: 'unread' | 'reading';
   sortMode: SortMode;
   optionsDefaultViewMode: DefaultViewMode;
@@ -163,8 +159,6 @@ export type FolioMutation =
   | {
       type: 'updateSettings';
       payload: {
-        iconVariant?: FolioIconVariant;
-        theme?: FolioTheme;
         defaultStatus?: 'unread' | 'reading';
         sortMode?: SortMode;
         optionsDefaultViewMode?: DefaultViewMode;
@@ -173,6 +167,19 @@ export type FolioMutation =
         popupDefaultViewMode?: DefaultViewMode;
         popupFixedView?: SavedView;
         popupLastView?: SavedView;
+      };
+    }
+  | {
+      type: 'renameTag';
+      payload: {
+        from: string;
+        to: string;
+      };
+    }
+  | {
+      type: 'deleteTag';
+      payload: {
+        tag: string;
       };
     }
   | {

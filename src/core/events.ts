@@ -1,7 +1,8 @@
 import type { FolioMutation, FolioStore } from './types';
 
 export interface CommitEvent {
-  mutation: FolioMutation;
+  /** Absent for sync-driven store changes (GitHub pull/resolve/connect). */
+  mutation?: FolioMutation;
   store: FolioStore;
 }
 
