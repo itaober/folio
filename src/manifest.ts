@@ -7,7 +7,7 @@ const DEV_EXTENSION_KEY =
   'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAux5Zwa5sWjVhlOpT1Uyf91qllzO0D+syS99yz+FMr+HTtOI9O4K5lC+G4pH4Agop/mxJWu3kaA2H7HRkNixOak0d8xnD29x3QwkDijFyVXtLIxPoA+BB9WsWf5lWnnIQT3tutcEGZ9fBjOjur6RAf2qql2dMquVqudOo5ChFvf582hfmrQ0ERhcQrTgAfjQ/hqQDS1ZNM7sZybsGHw/QWml4eQGrXuJP8H7933WWKPqhb6ciWTUw7ihRhktWWcHmg1bHEn18JVkYFUIRHgOePbaaTNmVZ2cBkMItjukJJt+kd336nQ/VoTFFsmLvG7TtKCzGqqE/Defc0tNpmtJgmQIDAQAB';
 const BUILD_CHANNEL = resolveBuildChannel(process.env.FOLIO_BUILD_CHANNEL);
 const APP_NAME_KEY = BUILD_CHANNEL === 'dev' ? 'appNameDev' : 'appName';
-const CLASSIC_ICON_PREFIX = BUILD_CHANNEL === 'dev' ? 'dev-classic' : 'classic';
+const ICON_PREFIX = BUILD_CHANNEL === 'dev' ? 'dev-mono' : 'mono';
 
 export default defineManifest({
   manifest_version: 3,
@@ -19,17 +19,17 @@ export default defineManifest({
   action: {
     default_popup: 'src/popup/index.html',
     default_icon: {
-      16: `icons/${CLASSIC_ICON_PREFIX}-16.png`,
-      32: `icons/${CLASSIC_ICON_PREFIX}-32.png`,
-      48: `icons/${CLASSIC_ICON_PREFIX}-48.png`,
-      128: `icons/${CLASSIC_ICON_PREFIX}-128.png`
+      16: `icons/${ICON_PREFIX}-16.png`,
+      32: `icons/${ICON_PREFIX}-32.png`,
+      48: `icons/${ICON_PREFIX}-48.png`,
+      128: `icons/${ICON_PREFIX}-128.png`
     }
   },
   icons: {
-    16: `icons/${CLASSIC_ICON_PREFIX}-16.png`,
-    32: `icons/${CLASSIC_ICON_PREFIX}-32.png`,
-    48: `icons/${CLASSIC_ICON_PREFIX}-48.png`,
-    128: `icons/${CLASSIC_ICON_PREFIX}-128.png`
+    16: `icons/${ICON_PREFIX}-16.png`,
+    32: `icons/${ICON_PREFIX}-32.png`,
+    48: `icons/${ICON_PREFIX}-48.png`,
+    128: `icons/${ICON_PREFIX}-128.png`
   },
   options_page: 'src/options/index.html',
   background: {
@@ -37,5 +37,5 @@ export default defineManifest({
     type: 'module'
   },
   permissions: ['storage', 'tabs', 'contextMenus', 'scripting'],
-  host_permissions: ['<all_urls>']
+  host_permissions: ['<all_urls>', 'https://api.github.com/*']
 });

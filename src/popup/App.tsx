@@ -3,42 +3,18 @@ import {
   useMemo,
   useRef,
   useState,
-  type KeyboardEvent,
   type PointerEvent,
   type ReactElement
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ChevronRight,
-  ExternalLink,
-  Goal,
-  Plus,
-  Search,
-  X
-} from 'lucide-react';
-import {
-  DEFAULT_THEME,
-  applyDocumentTheme,
-  getThemeIconVariant,
-  resolveFolioTheme,
-  type FolioTheme
-} from '../shared/theme';
-import { FolioMark } from '../shared/ui/FolioMark';
-import { noticeClass, type NoticeLevel } from '../shared/ui/notice';
-import {
-  nextStatus,
-  statusBadgeClass,
-  statusIcon,
-  statusToLabel
-} from '../shared/ui/itemStatus';
-import { renderHighlightedText } from '../shared/ui/renderHighlightedText';
-import { TagInputField } from '../shared/ui/TagInputField';
-import { TextField } from '../shared/ui/TextField';
+import { Search, X } from 'lucide-react';
+import type { NoticeLevel } from '../shared/ui/notice';
+import { IconButton } from '../shared/ui/IconButton';
+import { Segmented, type SegmentedOption } from '../shared/ui/Segmented';
+import { statusToLabel } from '../shared/ui/itemStatus';
 import { useAutoDismissNotice } from '../shared/ui/useAutoDismissNotice';
 import { commit, getStore } from '../core/repository';
 import {
-  getItemPreferredDomain,
-  getItemPreferredTitle,
   matchesItemKeyword,
   selectReadingItemByUrlFallback,
   selectItemByUrl,
@@ -46,6 +22,11 @@ import {
 } from '../core/selectors';
 import type { FolioItem, FolioStatus } from '../core/types';
 import type { RuntimeMessageResponse } from '../shared/runtimeMessages';
+import { PopupHeader, type HeaderMode } from './_components/PopupHeader';
+import { ItemRow } from './_components/ItemRow';
+import { QuickEditPanel } from './_components/QuickEditPanel';
+import { EmptyCold, EmptyFiltered, NoResults } from './_components/EmptyStates';
+import { PopupNotice } from './_components/Notices';
 
 interface ActivePage {
   url: string;
@@ -55,7 +36,7 @@ interface ActivePage {
 
 type PopupFilter = 'all' | FolioStatus;
 
-interface PopupNotice {
+interface Notice {
   level: NoticeLevel;
   text: string;
 }
@@ -69,19 +50,21 @@ export default function App(): ReactElement {
   const [currentItem, setCurrentItem] = useState<FolioItem | null>(null);
   const [readingTargetItem, setReadingTargetItem] = useState<FolioItem | null>(null);
   const [recentItems, setRecentItems] = useState<FolioItem[]>([]);
-  const [theme, setTheme] = useState<FolioTheme>(DEFAULT_THEME);
   const [popupFilter, setPopupFilter] = useState<PopupFilter>('unread');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [isSavingProgress, setIsSavingProgress] = useState(false);
+  const [isApplyingEdit, setIsApplyingEdit] = useState(false);
   const [popupEditNote, setPopupEditNote] = useState('');
   const [popupEditTags, setPopupEditTags] = useState<string[]>([]);
   const [popupTagInput, setPopupTagInput] = useState('');
-  const [notice, setNotice] = useState<PopupNotice | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const [deleteHoldItemId, setDeleteHoldItemId] = useState<string | null>(null);
   const [deleteHoldProgress, setDeleteHoldProgress] = useState(0);
   const initialFilterResolvedRef = useRef(false);
   const popupLastViewCommitRef = useRef(Promise.resolve());
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const deleteHoldRafRef = useRef<number | null>(null);
   const deleteHoldStartRef = useRef(0);
   const deleteHoldTargetRef = useRef<FolioItem | null>(null);
@@ -90,18 +73,22 @@ export default function App(): ReactElement {
   useAutoDismissNotice(notice, setNotice, 3000);
 
   useEffect(() => {
+    // Loads the active tab + store once when the popup opens (mount-only).
     void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    applyDocumentTheme(theme);
-  }, [theme]);
 
   useEffect(() => {
     return () => {
       stopDeleteHold();
     };
   }, []);
+
+  useEffect(() => {
+    if (searchOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [searchOpen]);
 
   function normalizeTag(input: string): string {
     return input.trim().replace(/^#+/, '').replace(/\s+/g, ' ');
@@ -149,7 +136,6 @@ export default function App(): ReactElement {
     setActivePage(page);
     setCurrentItem(item);
     setReadingTargetItem(readingItem);
-    setTheme(resolveFolioTheme(store.settings.theme));
     setRecentItems(selectRecentItems(store, 60));
     if (!initialFilterResolvedRef.current) {
       setPopupFilter(
@@ -204,6 +190,12 @@ export default function App(): ReactElement {
     const savedItem = await load();
     if (savedItem) {
       openPopupEditor(savedItem);
+      setNotice({
+        level: 'success',
+        text: t('popup.savedNotice', {
+          status: statusToLabel(savedItem.status, t)
+        })
+      });
     }
   }
 
@@ -288,32 +280,28 @@ export default function App(): ReactElement {
   }
 
   function handlePopupFilterChange(nextFilter: PopupFilter): void {
-    setPopupFilter(nextFilter);
     if (nextFilter === popupFilter) {
       return;
     }
+    setPopupFilter(nextFilter);
     persistPopupLastView(nextFilter);
   }
 
-  function handleToggleExpanded(item: FolioItem): void {
-    if (expandedItemId === item.id) {
-      closePopupEditor(item);
-      return;
-    }
-
-    openPopupEditor(item);
+  function openSearch(): void {
+    setSearchOpen(true);
   }
 
-  function handleRowKeyDown(
-    event: KeyboardEvent<HTMLDivElement>,
-    item: FolioItem
-  ): void {
-    if (event.key !== 'Enter' && event.key !== ' ') {
-      return;
-    }
+  function clearSearch(): void {
+    setSearchTerm('');
+    setSearchOpen(false);
+  }
 
-    event.preventDefault();
-    handleToggleExpanded(item);
+  function handleOpenItem(item: FolioItem): void {
+    void handleOpenRecentItem(item);
+  }
+
+  function handleEditItem(item: FolioItem): void {
+    openPopupEditor(item);
   }
 
   function handlePopupAddTag(): void {
@@ -345,22 +333,27 @@ export default function App(): ReactElement {
       return;
     }
 
-    const result = await commit({
-      type: 'updateItem',
-      payload: {
-        id: expandedItemId,
-        note: popupEditNote,
-        tags: popupEditTags
+    setIsApplyingEdit(true);
+    try {
+      const result = await commit({
+        type: 'updateItem',
+        payload: {
+          id: expandedItemId,
+          note: popupEditNote,
+          tags: popupEditTags
+        }
+      });
+
+      if (!result.ok) {
+        setNotice({ level: 'error', text: t('popup.updateFailed') });
+        return;
       }
-    });
 
-    if (!result.ok) {
-      setNotice({ level: 'error', text: t('popup.updateFailed') });
-      return;
+      closePopupEditor(null);
+      await load();
+    } finally {
+      setIsApplyingEdit(false);
     }
-
-    closePopupEditor(null);
-    await load();
   }
 
   function handleCancelPopupEdit(): void {
@@ -369,6 +362,15 @@ export default function App(): ReactElement {
       (currentItem?.id === expandedItemId ? currentItem : null);
 
     closePopupEditor(source);
+  }
+
+  async function handleQuickEditStatusChange(status: FolioStatus): Promise<void> {
+    const editing = expandedItem;
+    if (!editing) {
+      return;
+    }
+
+    await handleStatusChange(editing, status);
   }
 
   function stopDeleteHold(): void {
@@ -417,9 +419,7 @@ export default function App(): ReactElement {
     startDeleteHold(item);
   }
 
-  function handleDeletePointerStop(
-    event: PointerEvent<HTMLButtonElement>
-  ): void {
+  function handleDeletePointerStop(event: PointerEvent<HTMLButtonElement>): void {
     event.preventDefault();
     event.stopPropagation();
     stopDeleteHold();
@@ -439,271 +439,187 @@ export default function App(): ReactElement {
     return items;
   }, [popupFilter, recentItems, searchTerm]);
 
+  // The quick-edit panel is a full-surface view decoupled from the filtered
+  // list, so it stays open across status/filter changes; only a genuinely gone
+  // item (deleted) closes it.
   useEffect(() => {
     if (!expandedItemId) {
       return;
     }
 
-    if (!filteredRecentItems.some((item) => item.id === expandedItemId)) {
+    if (!recentItems.some((item) => item.id === expandedItemId)) {
       closePopupEditor(null);
     }
-  }, [expandedItemId, filteredRecentItems]);
+    // closePopupEditor is a stable setter wrapper; deps track the gone-item check.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandedItemId, recentItems]);
 
-  const iconVariant = getThemeIconVariant(theme);
+  const expandedItem = useMemo(
+    () => recentItems.find((item) => item.id === expandedItemId) ?? null,
+    [recentItems, expandedItemId]
+  );
+
+  const headerMode: HeaderMode = !canSave
+    ? 'disabled'
+    : currentItem
+      ? 'saved'
+      : 'save';
+
+  const trimmedSearch = searchTerm.trim();
+  const showingSearch = searchOpen || trimmedSearch.length > 0;
+
+  const filterCounts: Record<PopupFilter, number> = {
+    all: recentItems.length,
+    unread: recentItems.filter((item) => item.status === 'unread').length,
+    reading: recentItems.filter((item) => item.status === 'reading').length,
+    done: recentItems.filter((item) => item.status === 'done').length
+  };
+  const filterLabel = (text: string, count: number) => (
+    <span className="inline-flex items-center gap-1">
+      {text}
+      <span className="text-[10px] font-semibold tabular-nums opacity-55">{count}</span>
+    </span>
+  );
+  const filterOptions: SegmentedOption<PopupFilter>[] = [
+    { value: 'all', label: filterLabel(t('common.all'), filterCounts.all), ariaLabel: t('common.all') },
+    { value: 'unread', label: filterLabel(t('common.unread'), filterCounts.unread), ariaLabel: t('common.unread') },
+    { value: 'reading', label: filterLabel(t('common.reading'), filterCounts.reading), ariaLabel: t('common.reading') },
+    { value: 'done', label: filterLabel(t('common.done'), filterCounts.done), ariaLabel: t('common.done') }
+  ];
+
+  const isEmpty = recentItems.length === 0;
+  const isFilteredEmpty = filteredRecentItems.length === 0;
 
   return (
-    <main className="relative flex h-[450px] w-[320px] flex-col bg-bg-base text-text-primary">
-      <section className="space-y-2 p-2.5">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <FolioMark variant={iconVariant} size={17} />
-            <span className="font-display text-[14px] font-semibold">
-              {t('popup.title')}
-            </span>
-          </div>
+    <main className="fz fz-surface relative flex h-[520px] w-[360px] flex-col">
+      <PopupHeader
+        mode={headerMode}
+        onSave={() => void handleSaveCurrentPage()}
+        onRemove={() => void handleRemoveCurrentPage()}
+        onOpenLibrary={() => void handleOpenOptions()}
+      />
 
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              className="folio-pressable inline-flex h-7 items-center gap-1 rounded-md bg-accent px-2 text-[11px] font-medium text-on-accent shadow-[0_1px_2px_var(--shadow-soft)] hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
-              disabled={!canSave}
-              onClick={() =>
-                void (currentItem
-                  ? handleRemoveCurrentPage()
-                  : handleSaveCurrentPage())
-              }
-            >
-              {currentItem ? (
-                <X className="h-3 w-3" strokeWidth={2.2} />
-              ) : (
-                <Plus className="h-3 w-3" strokeWidth={2.2} />
-              )}
-              <span>
-                {currentItem ? t('popup.removeCurrent') : t('popup.saveShort')}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              className="folio-pressable inline-flex h-7 items-center gap-1 rounded-md border border-(--border) bg-bg-elevated px-2 text-[11px] text-text-secondary hover:border-(--accent-border) hover:bg-bg-sunken hover:text-text-primary"
-              onClick={() => void handleOpenOptions()}
-            >
-              <ExternalLink className="h-3 w-3" strokeWidth={2} />
-              {t('popup.openDashboard')}
-            </button>
-          </div>
-        </div>
-
-        <TextField
-          id="popup-search"
-          aria-label={t('popup.searchAction')}
-          leftIcon={<Search className="h-[11px] w-[11px]" strokeWidth={2} />}
-          className="h-8 px-2.5 pl-8 text-[11px]"
-          placeholder={t('popup.searchPlaceholder')}
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
+      {notice && notice.level === 'error' ? (
+        <PopupNotice
+          level={notice.level}
+          text={notice.text}
+          onDismiss={() => setNotice(null)}
         />
-      </section>
+      ) : null}
 
-      <div className="mx-2.5 h-px bg-(--border)" />
-
-      <section className="flex min-h-0 flex-1 flex-col space-y-2 p-2.5">
-        {notice ? (
-          <p className={`folio-panel m-0 rounded-lg px-2.5 py-2 text-[11px] ${noticeClass(notice.level)}`}>
-            {notice.text}
-          </p>
-        ) : null}
-
-        <div className="rounded-full border border-(--border) bg-bg-surface p-0.5">
-          <div className="grid grid-cols-4 gap-0.5">
-            {(['unread', 'reading', 'done', 'all'] as PopupFilter[]).map((status) => {
-              const active = popupFilter === status;
-              return (
-                <button
-                  key={status}
-                  type="button"
-                  aria-pressed={active}
-                  className={
-                    active
-                      ? 'folio-pressable rounded-full border border-(--accent-border) bg-accent-subtle px-1.5 py-1 text-[11px] font-semibold text-accent shadow-[0_1px_2px_var(--shadow-soft)]'
-                      : 'folio-pressable rounded-full border border-transparent px-1.5 py-1 text-[11px] text-text-muted hover:border-(--border) hover:bg-bg-base hover:text-text-secondary'
-                  }
-                  onClick={() => handlePopupFilterChange(status)}
+      {expandedItem ? (
+        <QuickEditPanel
+          item={expandedItem}
+          note={popupEditNote}
+          tags={popupEditTags}
+          tagInput={popupTagInput}
+          saving={isApplyingEdit}
+          onNoteChange={setPopupEditNote}
+          onTagInputChange={setPopupTagInput}
+          onAddTag={handlePopupAddTag}
+          onRemoveTag={handlePopupRemoveTag}
+          onStatusChange={(status) => void handleQuickEditStatusChange(status)}
+          onDone={() => void handleConfirmPopupEdit()}
+          onBack={handleCancelPopupEdit}
+        />
+      ) : (
+        <>
+          <div className="px-3 pb-2.5">
+            {showingSearch ? (
+              <div className="fz-token-field" style={{ height: 38, paddingLeft: 12 }}>
+                <Search size={15} strokeWidth={2} className="text-muted-foreground" />
+                <input
+                  ref={searchInputRef}
+                  className="fz-input"
+                  style={{ fontSize: 13.5 }}
+                  placeholder={t('popup.searchPlaceholder')}
+                  aria-label={t('popup.searchAction')}
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') {
+                      clearSearch();
+                    }
+                  }}
+                />
+                <IconButton
+                  size="sm"
+                  title={t('popup.clearSearch')}
+                  aria-label={t('popup.clearSearch')}
+                  onClick={clearSearch}
                 >
-                  {status === 'all' ? t('common.all') : statusToLabel(status, t)}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <p className="mb-1.5 font-mono text-[9px] uppercase text-text-muted">
-          {t('popup.recent')}
-        </p>
-        <div className="folio-scrollbar min-h-0 flex-1 space-y-0.5 overflow-y-auto px-1 pt-3">
-          {filteredRecentItems.map((item) => {
-            const isExpanded = expandedItemId === item.id;
-            const canSaveProgress =
-              item.id === readingTargetItem?.id && item.status === 'reading';
-
-            return (
-              <div
-                key={item.id}
-                className={`group/item relative overflow-visible rounded-lg border transition-[background-color,border-color,box-shadow] duration-150 ease-[var(--ease-out)] ${
-                  isExpanded
-                    ? 'border-(--border) bg-bg-surface shadow-[0_1px_2px_var(--shadow-soft)]'
-                    : 'border-transparent hover:border-(--border) hover:bg-bg-surface'
-                }`}
-              >
-                <div className="flex items-center gap-1 px-1.5 py-1.5">
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    className="folio-pressable flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md px-0.5 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-(--accent-border)"
-                    onClick={() => handleToggleExpanded(item)}
-                    onKeyDown={(event) => handleRowKeyDown(event, item)}
-                    aria-expanded={isExpanded}
-                  >
-                    {item.favicon ? (
-                      <img
-                        src={item.favicon}
-                        alt=""
-                        className="h-[18px] w-[18px] rounded-[4px] bg-bg-surface object-cover"
-                      />
-                    ) : (
-                      <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[4px] bg-bg-surface">
-                        <FolioMark variant={iconVariant} size={15} />
-                      </span>
-                    )}
-                    <span className="min-w-0 flex-1">
-                      <span className="flex min-w-0 items-center gap-1">
-                        <button
-                          type="button"
-                          className="block min-w-0 max-w-full truncate bg-transparent p-0 text-left text-[13px] text-text-primary transition-colors duration-150 ease-[var(--ease-out)] hover:text-accent hover:underline underline-offset-2"
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            void handleOpenRecentItem(item);
-                          }}
-                        >
-                          {renderHighlightedText(getItemPreferredTitle(item), searchTerm)}
-                        </button>
-                      </span>
-                      <span className="block truncate font-mono text-[10px] text-text-muted">
-                        {renderHighlightedText(getItemPreferredDomain(item), searchTerm)}
-                      </span>
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    {canSaveProgress ? (
-                      <button
-                        type="button"
-                        className="folio-pressable inline-flex h-7 w-7 items-center justify-center rounded-md border border-(--border) bg-bg-elevated text-text-secondary hover:border-(--accent-border) hover:bg-bg-sunken hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-55"
-                        onClick={() => void handleSaveProgress(item)}
-                        title={t('popup.saveProgress')}
-                        aria-label={t('popup.saveProgress')}
-                        disabled={isSavingProgress}
-                      >
-                        <Goal className="h-3.5 w-3.5" strokeWidth={2} />
-                      </button>
-                    ) : null}
-
-                    <button
-                      type="button"
-                      className={`folio-pressable inline-flex h-7 w-7 items-center justify-center rounded-md border border-(--border) ${statusBadgeClass(item.status)} hover:border-(--accent-border)`}
-                      onClick={() => void handleStatusChange(item, nextStatus(item.status))}
-                      title={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}
-                      aria-label={`${statusToLabel(item.status, t)} → ${statusToLabel(nextStatus(item.status), t)}`}
-                    >
-                      <span className="scale-[0.95]">{statusIcon(item.status)}</span>
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className={`folio-pressable group/delete absolute right-0 top-0 z-[3] inline-flex h-4.5 w-4.5 -translate-y-1/2 items-center justify-center rounded-full text-danger transition-[opacity,transform] duration-150 ease-[var(--ease-out)] ${
-                    deleteHoldItemId === item.id
-                      ? 'opacity-100 pointer-events-auto'
-                      : 'opacity-0 pointer-events-none group-hover/item:pointer-events-auto group-hover/item:opacity-100 group-focus-within/item:pointer-events-auto group-focus-within/item:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100'
-                  }`}
-                  onPointerDown={(event) => handleDeletePointerDown(event, item)}
-                  onPointerUp={handleDeletePointerStop}
-                  onPointerLeave={handleDeletePointerStop}
-                  onPointerCancel={handleDeletePointerStop}
-                  onContextMenu={(event) => event.preventDefault()}
-                  title={t('common.delete')}
-                  aria-label={t('common.delete')}
-                >
-                  {deleteHoldItemId === item.id ? (
-                    <>
-                      <span
-                        className="absolute inset-0 rounded-full"
-                        style={{
-                          background: `conic-gradient(var(--accent) ${
-                            deleteHoldProgress * 360
-                          }deg, transparent 0deg)`
-                        }}
-                      />
-                      <span className="absolute inset-[1px] rounded-full bg-bg-base" />
-                    </>
-                  ) : (
-                    <span className="absolute inset-0 rounded-full border border-(--border) bg-bg-base shadow-none transition-[background-color,box-shadow] duration-150 ease-[var(--ease-out)] group-hover/delete:bg-bg-elevated group-hover/delete:shadow-[0_1px_2px_rgba(0,0,0,0.12)]" />
-                  )}
-                  <X className="relative z-[2] h-2.25 w-2.25" strokeWidth={2.1} />
-                </button>
-
-                {isExpanded ? (
-                  <div className="folio-panel mx-1.5 mb-1.5 border-t border-(--border) px-1 py-2.5">
-                    <div className="grid gap-2">
-                      <TextField
-                        aria-label={t('popup.quickEditNote')}
-                        className="h-8 px-2.5 text-[11px]"
-                        placeholder={t('popup.quickEditNote')}
-                        value={popupEditNote}
-                        onChange={(event) => setPopupEditNote(event.target.value)}
-                      />
-                      <TagInputField
-                        tags={popupEditTags}
-                        inputValue={popupTagInput}
-                        placeholder={t('popup.quickEditTags')}
-                        removeButtonTitle={t('common.delete')}
-                        removeButtonLabel={(tag) => t('options.removeTagAria', { tag })}
-                        onInputChange={setPopupTagInput}
-                        onAddTag={handlePopupAddTag}
-                        onRemoveTag={handlePopupRemoveTag}
-                      />
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          type="button"
-                          className="folio-pressable inline-flex h-7 items-center rounded-md bg-bg-elevated px-2 text-[11px] text-text-secondary hover:bg-bg-sunken hover:text-text-primary"
-                          onClick={handleCancelPopupEdit}
-                        >
-                          {t('popup.quickEditDismiss')}
-                        </button>
-                        <button
-                          type="button"
-                          className="folio-pressable inline-flex h-7 items-center rounded-md bg-accent px-2 text-[11px] font-medium text-on-accent shadow-[0_1px_2px_var(--shadow-soft)] hover:bg-accent-hover"
-                          onClick={() => void handleConfirmPopupEdit()}
-                        >
-                          {t('popup.quickEditApply')}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
+                  <X size={14} strokeWidth={2.2} />
+                </IconButton>
               </div>
-            );
-          })}
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <Segmented
+                  options={filterOptions}
+                  value={popupFilter}
+                  onChange={handlePopupFilterChange}
+                  tight
+                  className="flex-1"
+                  ariaLabel={t('popup.recent')}
+                />
+                <IconButton
+                  size="sm"
+                  title={t('popup.searchAction')}
+                  aria-label={t('popup.searchAction')}
+                  onClick={openSearch}
+                >
+                  <Search size={16} strokeWidth={2} />
+                </IconButton>
+              </div>
+            )}
+          </div>
 
-          {filteredRecentItems.length === 0 ? (
-            <p className="m-0 rounded-lg border border-(--border) bg-bg-surface px-2.5 py-3 text-[11px] text-text-muted">
-              {t('options.emptyText')}
-            </p>
-          ) : null}
-        </div>
-      </section>
+          <div className="fz-scroll flex min-h-0 flex-1 flex-col overflow-y-auto px-2.5 pb-2 pt-2">
+            {isEmpty ? (
+              <EmptyCold />
+            ) : trimmedSearch && isFilteredEmpty ? (
+              <NoResults query={trimmedSearch} onClear={clearSearch} />
+            ) : isFilteredEmpty && popupFilter !== 'all' ? (
+              <EmptyFiltered status={popupFilter} />
+            ) : (
+              <div className="flex flex-col gap-px">
+                {filteredRecentItems.map((item) => (
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    searchTerm={searchTerm}
+                    canSaveProgress={
+                      item.id === readingTargetItem?.id && item.status === 'reading'
+                    }
+                    savingProgress={isSavingProgress}
+                    deleteHoldProgress={
+                      deleteHoldItemId === item.id ? deleteHoldProgress : null
+                    }
+                    onSetStatus={(id, status) => {
+                      const target = recentItems.find((entry) => entry.id === id);
+                      if (target) {
+                        void handleStatusChange(target, status);
+                      }
+                    }}
+                    onOpen={handleOpenItem}
+                    onTitle={handleEditItem}
+                    onSaveProgress={(target) => void handleSaveProgress(target)}
+                    onDeletePointerDown={handleDeletePointerDown}
+                    onDeletePointerStop={handleDeletePointerStop}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {notice && notice.level !== 'error' ? (
+        <PopupNotice
+          level={notice.level}
+          text={notice.text}
+          onDismiss={() => setNotice(null)}
+        />
+      ) : null}
     </main>
   );
 }

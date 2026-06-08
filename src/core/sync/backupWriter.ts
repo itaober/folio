@@ -39,6 +39,14 @@ async function ensureReadWritePermission(
     return true;
   }
 
+  // requestPermission needs a user gesture, which only exists in a page context
+  // (popup/options). In the background service worker (e.g. a context-menu save)
+  // there is no gesture, so we never prompt — we report not-granted and let a
+  // later gesture-backed sync from Options re-grant.
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
   if (
     (await handleWithPermissions.requestPermission({ mode: 'readwrite' })) ===
     'granted'

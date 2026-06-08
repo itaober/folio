@@ -15,8 +15,32 @@ import {
 } from './types';
 import { extractDomain, normalizeUrl } from './url';
 import { isSupportedLocale, writeStoredLocale } from '../shared/i18n/localeStore';
-import { getThemeIconVariant, resolveFolioTheme } from '../shared/theme';
 import { writeBackupToDirectory } from './sync/backupWriter';
+import {
+  readGitHubCredentials,
+  type GitHubCredentialsInput
+} from './sync/credentials';
+import {
+  configureGitHubSync,
+  connectGitHub,
+  disconnectGitHub,
+  getGitHubDiff,
+  getGitHubStatus,
+  pullStoreFromGitHub,
+  pushStoreToGitHub,
+  recordTombstone,
+  resolveGitHub
+} from './sync/github';
+import type {
+  GitHubResolveStrategy,
+  GitHubStoreDiff,
+  GitHubSyncStatus
+} from './sync/github/types';
+
+/** Push/pull result the background folds into a RuntimeMessageResponse. */
+export type RepositorySyncResult =
+  | { ok: true; syncedAt: number }
+  | { ok: false; error: string };
 
 function createId(): string {
   return crypto.randomUUID();
@@ -70,13 +94,12 @@ function normalizeResumeSnapshot(
   };
 }
 
-async function writeStore(store: FolioStore): Promise<void> {
+export async function writeStore(store: FolioStore): Promise<void> {
   await chrome.storage.local.set({ [FOLIO_STORE_KEY]: store });
 }
 
 function normalizeStore(store: FolioStore): FolioStore {
   const defaultStore = createDefaultStore();
-  const theme = resolveFolioTheme(store.settings.theme);
   const normalizedItems: Record<string, FolioItem> = {};
   for (const [id, item] of Object.entries(store.items)) {
     const legacySavedAt = (item as FolioItem & { savedAt?: unknown }).savedAt;
@@ -99,8 +122,6 @@ function normalizeStore(store: FolioStore): FolioStore {
     locale: isSupportedLocale(store.settings.locale)
       ? store.settings.locale
       : defaultStore.settings.locale,
-    iconVariant: getThemeIconVariant(theme),
-    theme,
     defaultStatus:
       store.settings.defaultStatus === 'reading' ? 'reading' : 'unread',
     sortMode: resolveSortMode(store.settings.sortMode),
@@ -150,15 +171,28 @@ function parseStatus(value: unknown): FolioStatus {
   return 'unread';
 }
 
-function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | null {
+function sanitizeImportedStore(
+  raw: unknown,
+  current: FolioStore,
+  mode: 'replace' | 'merge' = 'replace'
+): FolioStore | null {
   if (!isRecord(raw)) {
     return null;
   }
 
-  const defaultStore = createDefaultStore();
   const rawItems = isRecord(raw.items) ? raw.items : {};
   const byUrl = new Map<string, FolioItem>();
   const now = Date.now();
+
+  // 'merge' (GitHub sync): seed with the current store so local-only items
+  // (saved on this device but not yet pushed) survive a pull; payload items
+  // then win per-URL by the updatedAt LWW comparison below. 'replace' (file
+  // import) starts empty so the imported file fully defines the store.
+  if (mode === 'merge') {
+    for (const item of Object.values(current.items)) {
+      byUrl.set(item.url, item);
+    }
+  }
 
   for (const value of Object.values(rawItems)) {
     if (!isRecord(value)) {
@@ -267,8 +301,6 @@ function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | 
   const popupLastView = resolveSavedView(
     rawSettings.popupLastView ?? current.settings.popupLastView
   );
-  const theme = resolveFolioTheme(rawSettings.theme ?? current.settings.theme);
-  const iconVariant = getThemeIconVariant(theme);
 
   const rawMeta = isRecord(raw.meta) ? raw.meta : {};
 
@@ -277,8 +309,6 @@ function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | 
     tags: collectTagsFromItems(items),
     settings: {
       locale,
-      iconVariant,
-      theme,
       defaultStatus,
       sortMode,
       optionsDefaultViewMode,
@@ -313,22 +343,104 @@ function sanitizeImportedStore(raw: unknown, current: FolioStore): FolioStore | 
   return normalizeStore(nextStore);
 }
 
-async function updateSyncMetadata(store: FolioStore): Promise<FolioStore> {
-  if (!store.settings.syncDirectory) {
-    return store;
+const GITHUB_PUSH_DEBOUNCE_MS = 3000;
+let githubPushTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** A page context (popup/options) has a `window`; the service worker does not. */
+const IS_PAGE_CONTEXT = typeof window !== 'undefined';
+
+/**
+ * Coalesces a burst of commits into a single GitHub push. The push reads the
+ * latest store snapshot itself (whole-state file, no per-mutation queue, §5.6).
+ *
+ * In a PAGE context (popup/options) a setTimeout would be torn down when the
+ * surface closes — the popup almost always closes within the debounce window —
+ * so we hand the request to the background service worker, whose context is far
+ * more durable. In the SERVICE WORKER (e.g. a context-menu save) we run the
+ * debounce locally.
+ */
+export function scheduleGitHubPush(): void {
+  if (IS_PAGE_CONTEXT) {
+    try {
+      void chrome.runtime.sendMessage({ type: 'githubSchedulePush' }).catch(() => {});
+    } catch {
+      // Messaging unavailable (e.g. the e2e harness) — nothing to schedule.
+    }
+    return;
   }
 
-  const result = await writeBackupToDirectory(store);
+  if (githubPushTimer) {
+    clearTimeout(githubPushTimer);
+  }
+  githubPushTimer = setTimeout(() => {
+    githubPushTimer = null;
+    void runGitHubPush();
+  }, GITHUB_PUSH_DEBOUNCE_MS);
+}
+
+async function runGitHubPush(): Promise<void> {
+  const creds = await readGitHubCredentials();
+  if (!creds) {
+    return;
+  }
+  const store = await getStore();
+  const result = await pushStoreToGitHub(store);
+  await foldGitHubResult(result);
+}
+
+/** Records a tombstone for a deleted item only when GitHub sync is connected. */
+async function recordTombstoneIfSyncing(item: FolioItem): Promise<void> {
+  const creds = await readGitHubCredentials();
+  if (!creds) {
+    return;
+  }
+  await recordTombstone(item);
+}
+
+/** Folds a GitHub push/pull result into lastSyncedAt/lastSyncError (§5.7). */
+export async function foldGitHubResult(
+  result: { ok: true; syncedAt: number } | { ok: false; error: string }
+): Promise<FolioStore> {
+  const current = await getStore();
   const nextStore: FolioStore = {
-    ...store,
+    ...current,
     settings: {
-      ...store.settings,
-      lastSyncedAt: result.ok ? result.syncedAt : store.settings.lastSyncedAt,
+      ...current.settings,
+      lastSyncedAt: result.ok ? result.syncedAt : current.settings.lastSyncedAt,
       lastSyncError: result.ok ? null : result.error
     }
   };
-
   await writeStore(nextStore);
+  return nextStore;
+}
+
+/**
+ * Dispatches a committed store to every configured sync target (03-data-flow
+ * §4.3): local-directory backup write-through first (synchronous-ish), then a
+ * debounced async GitHub push. Returns the store with folded local-backup
+ * metadata; the GitHub result is folded later by the debounced push.
+ */
+async function updateSyncMetadata(store: FolioStore): Promise<FolioStore> {
+  let nextStore = store;
+
+  if (store.settings.syncDirectory) {
+    const result = await writeBackupToDirectory(store);
+    nextStore = {
+      ...store,
+      settings: {
+        ...store.settings,
+        lastSyncedAt: result.ok ? result.syncedAt : store.settings.lastSyncedAt,
+        lastSyncError: result.ok ? null : result.error
+      }
+    };
+    await writeStore(nextStore);
+  }
+
+  const creds = await readGitHubCredentials();
+  if (creds) {
+    scheduleGitHubPush();
+  }
+
   return nextStore;
 }
 
@@ -339,8 +451,6 @@ export async function getStore(): Promise<FolioStore> {
   if (store) {
     const knownSettingKeys = new Set([
       'locale',
-      'iconVariant',
-      'theme',
       'defaultStatus',
       'sortMode',
       'optionsDefaultViewMode',
@@ -369,12 +479,7 @@ export async function getStore(): Promise<FolioStore> {
     });
 
     const normalized = normalizeStore(store);
-    if (
-      normalized.settings.iconVariant !== store.settings.iconVariant ||
-      normalized.settings.theme !== store.settings.theme ||
-      needsTimestampNormalization ||
-      hasUnexpectedSettingKeys
-    ) {
+    if (needsTimestampNormalization || hasUnexpectedSettingKeys) {
       await writeStore(normalized);
     }
     return normalized;
@@ -385,7 +490,26 @@ export async function getStore(): Promise<FolioStore> {
   return defaultStore;
 }
 
-export async function commit(mutation: FolioMutation): Promise<CommitResult> {
+let commitChain: Promise<unknown> = Promise.resolve();
+
+/**
+ * Serializes commits within this context: each commit's full read-modify-write
+ * (getStore → mutate → writeStore → sync side effects) runs to completion before
+ * the next begins, so a burst of mutations (rapid status changes, edits) can't
+ * interleave a stale getStore()/writeStore() and silently drop a change. (Cross-
+ * context races between the SW and a page still share chrome.storage; those are
+ * far rarer — see REVIEW notes.)
+ */
+export function commit(mutation: FolioMutation): Promise<CommitResult> {
+  const run = commitChain.then(() => performCommit(mutation));
+  commitChain = run.then(
+    () => undefined,
+    () => undefined
+  );
+  return run;
+}
+
+async function performCommit(mutation: FolioMutation): Promise<CommitResult> {
   const current = await getStore();
   const next: FolioStore = {
     ...current,
@@ -467,7 +591,6 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
 
         if (mutation.payload.tags !== undefined) {
           updated.tags = [...new Set(mutation.payload.tags.filter(Boolean))];
-          next.tags = [...new Set([...next.tags, ...updated.tags])].sort();
         }
 
         if (mutation.payload.url !== undefined) {
@@ -531,6 +654,10 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
         }
 
         delete next.items[item.id];
+        // Soft-delete tombstone at the GitHub-envelope boundary only — the
+        // local store stays a hard delete (03-data-flow §6.3). Records to a
+        // separate key, so FolioStore is unchanged. Skip when GitHub is off.
+        void recordTombstoneIfSyncing(item);
         break;
       }
 
@@ -575,15 +702,6 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
       }
 
       case 'updateSettings': {
-        if (mutation.payload.iconVariant !== undefined) {
-          next.settings.iconVariant = mutation.payload.iconVariant;
-        }
-
-        if (mutation.payload.theme !== undefined) {
-          next.settings.theme = mutation.payload.theme;
-          next.settings.iconVariant = getThemeIconVariant(mutation.payload.theme);
-        }
-
         if (mutation.payload.defaultStatus !== undefined) {
           next.settings.defaultStatus = mutation.payload.defaultStatus;
         }
@@ -623,6 +741,38 @@ export async function commit(mutation: FolioMutation): Promise<CommitResult> {
           lastOpenedAt: now,
           updatedAt: now
         };
+        break;
+      }
+
+      case 'renameTag': {
+        const to = mutation.payload.to.trim();
+        if (!to) {
+          return { ok: false, code: 'unknown_error', store: current };
+        }
+        if (to === mutation.payload.from) {
+          break; // no-op rename — don't bump updatedAt on every tagged item
+        }
+        for (const [id, item] of Object.entries(next.items)) {
+          if (!item.tags.includes(mutation.payload.from)) {
+            continue;
+          }
+          const renamed = item.tags.map((tag) => (tag === mutation.payload.from ? to : tag));
+          next.items[id] = { ...item, tags: [...new Set(renamed)], updatedAt: now };
+        }
+        break;
+      }
+
+      case 'deleteTag': {
+        for (const [id, item] of Object.entries(next.items)) {
+          if (!item.tags.includes(mutation.payload.tag)) {
+            continue;
+          }
+          next.items[id] = {
+            ...item,
+            tags: item.tags.filter((tag) => tag !== mutation.payload.tag),
+            updatedAt: now
+          };
+        }
         break;
       }
 
@@ -697,6 +847,13 @@ export async function importStoreFromJson(raw: unknown): Promise<{
     const syncedStore = await updateSyncMetadata(next);
     return { ok: true, store: syncedStore };
   } catch {
+    // The write may have partially landed — roll back so the reported failure
+    // matches what's actually stored.
+    try {
+      await writeStore(current);
+    } catch {
+      // nothing more we can do
+    }
     return {
       ok: false,
       error: 'import_failed',
@@ -705,4 +862,99 @@ export async function importStoreFromJson(raw: unknown): Promise<{
   }
 }
 
+/* ----------------------------- GitHub facade ----------------------------- */
+// Thin wrappers the background SW calls. They fold sync results into
+// lastSyncedAt/lastSyncError and emit a commit event so open surfaces refresh.
+
+export async function githubConnect(
+  input: GitHubCredentialsInput
+): Promise<RepositorySyncResult> {
+  const result = await connectGitHub(input);
+  const store = await foldGitHubResult(result);
+  emitCommitEvent({ store });
+  return result.ok
+    ? { ok: true, syncedAt: result.syncedAt }
+    : { ok: false, error: result.error };
+}
+
+export async function githubDisconnect(): Promise<void> {
+  await disconnectGitHub();
+  const store = await getStore();
+  emitCommitEvent({ store });
+}
+
+export async function githubPushNow(): Promise<RepositorySyncResult> {
+  const current = await getStore();
+  const result = await pushStoreToGitHub(current);
+  const store = await foldGitHubResult(result);
+  emitCommitEvent({ store });
+  return result.ok
+    ? { ok: true, syncedAt: result.syncedAt }
+    : { ok: false, error: result.error };
+}
+
+export async function githubPullNow(): Promise<RepositorySyncResult> {
+  const result = await pullStoreFromGitHub();
+  const store = await foldGitHubResult(result);
+  emitCommitEvent({ store });
+  return result.ok
+    ? { ok: true, syncedAt: result.syncedAt }
+    : { ok: false, error: result.error };
+}
+
+export async function githubGetStatus(): Promise<GitHubSyncStatus> {
+  return getGitHubStatus();
+}
+
+export async function githubGetDiff(): Promise<
+  { ok: true; diff: GitHubStoreDiff } | { ok: false; error: string }
+> {
+  return getGitHubDiff();
+}
+
+/**
+ * Applies a reconciliation strategy: writes the resolved store, re-pushes when
+ * the strategy implies local should flow up, and folds the result.
+ */
+export async function githubResolve(
+  strategy: GitHubResolveStrategy
+): Promise<RepositorySyncResult> {
+  const resolved = await resolveGitHub(strategy);
+  if (!resolved.ok) {
+    const store = await foldGitHubResult({ ok: false, error: resolved.error });
+    emitCommitEvent({ store });
+    return { ok: false, error: resolved.error };
+  }
+
+  const { store: resolvedStore, pushAfter } = resolved.result;
+  // Capture the locale BEFORE writing — reading it after writeStore would
+  // always equal resolvedStore's locale and skip the stored-locale update.
+  const prevLocale = (await getStore()).settings.locale;
+  await writeStore(resolvedStore);
+  if (resolvedStore.settings.locale !== prevLocale) {
+    await writeStoredLocale(resolvedStore.settings.locale);
+  }
+
+  if (pushAfter) {
+    const pushResult = await pushStoreToGitHub(resolvedStore);
+    const store = await foldGitHubResult(pushResult);
+    emitCommitEvent({ store });
+    return pushResult.ok
+      ? { ok: true, syncedAt: pushResult.syncedAt }
+      : { ok: false, error: pushResult.error };
+  }
+
+  const store = await foldGitHubResult({ ok: true, syncedAt: Date.now() });
+  emitCommitEvent({ store });
+  return { ok: true, syncedAt: Date.now() };
+}
+
 export { subscribeCommitEvent };
+
+// Wire the GitHub sync orchestrator to the repository's store accessors and the
+// shipped per-item LWW merger, avoiding a circular import (03-data-flow §1.3).
+configureGitHubSync({
+  getStore,
+  writeStore,
+  mergeStores: (raw, current) => sanitizeImportedStore(raw, current, 'merge')
+});

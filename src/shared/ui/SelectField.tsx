@@ -14,12 +14,12 @@ export function SelectField({
 }: SelectFieldProps): ReactElement {
   const hasLeftIcon = Boolean(leftIcon);
   const baseClass =
-    'folio-control folio-select h-10 w-full rounded-md border border-(--border) bg-bg-surface px-3 text-sm text-text-secondary';
+    'folio-select h-10 w-full rounded-[var(--r-md)] border border-border bg-surface px-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-normal)] ease-[var(--ease)] focus:border-accent focus:shadow-[0_0_0_3px_var(--brand-tint)]';
 
   return (
     <label className={`relative block ${wrapperClassName ?? ''}`.trim()}>
       {hasLeftIcon ? (
-        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
           {leftIcon}
         </span>
       ) : null}

@@ -1,28 +1,30 @@
 @import './tokens.css';
 @import 'tailwindcss';
 
-@theme {
-  --color-bg-base: var(--bg-base);
-  --color-bg-surface: var(--bg-surface);
-  --color-bg-elevated: var(--bg-elevated);
-  --color-bg-sunken: var(--bg-sunken);
+@custom-variant dark (&:where(.dark, .dark *));
 
-  --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-muted: var(--text-muted);
-  --color-text-link: var(--text-link);
-
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-accent: var(--accent);
-  --color-accent-hover: var(--accent-hover);
-  --color-accent-subtle: var(--accent-subtle);
   --color-danger: var(--danger);
-  --color-danger-subtle: var(--danger-subtle);
-  --color-danger-subtle-hover: var(--danger-subtle-hover);
-  --color-on-accent: var(--text-on-accent);
+  --color-success: var(--success);
 
-  --font-display: var(--theme-font-display);
-  --font-ui: var(--theme-font-ui);
-  --font-mono: var(--theme-font-mono);
+  --radius-xs: var(--r-xs);
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-pill: var(--r-pill);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
 @layer base {
@@ -32,10 +34,12 @@
 
   body {
     margin: 0;
-    background: var(--bg-base);
-    color: var(--text-primary);
-    font-family: var(--font-ui);
-    color-scheme: light dark;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv11", "ss01";
   }
 
   button,
@@ -54,8 +58,18 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--border-focus);
-    outline-offset: 2px;
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--surface),
+      0 0 0 4px color-mix(in oklch, var(--foreground) 50%, transparent);
+  }
+
+  /* Inputs opt out of the focus ring — bordered fields show focus via their
+     container border (.fz-token-field:focus-within); chromeless inputs stay quiet. */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    box-shadow: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -71,12 +85,157 @@
 }
 
 @layer components {
-  .folio-card {
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--bg-surface);
-  }
+  /* ============================================================
+     faiz component classes (ported verbatim from the prototype)
+     ============================================================ */
 
+  .fz {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv11", "ss01";
+  }
+  .fz-mono { font-family: var(--font-mono); }
+
+  /* ---- Type scale (Inter) ---- */
+  .fz-display { font-weight: 650; font-size: 25px; line-height: 1.15; letter-spacing: -0.5px; }
+  .fz-title   { font-weight: 650; font-size: 18px; line-height: 1.25; letter-spacing: -0.3px; }
+  .fz-h       { font-weight: 550; font-size: 15px; line-height: 1.35; letter-spacing: -0.1px; }
+  .fz-body    { font-weight: 400; font-size: 14px; line-height: 1.55; }
+  .fz-sm      { font-weight: 400; font-size: 13px; line-height: 1.5; }
+  .fz-xs      { font-weight: 400; font-size: 12px; line-height: 1.45; }
+  .fz-eyebrow { font-family: var(--font-mono); font-weight: 500; font-size: 11px; line-height: 1; letter-spacing: 0.07em; text-transform: uppercase; }
+
+  /* ---- Surfaces ---- */
+  .fz-surface { background: var(--background); color: var(--foreground); }
+
+  /* ---- Buttons (pill) ---- */
+  .fz-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    height: 34px; padding: 0 14px; border-radius: var(--r-pill);
+    border: 1px solid transparent; font-family: inherit; font-size: 14px; font-weight: 500; line-height: 1;
+    cursor: pointer; white-space: nowrap;
+    transition: background-color var(--dur-normal) var(--ease), color var(--dur-normal) var(--ease), border-color var(--dur-normal) var(--ease), transform var(--dur-fast) var(--ease), box-shadow var(--dur-normal) var(--ease);
+  }
+  .fz-btn:active { transform: scale(0.98); }
+  /* primary = foreground (ink) */
+  .fz-btn-brand   { background: var(--foreground); color: var(--background); }
+  .fz-btn-brand:hover { background: color-mix(in oklch, var(--foreground) 88%, var(--background)); }
+  .fz-btn-ink     { background: var(--foreground); color: var(--background); }
+  .fz-btn-outline { background: transparent; color: var(--foreground); border-color: var(--border-strong); }
+  .fz-btn-ghost   { background: transparent; color: var(--muted-foreground); }
+  .fz-btn-ghost:hover { background: var(--muted); color: var(--foreground); }
+  .fz-btn-danger  { background: transparent; color: var(--danger); }
+  .fz-btn-danger:hover { background: var(--danger-tint); color: var(--danger); }
+  .fz-btn[disabled], .fz-btn-disabled { background: var(--muted); color: var(--muted-foreground); cursor: not-allowed; opacity: 0.8; }
+  .fz-btn-sm { height: 28px; padding: 0 11px; gap: 6px; font-size: 13px; }
+  .fz-btn-lg { height: 40px; padding: 0 18px; font-size: 14px; }
+
+  /* ---- Icon button ---- */
+  .fz-iconbtn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: var(--r-pill);
+    border: none; background: transparent; color: var(--muted-foreground);
+    cursor: pointer; flex: 0 0 auto;
+    transition: background-color var(--dur-normal) var(--ease), color var(--dur-normal) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+  .fz-iconbtn:active { transform: scale(0.96); }
+  .fz-iconbtn:hover { background: var(--muted); color: var(--foreground); }
+  .fz-iconbtn[data-active="true"] { background: var(--muted); color: var(--foreground); }
+  /* accent variant = the save/primary action = bg foreground / icon background */
+  .fz-iconbtn-brand { background: var(--foreground); color: var(--background); }
+  .fz-iconbtn-brand:hover { background: color-mix(in oklch, var(--foreground) 88%, var(--background)); color: var(--background); }
+  .fz-iconbtn-danger:hover { background: var(--danger-tint); color: var(--danger); }
+  .fz-iconbtn[disabled] { color: color-mix(in oklch, var(--muted-foreground) 50%, transparent); cursor: not-allowed; }
+  .fz-iconbtn-sm { width: 28px; height: 28px; }
+
+  /* ---- Segmented control ---- */
+  .fz-seg { position: relative; display: flex; gap: 2px; padding: 2px; background: var(--muted); border-radius: var(--r-md); }
+  .fz-seg-btn {
+    position: relative; z-index: 1; flex: 1 1 0; height: 26px; padding: 0 10px; white-space: nowrap;
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    border: none; background: transparent; color: var(--muted-foreground);
+    border-radius: var(--r-sm); font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+  }
+  .fz-seg-btn[data-active="true"] { color: var(--foreground); background: var(--surface); box-shadow: var(--shadow-sm); }
+  .fz-seg-tight .fz-seg-btn { padding: 0 5px; font-size: 12px; gap: 4px; }
+
+  /* ---- Status pill ---- */
+  .fz-status { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: var(--r-md); font-size: 12px; font-weight: 500; line-height: 1.4; }
+  .fz-status-unread  { background: var(--st-unread-bg);  color: var(--st-unread-fg); }
+  .fz-status-reading { background: var(--st-reading-bg); color: var(--st-reading-fg); }
+  .fz-status-done    { background: var(--st-done-bg);    color: var(--st-done-fg); }
+
+  /* ---- Badge / chip ---- */
+  .fz-badge { display: inline-flex; align-items: center; gap: 4px; border-radius: var(--r-md); padding: 2px 8px; font-size: 12px; font-weight: 500; border: 1px solid transparent; white-space: nowrap; flex: 0 0 auto; }
+  .fz-badge-secondary { background: var(--muted); color: var(--foreground); }
+  .fz-badge-outline { background: transparent; color: var(--muted-foreground); border-color: var(--border); }
+  .fz-badge-brand { background: var(--brand-tint); color: var(--brand-hover); }
+  .fz-badge-ink { background: var(--foreground); color: var(--background); }
+
+  /* ---- Card / row ---- */
+  .fz-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); }
+
+  /* ---- Fields ---- */
+  .fz-input { width: 100%; background: transparent; border: none; outline: none; color: var(--foreground); font-family: inherit; font-size: 14px; line-height: 1.6; }
+  .fz-input::placeholder { color: color-mix(in oklch, var(--muted-foreground) 75%, transparent); }
+  .fz-field-label { font-family: var(--font-mono); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted-foreground); }
+  .fz-token-field { display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 6px 0 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--background); transition: border-color var(--dur-normal) var(--ease); }
+  .fz-token-field:focus-within { border-color: var(--accent); }
+  .fz-token-field-focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--brand-tint); }
+
+  /* ---- Sheet / dialog ---- */
+  .fz-sheet { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-xl); box-shadow: var(--shadow-lg); }
+  .fz-icon-circle { width: 44px; height: 44px; border-radius: var(--r-pill); background: var(--muted); color: var(--foreground); display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+
+  /* ---- kbd ---- */
+  .fz-kbd { display: inline-flex; align-items: center; gap: 2px; font-family: var(--font-mono); font-size: 10px; line-height: 1; padding: 3px 5px; border-radius: var(--r-xs); background: color-mix(in oklch, var(--foreground) 9%, transparent); color: var(--muted-foreground); }
+  .fz-kbd-bordered { border: 1px solid var(--border); background: var(--background); color: var(--muted-foreground); }
+
+  /* ---- search highlight (accent ~22%) ---- */
+  .fz-hl { background: color-mix(in oklch, var(--accent) 22%, transparent); border-radius: 3px; padding: 0 1px; }
+
+  /* ---- dots ---- */
+  .fz-dot { width: 7px; height: 7px; border-radius: var(--r-pill); flex: 0 0 auto; }
+  .fz-dot-idle { background: var(--muted-foreground); }
+  .fz-dot-dirty { background: var(--amber); }
+  .fz-dot-sync { background: var(--accent); animation: fz-pulse 1s ease-in-out infinite; }
+  .fz-dot-error { background: var(--danger); }
+  .fz-dot-ok { background: var(--success); }
+
+  /* Opt-in utilities used across both surfaces. `focus-ring` matches the global
+     :focus-visible ring (explicit + self-documenting on interactive elements);
+     `pressable` adds the tactile :active scale to elements that aren't fz-btn /
+     fz-iconbtn (menu items, dropdown rows, reconciliation options, etc.). */
+  .focus-ring:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px color-mix(in oklch, var(--foreground) 50%, transparent);
+  }
+  .pressable {
+    transition:
+      transform var(--dur-normal) var(--ease),
+      background-color var(--dur-normal) var(--ease),
+      color var(--dur-normal) var(--ease),
+      opacity var(--dur-normal) var(--ease);
+  }
+  .pressable:active:not(:disabled) { transform: scale(0.97); }
+
+  /* scrollbar */
+  .fz-scroll { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+  .fz-scroll::-webkit-scrollbar { width: 8px; }
+  .fz-scroll::-webkit-scrollbar-thumb { border-radius: 999px; background: var(--border-strong); }
+
+  /* skeleton */
+  .fz-skel { background: var(--muted); border-radius: 6px; position: relative; overflow: hidden; }
+  .fz-skel::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, color-mix(in oklch, var(--foreground) 6%, transparent), transparent); transform: translateX(-100%); animation: fz-shimmer 1.4s infinite; }
+
+  /* ============================================================
+     DEPRECATED folio-* classes — kept transiently while surfaces
+     are rebuilt in parallel. Rebound to the new faiz tokens so
+     they no longer reference removed --theme-* / --bg-* / --text-*
+     vars. Do not use in new code; remove once popup/options drop them.
+     ============================================================ */
   .folio-pressable {
     transition:
       transform 140ms var(--ease-out),
@@ -95,129 +254,10 @@
     transform: none;
   }
 
-  .folio-control {
-    transition:
-      background-color 150ms var(--ease-out),
-      border-color 150ms var(--ease-out),
-      box-shadow 150ms var(--ease-out),
-      color 150ms var(--ease-out);
-  }
-
-  .folio-control:focus,
-  .folio-control:focus-within {
-    border-color: var(--accent-border);
-    background: var(--bg-base);
-    box-shadow: 0 0 0 3px var(--accent-subtle);
-  }
-
-  .folio-menu {
-    transform-origin: top right;
-    animation: folio-menu-in 150ms var(--ease-out) both;
-  }
-
-  .folio-panel {
-    transform-origin: top center;
-    animation: folio-panel-in 180ms var(--ease-out) both;
-  }
-
-  .folio-btn-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    background: var(--accent);
-    padding: 0.5rem 0.75rem;
-    color: var(--text-on-accent);
-    font-size: 0.875rem;
-    font-weight: 500;
-    line-height: 1.25rem;
-    transition:
-      transform 140ms var(--ease-out),
-      background-color 150ms var(--ease-out),
-      box-shadow 150ms var(--ease-out);
-    cursor: pointer;
-  }
-
-  .folio-btn-primary:hover {
-    background: var(--accent-hover);
-  }
-
-  .folio-btn-primary:disabled {
-    cursor: not-allowed;
-    opacity: 0.55;
-  }
-
-  .folio-btn-outline {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--border-strong);
-    border-radius: 6px;
-    background: transparent;
-    padding: 0.5rem 0.75rem;
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    font-weight: 500;
-    line-height: 1.25rem;
-    transition:
-      transform 140ms var(--ease-out),
-      border-color 150ms var(--ease-out),
-      color 150ms var(--ease-out),
-      background-color 150ms var(--ease-out),
-      box-shadow 150ms var(--ease-out);
-    cursor: pointer;
-  }
-
-  .folio-btn-outline:hover {
-    border-color: var(--accent-border);
-    color: var(--accent);
-    background: var(--bg-elevated);
-  }
-
-  .folio-btn-outline:disabled {
-    cursor: not-allowed;
-    opacity: 0.55;
-  }
-
-  .folio-input {
-    width: 100%;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--bg-elevated);
-    padding: 0.5rem 0.75rem;
-    color: var(--text-primary);
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    transition:
-      background-color 150ms var(--ease-out),
-      border-color 150ms var(--ease-out),
-      box-shadow 150ms var(--ease-out);
-  }
-
-  .folio-input::placeholder {
-    color: var(--text-muted);
-  }
-
-  .folio-input:focus {
-    border-color: var(--accent-border);
-    background: var(--bg-base);
-    box-shadow: 0 0 0 3px var(--accent-subtle);
-  }
-
-  .folio-select {
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5' stroke='%236b5f52' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-position: right 0.625rem center;
-    background-repeat: no-repeat;
-    background-size: 12px 12px;
-    padding-right: 2rem;
-  }
-
   .folio-scrollbar {
     scrollbar-gutter: stable;
     scrollbar-width: thin;
-    scrollbar-color: var(--border-strong) transparent;
+    scrollbar-color: var(--border) transparent;
   }
 
   .folio-scrollbar::-webkit-scrollbar {
@@ -233,36 +273,25 @@
   .folio-scrollbar::-webkit-scrollbar-thumb {
     border: 2px solid transparent;
     border-radius: 999px;
-    background: var(--border-strong);
+    background: var(--border);
     background-clip: content-box;
   }
 
   .folio-scrollbar:hover::-webkit-scrollbar-thumb {
-    background: var(--text-muted);
+    background: var(--muted-foreground);
     background-clip: content-box;
   }
 
-  @keyframes folio-menu-in {
-    from {
-      opacity: 0;
-      transform: translateY(-4px) scale(0.96);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-
-  @keyframes folio-panel-in {
-    from {
-      opacity: 0;
-      transform: translateY(-3px) scale(0.98);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
+  /* custom-chevron <select> pattern (chevron stroke = muted-foreground) */
+  .folio-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5' stroke='%23777067' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-position: right 0.625rem center;
+    background-repeat: no-repeat;
+    background-size: 12px 12px;
+    padding-right: 2rem;
   }
 }
+
+@keyframes fz-pulse { 50% { opacity: 0.3; } }
+@keyframes fz-shimmer { 100% { transform: translateX(100%); } }
