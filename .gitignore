@@ -3,3 +3,11 @@ dist/
 .DS_Store
 .vite/
 pnpm-debug.log*
+
+# dev-only e2e preview harness
+/e2e/
+/vite.config.e2e.ts
+
+# internal design docs + review notes — not part of the shipped repo
+/docs/refactor/
+/REVIEW.md
