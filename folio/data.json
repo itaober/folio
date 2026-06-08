@@ -1,8 +1,68 @@
 {
   "schemaVersion": 1,
-  "revision": 1780889977139,
-  "updatedAt": 1780889977139,
+  "revision": 1780897982663,
+  "updatedAt": 1780897982663,
   "items": {
+    "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
+      "createdAt": 1779688267452,
+      "domain": "tw93.fun",
+      "favicon": "https://gw.alicdn.com/imgextra/i4/O1CN01XYYPwL1uheeXASHIQ_!!6000000006069-2-tps-420-420.png",
+      "id": "2c805ca7-3bc9-4eb3-bf50-8df7ad824618",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [
+        "AI"
+      ],
+      "title": "你不知道的 Claude Code：架构、治理与工程实践 - Tw93",
+      "updatedAt": 1779688271951,
+      "url": "https://tw93.fun/2026-03-12/claude.html"
+    },
+    "40a76c9b-9bb6-4dce-b5b1-8e09d17270e4": {
+      "createdAt": 1779688294968,
+      "domain": "tw93.fun",
+      "favicon": "https://gw.alicdn.com/imgextra/i4/O1CN01XYYPwL1uheeXASHIQ_!!6000000006069-2-tps-420-420.png",
+      "id": "40a76c9b-9bb6-4dce-b5b1-8e09d17270e4",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [
+        "AI"
+      ],
+      "title": "你不知道的 Agent：原理、架构与工程实践 - Tw93",
+      "updatedAt": 1779688298885,
+      "url": "https://tw93.fun/2026-03-21/agent.html"
+    },
+    "7aa60a59-1325-4866-bb1b-6704d75578dd": {
+      "createdAt": 1780626180873,
+      "domain": "sethmlarson.dev",
+      "favicon": "https://sethmlarson.dev/static/favicon.ico",
+      "id": "7aa60a59-1325-4866-bb1b-6704d75578dd",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [],
+      "title": "WebKit browsers see telephone numbers everywhere — Seth Larson",
+      "updatedAt": 1780626180873,
+      "url": "https://sethmlarson.dev/mobile-browsers-and-telephone-numbers"
+    },
+    "8ed0632c-5a9c-4f16-81c8-e0849ef2ffa5": {
+      "createdAt": 1780626183022,
+      "domain": "www.htmhell.dev",
+      "favicon": "https://www.htmhell.dev/favicon-32x32.png",
+      "id": "8ed0632c-5a9c-4f16-81c8-e0849ef2ffa5",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [],
+      "title": "Replacing JS with just HTML - HTMHell",
+      "updatedAt": 1780626183022,
+      "url": "https://www.htmhell.dev/adventcalendar/2025/27/"
+    },
     "99653971-5a61-4775-a215-4d9c2fd5166c": {
       "createdAt": 1777519608782,
       "domain": "walkinglabs.github.io",
@@ -18,6 +78,66 @@
       "title": "欢迎来到 Learn Harness Engineering | Learn Harness Engineering",
       "updatedAt": 1780558328273,
       "url": "https://walkinglabs.github.io/learn-harness-engineering/zh/"
+    },
+    "a5f408ec-0ce3-405a-b840-531951b5c17e": {
+      "createdAt": 1780477242046,
+      "domain": "mp.weixin.qq.com",
+      "favicon": "https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico",
+      "id": "a5f408ec-0ce3-405a-b840-531951b5c17e",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "reading",
+      "tags": [
+        "AI"
+      ],
+      "title": "主流Agent Harness实现对比——Memory篇",
+      "updatedAt": 1780477256894,
+      "url": "https://mp.weixin.qq.com/s/qhwEhvE3IJqwYO088zfoYA?scene=1&click_id=7"
+    },
+    "d29c3828-e7b0-4e59-a992-15007a40040e": {
+      "createdAt": 1780454047393,
+      "domain": "animations.dev",
+      "favicon": "https://animations.dev/favicon.ico?favicon.133223a6.ico",
+      "id": "d29c3828-e7b0-4e59-a992-15007a40040e",
+      "lastOpenedAt": null,
+      "note": "动画指令",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [],
+      "title": "Vocabulary",
+      "updatedAt": 1780454062243,
+      "url": "https://animations.dev/vocabulary"
+    },
+    "d7621236-b371-4348-8024-a358f558d073": {
+      "createdAt": 1779330448052,
+      "domain": "lijigang-software-design-philosophy.surge.sh",
+      "favicon": "",
+      "id": "d7621236-b371-4348-8024-a358f558d073",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [],
+      "title": "软件设计的哲学 · 可视化讲解",
+      "updatedAt": 1779330448052,
+      "url": "https://lijigang-software-design-philosophy.surge.sh/"
+    },
+    "ecd966a1-866d-4e54-8863-27a6a7129772": {
+      "createdAt": 1779356611378,
+      "domain": "aiengineeringfromscratch.com",
+      "favicon": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23fafaf5'/><rect x='2' y='2' width='28' height='28' fill='none' stroke='%233553ff' stroke-width='1.2'/><text x='6' y='22' font-size='14' font-family='monospace' fill='%233553ff'>AI</text></svg>",
+      "id": "ecd966a1-866d-4e54-8863-27a6a7129772",
+      "lastOpenedAt": 1779356623728,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [
+        "AI"
+      ],
+      "title": "AI Engineering from Scratch",
+      "updatedAt": 1779356645475,
+      "url": "https://aiengineeringfromscratch.com/"
     }
   },
   "tags": [
