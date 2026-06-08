@@ -1,4 +1,4 @@
-import { ChevronRight, Github } from 'lucide-react';
+import { Github } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
@@ -15,27 +15,35 @@ interface SyncChipProps {
 interface ChipMeta {
   dot: string | null;
   labelKey: string;
-  color: string;
 }
 
 const CHIP_META: Record<GitHubSyncState, ChipMeta> = {
-  'not-connected': { dot: null, labelKey: 'sync.chipNotConnected', color: 'var(--muted-foreground)' },
-  idle: { dot: 'fz-dot-ok', labelKey: 'sync.chipConnected', color: 'var(--muted-foreground)' },
-  syncing: { dot: 'fz-dot-sync', labelKey: 'sync.chipSyncing', color: 'var(--brand-hover)' },
-  synced: { dot: 'fz-dot-ok', labelKey: 'sync.chipInSync', color: 'var(--st-done-fg)' },
-  error: { dot: 'fz-dot-error', labelKey: 'sync.chipError', color: 'var(--danger)' },
-  diverged: { dot: 'fz-dot-dirty', labelKey: 'sync.chipDiverged', color: 'var(--amber)' },
-  'rate-limited': { dot: 'fz-dot-dirty', labelKey: 'sync.chipRateLimited', color: 'var(--amber)' },
-  offline: { dot: 'fz-dot-idle', labelKey: 'sync.chipOffline', color: 'var(--muted-foreground)' }
+  'not-connected': { dot: null, labelKey: 'sync.chipNotConnected' },
+  idle: { dot: 'fz-dot-ok', labelKey: 'sync.chipConnected' },
+  syncing: { dot: 'fz-dot-sync', labelKey: 'sync.chipSyncing' },
+  synced: { dot: 'fz-dot-ok', labelKey: 'sync.chipInSync' },
+  error: { dot: 'fz-dot-error', labelKey: 'sync.chipError' },
+  diverged: { dot: 'fz-dot-dirty', labelKey: 'sync.chipDiverged' },
+  'rate-limited': { dot: 'fz-dot-dirty', labelKey: 'sync.chipRateLimited' },
+  offline: { dot: 'fz-dot-idle', labelKey: 'sync.chipOffline' }
 };
 
-/** The always-on sync truth pinned at the bottom of the nav (8 states). */
+/**
+ * The always-on sync truth pinned at the bottom of the nav (8 states). Styled as
+ * a twin of the sidebar's NavItem — a borderless ghost row whose colored dot
+ * carries the state (the same dot+label idiom the Unread/Reading/Done items use),
+ * with the relative time / action hint in the trailing "count" slot — so the
+ * footer reads as two consistent rows with the Settings item below it. State hue
+ * lives only in the dot, keeping the row ink-first like every other nav row.
+ */
 export function SyncChip({ status, onClick }: SyncChipProps): ReactElement {
   const { t } = useTranslation();
   const state: GitHubSyncState = status?.state ?? 'not-connected';
   const meta = CHIP_META[state];
 
-  function subLabel(): string {
+  // Trailing meta = NavItem's count slot: a relative timestamp for the steady
+  // states, a short status / action word for the rest.
+  function trailing(): string {
     switch (state) {
       case 'not-connected':
         return t('sync.chipSetUp');
@@ -58,22 +66,26 @@ export function SyncChip({ status, onClick }: SyncChipProps): ReactElement {
     <button
       type="button"
       onClick={onClick}
-      className="pressable flex w-full items-center gap-2.5 rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-left hover:border-border-strong focus-ring"
+      aria-label={`${t(meta.labelKey)} — ${trailing()}`}
+      className="pressable flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground focus-ring"
     >
       {meta.dot ? (
-        <span className={`fz-dot ${meta.dot}`} />
+        <span className={`fz-dot ${meta.dot}`} style={{ width: 8, height: 8 }} aria-hidden="true" />
       ) : (
-        <Github size={15} className="text-muted-foreground" aria-hidden="true" />
+        <Github size={16} className="shrink-0 text-muted-foreground" aria-hidden="true" />
       )}
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-xs font-bold" style={{ color: meta.color }}>
-          {t(meta.labelKey)}
-        </span>
-        <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
-          {subLabel()}
-        </span>
-      </span>
-      <ChevronRight size={14} className="shrink-0 text-muted-foreground" aria-hidden="true" />
+      <span className="min-w-0 flex-1 truncate text-[13.5px] leading-none">{t(meta.labelKey)}</span>
+      {state === 'not-connected' ? (
+        // Not connected → a small static amber dot in place of a timestamp: a
+        // quiet "needs connecting" nudge, no extra copy required.
+        <span
+          className="fz-dot fz-dot-dirty shrink-0"
+          style={{ width: 8, height: 8 }}
+          aria-hidden="true"
+        />
+      ) : (
+        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{trailing()}</span>
+      )}
     </button>
   );
 }
