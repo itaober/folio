@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "revision": 1780889978594,
-  "updatedAt": 1780889978594,
+  "revision": 1780897984285,
+  "updatedAt": 1780897984285,
   "settings": {
     "locale": "zh-CN",
     "defaultStatus": "unread",
     "sortMode": "saved_desc",
     "optionsDefaultViewMode": "last",
     "optionsFixedView": "unread",
-    "optionsLastView": "all",
+    "optionsLastView": "unread",
     "popupDefaultViewMode": "last",
     "popupFixedView": "unread",
-    "popupLastView": "all"
+    "popupLastView": "unread"
   }
 }
