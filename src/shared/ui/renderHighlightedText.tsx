@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 export function renderHighlightedText(
   text: string,
   keyword: string,
-  highlightClassName = 'text-accent'
+  highlightClassName = 'fz-hl'
 ): ReactNode {
   const term = keyword.trim();
   if (!term) {

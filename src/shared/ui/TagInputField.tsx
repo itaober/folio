@@ -29,19 +29,19 @@ export function TagInputField({
   }
 
   return (
-    <div className="folio-control rounded-md border border-(--border) bg-bg-surface px-2 py-1.5 focus-within:border-(--accent-border)">
+    <div className="rounded-[var(--r-md)] border border-border bg-surface px-2 py-1.5 transition-[border-color,box-shadow] duration-[var(--dur-normal)] ease-[var(--ease)] focus-within:border-accent focus-within:shadow-[0_0_0_3px_var(--brand-tint)]">
       {tags.length > 0 ? (
         <div className="mb-1.5 flex flex-wrap gap-1">
           {tags.map((tag, index) => (
             <span
               key={`${tag}-${index}`}
-              className="group/tag relative inline-flex max-w-[180px] items-center rounded-md bg-bg-elevated px-2.5 py-1 pr-4 text-xs text-text-secondary"
+              className="group/tag relative inline-flex max-w-[180px] items-center rounded-[var(--r-md)] bg-muted px-2.5 py-1 pr-4 text-xs text-foreground"
               title={tag}
             >
               <span className="truncate">#{tag}</span>
               <button
                 type="button"
-                className="folio-pressable absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-(--border) bg-bg-surface text-[11px] leading-none text-text-muted opacity-70 hover:bg-bg-sunken hover:text-text-secondary hover:opacity-100 focus-visible:opacity-100"
+                className="folio-pressable absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-border bg-surface text-[11px] leading-none text-muted-foreground opacity-70 hover:bg-muted hover:text-foreground hover:opacity-100 focus-visible:opacity-100"
                 onPointerDown={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
@@ -65,7 +65,7 @@ export function TagInputField({
         </div>
       ) : null}
       <input
-        className="h-6 w-full border-0 bg-transparent px-0 text-xs text-text-primary placeholder:text-text-muted"
+        className="h-6 w-full border-0 bg-transparent px-0 text-xs text-foreground outline-none placeholder:text-muted-foreground/70"
         value={inputValue}
         onChange={(event) => onInputChange(event.target.value)}
         onKeyDown={handleKeyDown}
