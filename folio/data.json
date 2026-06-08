@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1780905150312,
-  "updatedAt": 1780905150312,
+  "revision": 1780905155420,
+  "updatedAt": 1780905155420,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -148,9 +148,11 @@
       "note": "",
       "resumeSnapshot": null,
       "status": "unread",
-      "tags": [],
+      "tags": [
+        "AI"
+      ],
       "title": "Running an AI-native engineering org | Claude",
-      "updatedAt": 1780905147083,
+      "updatedAt": 1780905152332,
       "url": "https://claude.com/blog/running-an-ai-native-engineering-org"
     }
   },
