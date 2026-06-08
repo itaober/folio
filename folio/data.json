@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1780902934837,
-  "updatedAt": 1780902934837,
+  "revision": 1780905150312,
+  "updatedAt": 1780905150312,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -138,6 +138,20 @@
       "title": "AI Engineering from Scratch",
       "updatedAt": 1779356645475,
       "url": "https://aiengineeringfromscratch.com/"
+    },
+    "ff3cedc0-74aa-4beb-874f-a26a90fdd6ce": {
+      "createdAt": 1780905147083,
+      "domain": "claude.com",
+      "favicon": "https://cdn.prod.website-files.com/6889473510b50328dbb70ae6/689f4a9aff1f63fde75cf733_favicon.png",
+      "id": "ff3cedc0-74aa-4beb-874f-a26a90fdd6ce",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [],
+      "title": "Running an AI-native engineering org | Claude",
+      "updatedAt": 1780905147083,
+      "url": "https://claude.com/blog/running-an-ai-native-engineering-org"
     }
   },
   "tags": [
