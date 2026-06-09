@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1780997112498,
-  "updatedAt": 1780997112498,
+  "revision": 1780997119696,
+  "updatedAt": 1780997119696,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -44,9 +44,11 @@
       "note": "",
       "resumeSnapshot": null,
       "status": "unread",
-      "tags": [],
+      "tags": [
+        "Design"
+      ],
       "title": "userinterface.wiki",
-      "updatedAt": 1780997109244,
+      "updatedAt": 1780997116528,
       "url": "https://www.userinterface.wiki/"
     },
     "7aa60a59-1325-4866-bb1b-6704d75578dd": {
@@ -171,7 +173,8 @@
     }
   },
   "tags": [
-    "AI"
+    "AI",
+    "Design"
   ],
   "tombstones": [
     {
