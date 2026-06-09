@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1780905155420,
-  "updatedAt": 1780905155420,
+  "revision": 1780997112498,
+  "updatedAt": 1780997112498,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -34,6 +34,20 @@
       "title": "你不知道的 Agent：原理、架构与工程实践 - Tw93",
       "updatedAt": 1779688298885,
       "url": "https://tw93.fun/2026-03-21/agent.html"
+    },
+    "74287dd9-e3bc-4e2f-a756-c162fa129f3f": {
+      "createdAt": 1780997109244,
+      "domain": "www.userinterface.wiki",
+      "favicon": "https://www.userinterface.wiki/open-graph/icon.png",
+      "id": "74287dd9-e3bc-4e2f-a756-c162fa129f3f",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [],
+      "title": "userinterface.wiki",
+      "updatedAt": 1780997109244,
+      "url": "https://www.userinterface.wiki/"
     },
     "7aa60a59-1325-4866-bb1b-6704d75578dd": {
       "createdAt": 1780626180873,
