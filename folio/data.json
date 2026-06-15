@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1781509729058,
-  "updatedAt": 1781509729058,
+  "revision": 1781522466194,
+  "updatedAt": 1781522466194,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -40,13 +40,13 @@
       "domain": "mp.weixin.qq.com",
       "favicon": "https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico",
       "id": "49495aa4-f3d0-4f2e-b0a3-7f97d678f9e7",
-      "lastOpenedAt": null,
+      "lastOpenedAt": 1781522463080,
       "note": "",
       "resumeSnapshot": null,
       "status": "reading",
       "tags": [],
       "title": "深度思考：架构腐朽 & Loop Engineering",
-      "updatedAt": 1781509724506,
+      "updatedAt": 1781522463080,
       "url": "https://mp.weixin.qq.com/s/wINKSDQCroWBvf29h567zA"
     },
     "74287dd9-e3bc-4e2f-a756-c162fa129f3f": {
