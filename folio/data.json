@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1781576474025,
-  "updatedAt": 1781576474025,
+  "revision": 1781576493811,
+  "updatedAt": 1781576493811,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -102,9 +102,11 @@
       "note": "",
       "resumeSnapshot": null,
       "status": "unread",
-      "tags": [],
+      "tags": [
+        "RAG"
+      ],
       "title": "用 Zvec 构建自己的 RAG 系统：Go 与 Rust 实战指南 | 虫子樱桃",
-      "updatedAt": 1781576470917,
+      "updatedAt": 1781576490781,
       "url": "https://czyt.tech/post/building-rag-with-zvec/"
     },
     "99653971-5a61-4775-a215-4d9c2fd5166c": {
@@ -202,7 +204,8 @@
   },
   "tags": [
     "AI",
-    "Design"
+    "Design",
+    "RAG"
   ],
   "tombstones": [
     {
