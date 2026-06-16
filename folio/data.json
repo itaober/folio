@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1781522466194,
-  "updatedAt": 1781522466194,
+  "revision": 1781576474025,
+  "updatedAt": 1781576474025,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -92,6 +92,20 @@
       "title": "Replacing JS with just HTML - HTMHell",
       "updatedAt": 1780626183022,
       "url": "https://www.htmhell.dev/adventcalendar/2025/27/"
+    },
+    "940ea1dd-b96e-4b5a-9407-4dcb698c2e71": {
+      "createdAt": 1781576470917,
+      "domain": "czyt.tech",
+      "favicon": "https://czyt.tech/favicon.ico",
+      "id": "940ea1dd-b96e-4b5a-9407-4dcb698c2e71",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [],
+      "title": "用 Zvec 构建自己的 RAG 系统：Go 与 Rust 实战指南 | 虫子樱桃",
+      "updatedAt": 1781576470917,
+      "url": "https://czyt.tech/post/building-rag-with-zvec/"
     },
     "99653971-5a61-4775-a215-4d9c2fd5166c": {
       "createdAt": 1777519608782,
