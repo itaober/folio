@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1782377775807,
-  "updatedAt": 1782377775807,
+  "revision": 1782377786073,
+  "updatedAt": 1782377786073,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -150,9 +150,11 @@
       "note": "",
       "resumeSnapshot": null,
       "status": "unread",
-      "tags": [],
+      "tags": [
+        "FE"
+      ],
       "title": "Astro 7.0 | Astro",
-      "updatedAt": 1782377772618,
+      "updatedAt": 1782377783021,
       "url": "https://astro.build/blog/astro-7/"
     },
     "d29c3828-e7b0-4e59-a992-15007a40040e": {
@@ -219,6 +221,7 @@
   "tags": [
     "AI",
     "Design",
+    "FE",
     "RAG"
   ],
   "tombstones": [
