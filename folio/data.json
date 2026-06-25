@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1781610697750,
-  "updatedAt": 1781610697751,
+  "revision": 1782377775807,
+  "updatedAt": 1782377775807,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -140,6 +140,20 @@
       "title": "主流Agent Harness实现对比——Memory篇",
       "updatedAt": 1780477256894,
       "url": "https://mp.weixin.qq.com/s/qhwEhvE3IJqwYO088zfoYA?scene=1&click_id=7"
+    },
+    "c78f819d-5634-408a-a4da-a646a21031fe": {
+      "createdAt": 1782377772618,
+      "domain": "astro.build",
+      "favicon": "https://astro.build/favicon.svg",
+      "id": "c78f819d-5634-408a-a4da-a646a21031fe",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [],
+      "title": "Astro 7.0 | Astro",
+      "updatedAt": 1782377772618,
+      "url": "https://astro.build/blog/astro-7/"
     },
     "d29c3828-e7b0-4e59-a992-15007a40040e": {
       "createdAt": 1780454047393,
