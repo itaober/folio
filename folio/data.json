@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1782377786073,
-  "updatedAt": 1782377786073,
+  "revision": 1783478011144,
+  "updatedAt": 1783478011144,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -78,6 +78,20 @@
       "title": "WebKit browsers see telephone numbers everywhere — Seth Larson",
       "updatedAt": 1780626180873,
       "url": "https://sethmlarson.dev/mobile-browsers-and-telephone-numbers"
+    },
+    "87b1eeab-3c2e-4d64-957c-d0e0cab627e3": {
+      "createdAt": 1783478005810,
+      "domain": "stephango.com",
+      "favicon": "https://stephango.com/icon.svg",
+      "id": "87b1eeab-3c2e-4d64-957c-d0e0cab627e3",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [],
+      "title": "How I use Obsidian — Steph Ango",
+      "updatedAt": 1783478008111,
+      "url": "https://stephango.com/vault"
     },
     "8ed0632c-5a9c-4f16-81c8-e0849ef2ffa5": {
       "createdAt": 1780626183022,
