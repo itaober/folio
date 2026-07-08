@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1783478011144,
-  "updatedAt": 1783478011144,
+  "revision": 1783478101293,
+  "updatedAt": 1783478101293,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -154,6 +154,20 @@
       "title": "主流Agent Harness实现对比——Memory篇",
       "updatedAt": 1780477256894,
       "url": "https://mp.weixin.qq.com/s/qhwEhvE3IJqwYO088zfoYA?scene=1&click_id=7"
+    },
+    "a97b7f96-a5f6-4e96-9448-44a8fe42edcf": {
+      "createdAt": 1783478096476,
+      "domain": "mp.weixin.qq.com",
+      "favicon": "https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico",
+      "id": "a97b7f96-a5f6-4e96-9448-44a8fe42edcf",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [],
+      "title": "那些买刚需房的年轻人",
+      "updatedAt": 1783478098194,
+      "url": "https://mp.weixin.qq.com/s/h_NKu5Hf63sj9Jgonol1gQ"
     },
     "c78f819d-5634-408a-a4da-a646a21031fe": {
       "createdAt": 1782377772618,
