@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1784622039452,
-  "updatedAt": 1784622039452,
+  "revision": 1784622045355,
+  "updatedAt": 1784622045355,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -116,9 +116,11 @@
       "note": "",
       "resumeSnapshot": null,
       "status": "unread",
-      "tags": [],
+      "tags": [
+        "AI"
+      ],
       "title": "M01 · 第1章：开篇 —— 为什么 Pi-Agent 值得你花时间 | Pi Agent Book",
-      "updatedAt": 1784622036110,
+      "updatedAt": 1784622042246,
       "url": "https://dg-ai-notes.pages.dev/modules/ch01-overview/"
     },
     "940ea1dd-b96e-4b5a-9407-4dcb698c2e71": {
