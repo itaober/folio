@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1785736752262,
-  "updatedAt": 1785736752262,
+  "revision": 1786353971804,
+  "updatedAt": 1786353971804,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -214,6 +214,20 @@
       "title": "Vocabulary",
       "updatedAt": 1780454062243,
       "url": "https://animations.dev/vocabulary"
+    },
+    "d5b7f0cf-3dc8-4c04-89b1-c667b301436a": {
+      "createdAt": 1786353968677,
+      "domain": "books.antinomie.org",
+      "favicon": "",
+      "id": "d5b7f0cf-3dc8-4c04-89b1-c667b301436a",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [],
+      "title": "π-agent book · 预览",
+      "updatedAt": 1786353968677,
+      "url": "https://books.antinomie.org/pi/"
     },
     "d7621236-b371-4348-8024-a358f558d073": {
       "createdAt": 1779330448052,
