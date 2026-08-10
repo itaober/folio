@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1786353971804,
-  "updatedAt": 1786353971804,
+  "revision": 1786353977600,
+  "updatedAt": 1786353977600,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -224,9 +224,11 @@
       "note": "",
       "resumeSnapshot": null,
       "status": "unread",
-      "tags": [],
+      "tags": [
+        "AI"
+      ],
       "title": "π-agent book · 预览",
-      "updatedAt": 1786353968677,
+      "updatedAt": 1786353973811,
       "url": "https://books.antinomie.org/pi/"
     },
     "d7621236-b371-4348-8024-a358f558d073": {
