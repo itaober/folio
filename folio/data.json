@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1786353977600,
-  "updatedAt": 1786353977600,
+  "revision": 1786436694036,
+  "updatedAt": 1786436694036,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -184,6 +184,20 @@
       "title": "那些买刚需房的年轻人",
       "updatedAt": 1783478098194,
       "url": "https://mp.weixin.qq.com/s/h_NKu5Hf63sj9Jgonol1gQ"
+    },
+    "b556d466-9a1e-43b6-9353-51d36ed543a4": {
+      "createdAt": 1786436690798,
+      "domain": "pi-from-scratch.vercel.app",
+      "favicon": "https://pi-from-scratch.vercel.app/icon.svg?3f511ec9b66a6311",
+      "id": "b556d466-9a1e-43b6-9353-51d36ed543a4",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [],
+      "title": "PI from Scratch · 创造属于你的pi-agent",
+      "updatedAt": 1786436690798,
+      "url": "https://pi-from-scratch.vercel.app/"
     },
     "c78f819d-5634-408a-a4da-a646a21031fe": {
       "createdAt": 1782377772618,
