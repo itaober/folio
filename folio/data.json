@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1786675868067,
-  "updatedAt": 1786675868067,
+  "revision": 1786675877195,
+  "updatedAt": 1786675877195,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -88,9 +88,11 @@
       "note": "",
       "resumeSnapshot": null,
       "status": "unread",
-      "tags": [],
+      "tags": [
+        "图解"
+      ],
       "title": "图解分布式系统原理 | codedump notes",
-      "updatedAt": 1786675864944,
+      "updatedAt": 1786675874097,
       "url": "https://www.codedump.info/dist-system-cn/"
     },
     "87b1eeab-3c2e-4d64-957c-d0e0cab627e3": {
@@ -310,7 +312,8 @@
     "AI",
     "Design",
     "FE",
-    "RAG"
+    "RAG",
+    "图解"
   ],
   "tombstones": [
     {
