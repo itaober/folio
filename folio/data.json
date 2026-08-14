@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1786436694036,
-  "updatedAt": 1786436694036,
+  "revision": 1786675868067,
+  "updatedAt": 1786675868067,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -78,6 +78,20 @@
       "title": "WebKit browsers see telephone numbers everywhere — Seth Larson",
       "updatedAt": 1780626180873,
       "url": "https://sethmlarson.dev/mobile-browsers-and-telephone-numbers"
+    },
+    "855590cf-5fda-4e9e-86f8-7272fc376171": {
+      "createdAt": 1786675864944,
+      "domain": "www.codedump.info",
+      "favicon": "https://www.codedump.info//favicon-32x32.png",
+      "id": "855590cf-5fda-4e9e-86f8-7272fc376171",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [],
+      "title": "图解分布式系统原理 | codedump notes",
+      "updatedAt": 1786675864944,
+      "url": "https://www.codedump.info/dist-system-cn/"
     },
     "87b1eeab-3c2e-4d64-957c-d0e0cab627e3": {
       "createdAt": 1783478005810,
