@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1786675877195,
-  "updatedAt": 1786675877195,
+  "revision": 1787655461335,
+  "updatedAt": 1787655461335,
   "items": {
     "2c805ca7-3bc9-4eb3-bf50-8df7ad824618": {
       "createdAt": 1779688267452,
@@ -290,6 +290,20 @@
       "title": "AI Engineering from Scratch",
       "updatedAt": 1779356645475,
       "url": "https://aiengineeringfromscratch.com/"
+    },
+    "fd601b9a-93c0-46ad-92ad-0ebe9845a18a": {
+      "createdAt": 1787655458119,
+      "domain": "vercel.com",
+      "favicon": "https://vercel.com/favicon.ico?favicon.3fpu2ql9ns1a0.ico",
+      "id": "fd601b9a-93c0-46ad-92ad-0ebe9845a18a",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [],
+      "title": "Build Your Own AI Coding Agent Harness | Vercel Academy",
+      "updatedAt": 1787655458119,
+      "url": "https://vercel.com/academy/build-ai-agent-harness"
     },
     "ff3cedc0-74aa-4beb-874f-a26a90fdd6ce": {
       "createdAt": 1780905147083,
