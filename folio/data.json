@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1787973112881,
-  "updatedAt": 1787973112881,
+  "revision": 1791386885554,
+  "updatedAt": 1791386885554,
   "items": {
     "0ff6881b-1387-43b3-a4d2-aa81242d8f62": {
       "createdAt": 1787973109312,
@@ -345,21 +345,5 @@
     "RAG",
     "图解"
   ],
-  "tombstones": [
-    {
-      "deletedAt": 1780627023053,
-      "id": "a2707b89-10d5-48e3-b06f-23073ec91fc8",
-      "url": "chrome-extension://bpedlekbgkhdmoagkpoponepenpegaam/src/options/index.html"
-    },
-    {
-      "deletedAt": 1780644837043,
-      "id": "3f5cb25d-c95b-48cf-ba21-2a80e9bb8df6",
-      "url": "https://claude.ai/design/p/dbd3f99c-9b9b-4744-92c6-e2c2741f0bce?file=Folio+Redesign.html"
-    },
-    {
-      "deletedAt": 1780644839893,
-      "id": "0aea3a8b-8135-4d90-8f27-b5dd62c9678a",
-      "url": "chrome://extensions/"
-    }
-  ]
+  "tombstones": []
 }
