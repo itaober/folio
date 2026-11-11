@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1792474444305,
-  "updatedAt": 1792474444305,
+  "revision": 1794387123091,
+  "updatedAt": 1794387123091,
   "items": {
     "0ff6881b-1387-43b3-a4d2-aa81242d8f62": {
       "createdAt": 1787973109312,
@@ -76,6 +76,20 @@
       "title": "深度思考：架构腐朽 & Loop Engineering",
       "updatedAt": 1781522463080,
       "url": "https://mp.weixin.qq.com/s/wINKSDQCroWBvf29h567zA"
+    },
+    "526e73bd-7233-4b48-9c1c-0a1f4077fbaf": {
+      "createdAt": 1794387119751,
+      "domain": "blog.x.com",
+      "favicon": "https://blog.x.com/favicon.ico?favicon.0pe5xuk6qabi9.ico?dpl=16434391-a8f7-4430-801e-0e078178a28b",
+      "id": "526e73bd-7233-4b48-9c1c-0a1f4077fbaf",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [],
+      "title": "Rebuilding the global town square from scratch",
+      "updatedAt": 1794387119751,
+      "url": "https://blog.x.com/en/engineering/rebuilding-the-global-town-square-from-scratch"
     },
     "74287dd9-e3bc-4e2f-a756-c162fa129f3f": {
       "createdAt": 1780997109244,
