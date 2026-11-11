@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1794387123091,
-  "updatedAt": 1794387123091,
+  "revision": 1794387126601,
+  "updatedAt": 1794387126601,
   "items": {
     "0ff6881b-1387-43b3-a4d2-aa81242d8f62": {
       "createdAt": 1787973109312,
@@ -88,7 +88,7 @@
       "status": "unread",
       "tags": [],
       "title": "Rebuilding the global town square from scratch",
-      "updatedAt": 1794387119751,
+      "updatedAt": 1794387123369,
       "url": "https://blog.x.com/en/engineering/rebuilding-the-global-town-square-from-scratch"
     },
     "74287dd9-e3bc-4e2f-a756-c162fa129f3f": {
