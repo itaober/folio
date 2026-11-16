@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1794812891277,
-  "updatedAt": 1794812891277,
+  "revision": 1794812898665,
+  "updatedAt": 1794812898665,
   "items": {
     "0ff6881b-1387-43b3-a4d2-aa81242d8f62": {
       "createdAt": 1787973109312,
@@ -262,13 +262,15 @@
       "domain": "mcp-explained.com",
       "favicon": "https://mcp-explained.com/favicon.svg",
       "id": "b6589cea-3963-47a3-87ec-a4ea35b925c9",
-      "lastOpenedAt": null,
+      "lastOpenedAt": 1794812898603,
       "note": "",
       "resumeSnapshot": null,
       "status": "unread",
-      "tags": [],
+      "tags": [
+        "AI"
+      ],
       "title": "MCP Explained · how the Model Context Protocol works",
-      "updatedAt": 1794812888022,
+      "updatedAt": 1794812898603,
       "url": "https://mcp-explained.com/"
     },
     "c78f819d-5634-408a-a4da-a646a21031fe": {
