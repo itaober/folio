@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 1794387126601,
-  "updatedAt": 1794387126601,
+  "revision": 1794812891277,
+  "updatedAt": 1794812891277,
   "items": {
     "0ff6881b-1387-43b3-a4d2-aa81242d8f62": {
       "createdAt": 1787973109312,
@@ -256,6 +256,20 @@
       "title": "PI from Scratch · 创造属于你的pi-agent",
       "updatedAt": 1786436690798,
       "url": "https://pi-from-scratch.vercel.app/"
+    },
+    "b6589cea-3963-47a3-87ec-a4ea35b925c9": {
+      "createdAt": 1794812888022,
+      "domain": "mcp-explained.com",
+      "favicon": "https://mcp-explained.com/favicon.svg",
+      "id": "b6589cea-3963-47a3-87ec-a4ea35b925c9",
+      "lastOpenedAt": null,
+      "note": "",
+      "resumeSnapshot": null,
+      "status": "unread",
+      "tags": [],
+      "title": "MCP Explained · how the Model Context Protocol works",
+      "updatedAt": 1794812888022,
+      "url": "https://mcp-explained.com/"
     },
     "c78f819d-5634-408a-a4da-a646a21031fe": {
       "createdAt": 1782377772618,
